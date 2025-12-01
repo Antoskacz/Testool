@@ -23,14 +23,14 @@ def show():
     def save_projects():
         return save_json(PROJECTS_PATH, st.session_state.projects)
     
-    def make_scenarios_df(project_name):
+    def make_testcases_df(project_name):
         if project_name not in st.session_state.projects:
             return pd.DataFrame()
         
-        scenarios = st.session_state.projects[project_name].get("scenarios", [])
+        testcases = st.session_state.projects[project_name].get("scenarios", [])
         rows = []
         
-        for tc in scenarios:
+        for tc in testcases:
             rows.append({
                 "Order": tc.get("order_no"),
                 "Test Name": tc.get("test_name"),
@@ -47,13 +47,13 @@ def show():
             df = df.sort_values(by="Order", ascending=True)
         return df
     
-    def renumber_scenarios(project_name):
+    def renumber_testcases(project_name):
         if project_name not in st.session_state.projects:
             return
         
-        scenarios = st.session_state.projects[project_name]["scenarios"]
+        testcases = st.session_state.projects[project_name]["scenarios"]
         
-        for i, tc in enumerate(sorted(scenarios, key=lambda x: x["order_no"]), start=1):
+        for i, tc in enumerate(sorted(testcases, key=lambda x: x["order_no"]), start=1):
             new_number = f"{i:03d}"
             tc["order_no"] = i
             
@@ -67,7 +67,7 @@ def show():
                 tc["test_name"] = f"{new_number}_{tc['test_name']}"
         
         save_projects()
-        st.success("✅ Scenarios have been renumbered.")
+        st.success("✅ Test cases have been renumbered.")
         st.rerun()
     
     # ---------- SIDEBAR ----------
@@ -133,26 +133,127 @@ def show():
     
     project_name = st.session_state.selected_project
     
-    # Project overview - OPRAVENÉ (bez backslashu ve f-stringu)
-    st.subheader("📊 Project Overview")
-    st.write(f"**Active Project:** {project_name}")
+    # ---------- ROW 1: PROJECT OVERVIEW + ANALYSIS ----------
+    col_overview, col_analysis = st.columns([1, 1])
     
-    # OPRAVA: Bez backslashu ve f-stringu
-    subject_value = st.session_state.projects[project_name].get('subject', 'UAT2\\Antosova\\')
-    st.write(f"**Subject:** {subject_value}")
+    with col_overview:
+        st.subheader("📊 Project Overview")
+        st.write(f"**Active Project:** {project_name}")
+        
+        subject_value = st.session_state.projects[project_name].get('subject', 'UAT2\\Antosova\\')
+        st.write(f"**Subject:** {subject_value}")
+        
+        testcase_count = len(st.session_state.projects[project_name].get('scenarios', []))
+        st.write(f"**Number of Test Cases:** {testcase_count}")
+        
+        # Quick stats
+        if testcase_count > 0:
+            testcases = st.session_state.projects[project_name]["scenarios"]
+            b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
+            b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
+            st.write(f"**B2C:** {b2c_count} | **B2B:** {b2b_count}")
     
-    st.write(f"**Number of Scenarios:** {len(st.session_state.projects[project_name].get('scenarios', []))}")
+    with col_analysis:
+        st.subheader("📈 Analysis")
+        
+        testcases = st.session_state.projects[project_name].get("scenarios", [])
+        if testcases:
+            segment_data = analyze_scenarios(testcases)
+            
+            # Compact analysis view
+            with st.expander("👥 B2C Analysis", expanded=True):
+                if "B2C" in segment_data and segment_data["B2C"]:
+                    for channel in segment_data["B2C"]:
+                        st.write(f"**{channel}:**")
+                        for technology in segment_data["B2C"][channel]:
+                            action_count = len(segment_data["B2C"][channel][technology])
+                            st.write(f"  {technology}: {action_count} actions")
+                else:
+                    st.write("No B2C test cases")
+            
+            with st.expander("🏢 B2B Analysis", expanded=True):
+                if "B2B" in segment_data and segment_data["B2B"]:
+                    for channel in segment_data["B2B"]:
+                        st.write(f"**{channel}:**")
+                        for technology in segment_data["B2B"][channel]:
+                            action_count = len(segment_data["B2B"][channel][technology])
+                            st.write(f"  {technology}: {action_count} actions")
+                else:
+                    st.write("No B2B test cases")
+        else:
+            st.info("No test cases for analysis")
     
     st.markdown("---")
     
-    # ADD NEW SCENARIO
-    st.subheader("➕ Add New Scenario")
+    # ---------- ROW 2: TEST CASES LIST ----------
+    st.subheader("📋 Test Cases List")
+    
+    df = make_testcases_df(project_name)
+    if not df.empty:
+        st.dataframe(
+            df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Order": st.column_config.NumberColumn("No.", width="small"),
+                "Test Name": st.column_config.TextColumn("Test Name", width="large"),
+                "Action": st.column_config.TextColumn("Action", width="medium"),
+                "Segment": st.column_config.TextColumn("Segment", width="small"),
+                "Channel": st.column_config.TextColumn("Channel", width="small"),
+                "Priority": st.column_config.TextColumn("Priority", width="small"),
+                "Complexity": st.column_config.TextColumn("Complexity", width="small"),
+                "Steps": st.column_config.NumberColumn("Steps", width="small")
+            }
+        )
+        
+        # Actions for all test cases
+        col_renumber, col_export = st.columns([1, 1])
+        with col_renumber:
+            if st.button("🔢 Renumber Test Cases from 001", use_container_width=True):
+                renumber_testcases(project_name)
+        with col_export:
+            if st.button("💾 Export to Excel", use_container_width=True, type="primary"):
+                with st.spinner("Exporting to Excel..."):
+                    export_result = export_to_excel(project_name, st.session_state.projects)
+                    
+                    if export_result:
+                        safe_name = "".join(c for c in project_name if c.isalnum() or c in (' ', '-', '_')).rstrip()
+                        safe_name = safe_name.replace(' ', '_').replace('/', '_').replace('\\', '_')
+                        filename = f"testcases_{safe_name}.xlsx"
+                        
+                        st.success("✅ Export complete! File ready for download.")
+                        
+                        st.download_button(
+                            label="⬇️ Download Excel File",
+                            data=export_result.getvalue(),
+                            file_name=filename,
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            use_container_width=True
+                        )
+                    else:
+                        st.error("❌ No data to export")
+    else:
+        st.info("No test cases yet. Add your first test case below.")
+    
+    st.markdown("---")
+    
+    # ---------- ROW 3: ADD NEW TEST CASE ----------
+    col_add, col_import = st.columns([3, 1])
+    
+    with col_add:
+        st.subheader("➕ Add New Test Case")
+    
+    with col_import:
+        st.write("")  # Spacer
+        if st.button("📤 Import from Excel", help="Import test cases from Excel file"):
+            st.info("🚧 Excel Import - Coming Soon!")
+            st.write("This feature will be available in the next update.")
     
     # Get available actions
     action_list = list(st.session_state.steps_data.keys())
     
-    with st.form("add_scenario_form"):
-        sentence = st.text_area("Sentence (requirement)", height=100, 
+    with st.form("add_testcase_form"):
+        sentence = st.text_area("Requirement Sentence", height=100, 
                               placeholder="e.g.: Activate DSL for B2C via SHOP channel...")
         action = st.selectbox("Action (from kroky.json)", options=action_list)
         
@@ -174,9 +275,9 @@ def show():
                 help=f"Automatically set to {auto_complexity} based on {step_count} steps"
             )
         
-        if st.form_submit_button("➕ Add Scenario"):
+        if st.form_submit_button("➕ Add Test Case"):
             if not sentence.strip():
-                st.error("Sentence cannot be empty.")
+                st.error("Requirement sentence cannot be empty.")
             elif not action:
                 st.error("Select an action.")
             else:
@@ -189,105 +290,96 @@ def show():
                     steps_data=st.session_state.steps_data,
                     projects_data=st.session_state.projects
                 )
-                st.success(f"✅ Scenario added: {tc['test_name']}")
+                st.success(f"✅ Test case added: {tc['test_name']}")
                 st.rerun()
     
     st.markdown("---")
     
-    # SCENARIO LIST
-    st.subheader("📋 Scenario List")
+    # ---------- ROW 4: EDIT & DELETE TEST CASES ----------
+    st.subheader("✏️ Edit & Delete Test Cases")
     
-    df = make_scenarios_df(project_name)
     if not df.empty:
-        st.dataframe(
-            df,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "Order": st.column_config.NumberColumn("No.", width="small"),
-                "Test Name": st.column_config.TextColumn("Test Name", width="large"),
-                "Action": st.column_config.TextColumn("Action", width="medium"),
-                "Segment": st.column_config.TextColumn("Segment", width="small"),
-                "Channel": st.column_config.TextColumn("Channel", width="small"),
-                "Priority": st.column_config.TextColumn("Priority", width="small"),
-                "Complexity": st.column_config.TextColumn("Complexity", width="small"),
-                "Steps": st.column_config.NumberColumn("Steps", width="small")
-            }
+        # EDIT TEST CASE
+        st.write("**Edit Existing Test Case:**")
+        selected_row = st.selectbox(
+            "Select test case to edit:",
+            options=["— none —"] + [f"{row['Order']} - {row['Test Name']}" for _, row in df.iterrows()],
+            index=0,
+            key="edit_testcase_select"
         )
         
-        if st.button("🔢 Renumber Scenarios from 001", use_container_width=True):
-            renumber_scenarios(project_name)
-    else:
-        st.info("No scenarios yet. Add your first scenario above.")
-    
-    st.markdown("---")
-    
-    # SCENARIO ANALYSIS
-    st.subheader("📊 Scenario Analysis")
-    
-    scenarios = st.session_state.projects[project_name].get("scenarios", [])
-    if scenarios:
-        segment_data = analyze_scenarios(scenarios)
-        
-        col_b2c, col_b2b = st.columns(2)
-        
-        with col_b2c:
-            with st.expander("👥 B2C", expanded=True):
-                if "B2C" in segment_data and segment_data["B2C"]:
-                    for channel in segment_data["B2C"]:
-                        st.markdown(f"<h4 style='margin-bottom: 5px;'>{channel}</h4>", unsafe_allow_html=True)
-                        
-                        for technology in segment_data["B2C"][channel]:
-                            st.markdown(f"<strong>{technology}</strong>", unsafe_allow_html=True)
-                            
-                            for action in segment_data["B2C"][channel][technology]:
-                                st.write(f"  • {action}")
-                        
-                        if channel != list(segment_data["B2C"].keys())[-1]:
-                            st.markdown("<hr style='margin: 10px 0;'>", unsafe_allow_html=True)
-                else:
-                    st.write("No B2C scenarios")
-        
-        with col_b2b:
-            with st.expander("🏢 B2B", expanded=True):
-                if "B2B" in segment_data and segment_data["B2B"]:
-                    for channel in segment_data["B2B"]:
-                        st.markdown(f"<h4 style='margin-bottom: 5px;'>{channel}</h4>", unsafe_allow_html=True)
-                        
-                        for technology in segment_data["B2B"][channel]:
-                            st.markdown(f"<strong>{technology}</strong>", unsafe_allow_html=True)
-                            
-                            for action in segment_data["B2B"][channel][technology]:
-                                st.write(f"  • {action}")
-                        
-                        if channel != list(segment_data["B2B"].keys())[-1]:
-                            st.markdown("<hr style='margin: 10px 0;'>", unsafe_allow_html=True)
-                else:
-                    st.write("No B2B scenarios")
-    
-    st.markdown("---")
-    
-    # EXPORT
-    st.subheader("📤 Export Project")
-    
-    if st.button("💾 Export to Excel", use_container_width=True, type="primary"):
-        with st.spinner("Exporting to Excel..."):
-            export_result = export_to_excel(project_name, st.session_state.projects)
+        if selected_row != "— none —":
+            idx = int(selected_row.split(" - ")[0])
+            testcase_list = st.session_state.projects[project_name]["scenarios"]
+            testcase_index = next((i for i, t in enumerate(testcase_list) if t["order_no"] == idx), None)
+            testcase = testcase_list[testcase_index] if testcase_index is not None else None
             
-            if export_result:
-                # Create safe filename
-                safe_name = "".join(c for c in project_name if c.isalnum() or c in (' ', '-', '_')).rstrip()
-                safe_name = safe_name.replace(' ', '_').replace('/', '_').replace('\\', '_')
-                filename = f"testcases_{safe_name}.xlsx"
-                
-                st.success("✅ Export complete! File ready for download.")
-                
-                st.download_button(
-                    label="⬇️ Download Excel File",
-                    data=export_result.getvalue(),
-                    file_name=filename,
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True
-                )
-            else:
-                st.error("❌ No data to export")
+            if testcase:
+                with st.form("edit_testcase_form"):
+                    sentence = st.text_area("Requirement Sentence", value=testcase["veta"], height=100)
+                    action = st.selectbox("Action", 
+                                        options=list(st.session_state.steps_data.keys()),
+                                        index=list(st.session_state.steps_data.keys()).index(testcase["akce"]) 
+                                                if testcase["akce"] in st.session_state.steps_data else 0)
+                    
+                    # Priority and Complexity maps
+                    PRIORITY_MAP_VALUES = ["1-High", "2-Medium", "3-Low"]
+                    COMPLEXITY_MAP_VALUES = ["1-Giant", "2-Huge", "3-Big", "4-Medium", "5-Low"]
+                    
+                    priority = st.selectbox("Priority", 
+                                          options=PRIORITY_MAP_VALUES,
+                                          index=PRIORITY_MAP_VALUES.index(testcase["priority"]) 
+                                                if testcase["priority"] in PRIORITY_MAP_VALUES else 1)
+                    complexity = st.selectbox("Complexity", 
+                                            options=COMPLEXITY_MAP_VALUES,
+                                            index=COMPLEXITY_MAP_VALUES.index(testcase["complexity"]) 
+                                                  if testcase["complexity"] in COMPLEXITY_MAP_VALUES else 3)
+                    
+                    if st.form_submit_button("💾 Save Changes"):
+                        testcase["veta"] = sentence.strip()
+                        testcase["akce"] = action
+                        testcase["priority"] = priority
+                        testcase["complexity"] = complexity
+                        testcase["kroky"] = get_steps_from_action(action, st.session_state.steps_data)
+                        
+                        # Update test name while keeping structure
+                        current_name_parts = testcase["test_name"].split("_")
+                        if len(current_name_parts) >= 5:
+                            new_test_name = f"{current_name_parts[0]}_{current_name_parts[1]}_{current_name_parts[2]}_{current_name_parts[3]}_{sentence.strip()}"
+                        else:
+                            from core import extract_channel, extract_segment, extract_technology
+                            segment = extract_segment(sentence.strip())
+                            kanal = extract_channel(sentence.strip())
+                            technologie = extract_technology(sentence.strip())
+                            new_test_name = f"{current_name_parts[0]}_{kanal}_{segment}_{technologie}_{sentence.strip()}"
+                        
+                        testcase["test_name"] = new_test_name
+                        
+                        st.session_state.projects[project_name]["scenarios"][testcase_index] = testcase
+                        save_projects()
+                        st.success("✅ Changes saved and propagated to project.")
+                        st.rerun()
+        
+        st.markdown("---")
+        
+        # DELETE TEST CASE
+        st.write("**Delete Test Case:**")
+        to_delete = st.selectbox(
+            "Select test case to delete:",
+            options=["— none —"] + [f"{row['Order']} - {row['Test Name']}" for _, row in df.iterrows()],
+            index=0,
+            key="delete_testcase_select"
+        )
+        
+        if to_delete != "— none —":
+            idx = int(to_delete.split(" - ")[0])
+            if st.button("🗑️ Confirm Delete Test Case", type="secondary"):
+                testcases_filtered = [t for t in st.session_state.projects[project_name]["scenarios"] if t.get("order_no") != idx]
+                for i, t in enumerate(testcases_filtered, start=1):
+                    t["order_no"] = i
+                st.session_state.projects[project_name]["scenarios"] = testcases_filtered
+                save_projects()
+                st.success("Test case deleted and order recalculated.")
+                st.rerun()
+    else:
+        st.info("No test cases to edit or delete.")

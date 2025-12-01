@@ -1,164 +1,21 @@
 import streamlit as st
-import pandas as pd
 from core import (
     load_json, save_json,
-    PROJECTS_PATH, KROKY_PATH,
-    get_steps_from_action,
+    KROKY_PATH,
     add_new_action, update_action, delete_action
 )
 
 def show():
-    st.title("✏️ Edit Test Cases & Manage Actions")
+    st.title("🔧 Edit Actions & Steps")
+    st.markdown("Manage actions and their steps in `kroky.json`")
     
     # ---------- SESSION STATE ----------
-    if 'projects' not in st.session_state:
-        st.session_state.projects = load_json(PROJECTS_PATH)
-    if 'selected_project' not in st.session_state:
-        st.session_state.selected_project = None
     if 'steps_data' not in st.session_state:
         st.session_state.steps_data = load_json(KROKY_PATH)
     
-    # ---------- HELPER FUNCTIONS ----------
-    def save_projects():
-        return save_json(PROJECTS_PATH, st.session_state.projects)
+    # ---------- ADD NEW ACTION ----------
+    st.subheader("➕ Add New Action")
     
-    def make_scenarios_df(project_name):
-        if project_name not in st.session_state.projects:
-            return pd.DataFrame()
-        
-        scenarios = st.session_state.projects[project_name].get("scenarios", [])
-        rows = []
-        
-        for tc in scenarios:
-            rows.append({
-                "Order": tc.get("order_no"),
-                "Test Name": tc.get("test_name"),
-                "Action": tc.get("akce"),
-                "Segment": tc.get("segment"),
-                "Channel": tc.get("kanal"),
-                "Priority": tc.get("priority"),
-                "Complexity": tc.get("complexity"),
-                "Steps": len(tc.get("kroky", []))
-            })
-        
-        df = pd.DataFrame(rows)
-        if not df.empty:
-            df = df.sort_values(by="Order", ascending=True)
-        return df
-    
-    # ---------- SIDEBAR PROJECT SELECTION ----------
-    st.sidebar.title("📁 Project")
-    
-    project_names = list(st.session_state.projects.keys())
-    selected = st.sidebar.selectbox(
-        "Select Project",
-        options=["— select —"] + project_names,
-        index=0,
-        key="project_select_edit"
-    )
-    
-    if selected != "— select —" and selected in st.session_state.projects:
-        st.session_state.selected_project = selected
-    
-    # ---------- EDIT SCENARIOS ----------
-    if st.session_state.selected_project:
-        project_name = st.session_state.selected_project
-        
-        st.subheader(f"📝 Edit Scenarios - {project_name}")
-        
-        df = make_scenarios_df(project_name)
-        if not df.empty:
-            # EDIT SCENARIO
-            st.write("**Edit Existing Scenario:**")
-            selected_row = st.selectbox(
-                "Select scenario to edit:",
-                options=["— none —"] + [f"{row['Order']} - {row['Test Name']}" for _, row in df.iterrows()],
-                index=0
-            )
-            
-            if selected_row != "— none —":
-                idx = int(selected_row.split(" - ")[0])
-                scenario_list = st.session_state.projects[project_name]["scenarios"]
-                scenario_index = next((i for i, t in enumerate(scenario_list) if t["order_no"] == idx), None)
-                scenario = scenario_list[scenario_index] if scenario_index is not None else None
-                
-                if scenario:
-                    with st.form("edit_scenario_form"):
-                        sentence = st.text_area("Sentence", value=scenario["veta"], height=100)
-                        action = st.selectbox("Action", 
-                                            options=list(st.session_state.steps_data.keys()),
-                                            index=list(st.session_state.steps_data.keys()).index(scenario["akce"]) 
-                                                    if scenario["akce"] in st.session_state.steps_data else 0)
-                        
-                        # Priority and Complexity maps (temporary)
-                        PRIORITY_MAP_VALUES = ["1-High", "2-Medium", "3-Low"]
-                        COMPLEXITY_MAP_VALUES = ["1-Giant", "2-Huge", "3-Big", "4-Medium", "5-Low"]
-                        
-                        priority = st.selectbox("Priority", 
-                                              options=PRIORITY_MAP_VALUES,
-                                              index=PRIORITY_MAP_VALUES.index(scenario["priority"]) 
-                                                    if scenario["priority"] in PRIORITY_MAP_VALUES else 1)
-                        complexity = st.selectbox("Complexity", 
-                                                options=COMPLEXITY_MAP_VALUES,
-                                                index=COMPLEXITY_MAP_VALUES.index(scenario["complexity"]) 
-                                                      if scenario["complexity"] in COMPLEXITY_MAP_VALUES else 3)
-                        
-                        if st.form_submit_button("💾 Save Changes"):
-                            scenario["veta"] = sentence.strip()
-                            scenario["akce"] = action
-                            scenario["priority"] = priority
-                            scenario["complexity"] = complexity
-                            scenario["kroky"] = get_steps_from_action(action, st.session_state.steps_data)
-                            
-                            # Keep name structure
-                            current_name_parts = scenario["test_name"].split("_")
-                            if len(current_name_parts) >= 5:
-                                new_test_name = f"{current_name_parts[0]}_{current_name_parts[1]}_{current_name_parts[2]}_{current_name_parts[3]}_{sentence.strip()}"
-                            else:
-                                # Simple update if format is not standard
-                                from core import extract_channel, extract_segment, extract_technology
-                                segment = extract_segment(sentence.strip())
-                                kanal = extract_channel(sentence.strip())
-                                technologie = extract_technology(sentence.strip())
-                                new_test_name = f"{current_name_parts[0]}_{kanal}_{segment}_{technologie}_{sentence.strip()}"
-                            
-                            scenario["test_name"] = new_test_name
-                            
-                            st.session_state.projects[project_name]["scenarios"][scenario_index] = scenario
-                            save_projects()
-                            st.success("✅ Changes saved and propagated to project.")
-                            st.rerun()
-            
-            st.markdown("---")
-            
-            # DELETE SCENARIO
-            st.write("**Delete Scenario:**")
-            to_delete = st.selectbox(
-                "Select scenario to delete:",
-                options=["— none —"] + [f"{row['Order']} - {row['Test Name']}" for _, row in df.iterrows()],
-                index=0,
-                key="delete_selector"
-            )
-            
-            if to_delete != "— none —":
-                idx = int(to_delete.split(" - ")[0])
-                if st.button("🗑️ Confirm Delete Scenario", type="secondary"):
-                    scen = [t for t in st.session_state.projects[project_name]["scenarios"] if t.get("order_no") != idx]
-                    for i, t in enumerate(scen, start=1):
-                        t["order_no"] = i
-                    st.session_state.projects[project_name]["scenarios"] = scen
-                    save_projects()
-                    st.success("Scenario deleted and order recalculated.")
-                    st.rerun()
-        else:
-            st.info("No scenarios to edit.")
-    
-    st.markdown("---")
-    
-    # ---------- MANAGE ACTIONS ----------
-    st.subheader("🔧 Manage Actions (kroky.json)")
-    
-    # Add new action button
     if st.button("➕ Add New Action", key="new_action_main", use_container_width=True):
         st.session_state["new_action"] = True
         st.session_state["edit_action"] = None
@@ -251,10 +108,10 @@ def show():
     
     st.markdown("---")
     
-    # EXISTING ACTIONS LIST
+    # ---------- EXISTING ACTIONS LIST ----------
+    st.subheader("📝 Existing Actions")
+    
     if st.session_state.steps_data:
-        st.subheader("📝 Existing Actions")
-        
         for action in sorted(st.session_state.steps_data.keys()):
             content = st.session_state.steps_data[action]
             description = content.get("description", "No description") if isinstance(content, dict) else "No description"
@@ -284,7 +141,7 @@ def show():
             
             st.markdown("---")
     
-    # EDIT EXISTING ACTION
+    # ---------- EDIT EXISTING ACTION ----------
     if "edit_action" in st.session_state and st.session_state.edit_action:
         action = st.session_state.edit_action
         content = st.session_state.steps_data.get(action, {})
