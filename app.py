@@ -42,13 +42,13 @@ page = st.sidebar.radio(
     ]
 )
 
-# Page routing
+# Page routing - OPRAVENÉ IMPORTOVÁNÍ
 if page == "🏗️ Build Test Cases":
-    from pages import build_testcases
-    build_testcases.show()
+    from pages.build_testcases import show
+    show()
 elif page == "✏️ Edit Test Cases":
-    from pages import edit_testcases
-    edit_testcases.show()
+    from pages.edit_testcases import show
+    show()
 elif page == "📤 Import from Excel":
     st.info("🚧 Excel Import - Coming Soon!")
     st.write("This feature will allow importing test cases from Excel files.")
