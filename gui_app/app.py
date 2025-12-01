@@ -388,7 +388,8 @@ def main():
     # Project overview
     st.subheader("📊 Project Overview")
     st.write(f"**Active Project:** {project_name}")
-    st.write(f"**Subject:** {st.session_state.projects[project_name].get('subject', 'UAT2\\\\Antosova\\\\')}")
+    subject = st.session_state.projects[project_name].get('subject', 'UAT2\\Antosova\\')
+    st.write(f"**Subject:** {subject}")
     st.write(f"**Number of Scenarios:** {len(st.session_state.projects[project_name].get('scenarios', []))}")
     
     st.markdown("---")
