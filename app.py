@@ -42,7 +42,7 @@ page = st.sidebar.radio(
     ]
 )
 
-# Page routing - OPRAVENÉ IMPORTOVÁNÍ
+# Page routing
 if page == "🏗️ Build Test Cases":
     from pages.build_testcases import show
     show()

@@ -133,10 +133,14 @@ def show():
     
     project_name = st.session_state.selected_project
     
-    # Project overview
+    # Project overview - OPRAVENÉ (bez backslashu ve f-stringu)
     st.subheader("📊 Project Overview")
     st.write(f"**Active Project:** {project_name}")
-    st.write(f"**Subject:** {st.session_state.projects[project_name].get('subject', 'UAT2\\\\Antosova\\\\')}")
+    
+    # OPRAVA: Bez backslashu ve f-stringu
+    subject_value = st.session_state.projects[project_name].get('subject', 'UAT2\\Antosova\\')
+    st.write(f"**Subject:** {subject_value}")
+    
     st.write(f"**Number of Scenarios:** {len(st.session_state.projects[project_name].get('scenarios', []))}")
     
     st.markdown("---")
