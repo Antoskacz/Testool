@@ -94,6 +94,13 @@ def extract_technology(text: str) -> str:
         return "FWA"
     return "UNKNOWN"
 
+def parse_veta(text: str):
+    """Parse sentence to extract components - used for editing test cases"""
+    segment = extract_segment(text)
+    kanal = extract_channel(text)
+    technologie = extract_technology(text)
+    return segment, kanal, technologie
+
 def normalize_text(text):
     """Normalize text for filenames"""
     text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")

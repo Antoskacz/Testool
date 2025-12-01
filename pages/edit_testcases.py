@@ -13,6 +13,11 @@ def show():
     if 'steps_data' not in st.session_state:
         st.session_state.steps_data = load_json(KROKY_PATH)
     
+    # Check if kroky.json exists and is loaded
+    if not st.session_state.steps_data:
+        st.warning("No actions found in kroky.json. The file may be empty or missing.")
+        st.info("You can add your first action below.")
+    
     # ---------- ADD NEW ACTION ----------
     st.subheader("➕ Add New Action")
     
@@ -132,12 +137,25 @@ def show():
             
             with col_delete:
                 if st.button("🗑️", key=f"delete_{action}", help="Delete action", use_container_width=True):
-                    if st.checkbox(f"Confirm delete '{action}'?", key=f"confirm_{action}"):
+                    st.session_state.delete_action = action
+                    st.rerun()
+            
+            # Delete confirmation
+            if st.session_state.get("delete_action") == action:
+                st.warning(f"Are you sure you want to delete action '{action}'?")
+                col_confirm, col_cancel = st.columns(2)
+                with col_confirm:
+                    if st.button("Yes, delete", key=f"confirm_del_{action}"):
                         success = delete_action(action)
                         if success:
                             st.success(f"✅ Action '{action}' deleted from kroky.json!")
                             st.session_state.steps_data = load_json(KROKY_PATH)
+                            st.session_state.delete_action = None
                             st.rerun()
+                with col_cancel:
+                    if st.button("Cancel", key=f"cancel_del_{action}"):
+                        st.session_state.delete_action = None
+                        st.rerun()
             
             st.markdown("---")
     
@@ -161,6 +179,7 @@ def show():
             st.write("**Action Steps:**")
             
             # Display steps for editing
+            steps_to_delete = []
             for i, step in enumerate(st.session_state[f"edit_steps_{action}"]):
                 col_step, col_delete = st.columns([4, 1])
                 
@@ -178,10 +197,15 @@ def show():
                 
                 with col_delete:
                     if st.form_submit_button("🗑️", key=f"del_{action}_{i}", use_container_width=True):
-                        st.session_state[f"edit_steps_{action}"].pop(i)
-                        st.rerun()
+                        steps_to_delete.append(i)
                 
                 st.markdown("---")
+            
+            # Delete marked steps
+            for index in sorted(steps_to_delete, reverse=True):
+                if index < len(st.session_state[f"edit_steps_{action}"]):
+                    st.session_state[f"edit_steps_{action}"].pop(index)
+                    st.rerun()
             
             # Add new step
             st.write("**Add New Step:**")

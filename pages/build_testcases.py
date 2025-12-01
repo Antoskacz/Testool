@@ -7,7 +7,8 @@ from core import (
     generate_testcase, export_to_excel,
     PRIORITY_MAP, COMPLEXITY_MAP,
     get_steps_from_action, analyze_scenarios,
-    get_automatic_complexity
+    get_automatic_complexity,
+    parse_veta, extract_channel, extract_segment, extract_technology
 )
 
 def show():
@@ -24,6 +25,7 @@ def show():
         return save_json(PROJECTS_PATH, st.session_state.projects)
     
     def make_testcases_df(project_name):
+        """Create DataFrame of test cases for display"""
         if project_name not in st.session_state.projects:
             return pd.DataFrame()
         
@@ -48,6 +50,7 @@ def show():
         return df
     
     def renumber_testcases(project_name):
+        """Renumber test cases starting from 001"""
         if project_name not in st.session_state.projects:
             return
         
@@ -85,7 +88,7 @@ def show():
     # Create new project
     new_project = st.sidebar.text_input("New Project Name", placeholder="e.g.: CCCTR-XXXX – Name")
     
-    if st.sidebar.button("✅ Create Project"):
+    if st.sidebar.button("✅ Create Project", use_container_width=True):
         if new_project.strip():
             if new_project.strip() not in st.session_state.projects:
                 st.session_state.projects[new_project.strip()] = {
@@ -96,6 +99,8 @@ def show():
                 save_projects()
                 st.session_state.selected_project = new_project.strip()
                 st.rerun()
+            else:
+                st.sidebar.error("Project already exists!")
     
     # Project management
     if selected != "— select —" and selected in st.session_state.projects:
@@ -106,7 +111,7 @@ def show():
         
         with st.sidebar.expander("✏️ Edit Project Name"):
             new_name = st.text_input("New Project Name", value=selected)
-            if st.button("Save New Name"):
+            if st.button("Save New Name", key="save_name_btn"):
                 if new_name.strip() and new_name != selected:
                     st.session_state.projects[new_name] = st.session_state.projects.pop(selected)
                     st.session_state.selected_project = new_name
@@ -117,7 +122,7 @@ def show():
         with st.sidebar.expander("📝 Edit Subject"):
             current_subject = st.session_state.projects[selected].get("subject", "UAT2\\Antosova\\")
             new_subject = st.text_input("New Subject", value=current_subject)
-            if st.button("Save Subject"):
+            if st.button("Save Subject", key="save_subject_btn"):
                 if new_subject.strip():
                     st.session_state.projects[selected]["subject"] = new_subject.strip()
                     save_projects()
@@ -245,11 +250,15 @@ def show():
     
     with col_import:
         st.write("")  # Spacer
-        if st.button("📤 Import from Excel", help="Import test cases from Excel file"):
+        if st.button("📤 Import from Excel", help="Import test cases from Excel file", use_container_width=True):
             st.info("🚧 Excel Import - Coming Soon!")
             st.write("This feature will be available in the next update.")
     
-    # Get available actions
+    # Check if we have actions available
+    if not st.session_state.steps_data:
+        st.error("❌ No actions found! Please add actions in 'Edit Actions & Steps' page first.")
+        return
+    
     action_list = list(st.session_state.steps_data.keys())
     
     with st.form("add_testcase_form"):
@@ -347,10 +356,7 @@ def show():
                         if len(current_name_parts) >= 5:
                             new_test_name = f"{current_name_parts[0]}_{current_name_parts[1]}_{current_name_parts[2]}_{current_name_parts[3]}_{sentence.strip()}"
                         else:
-                            from core import extract_channel, extract_segment, extract_technology
-                            segment = extract_segment(sentence.strip())
-                            kanal = extract_channel(sentence.strip())
-                            technologie = extract_technology(sentence.strip())
+                            segment, kanal, technologie = parse_veta(sentence.strip())
                             new_test_name = f"{current_name_parts[0]}_{kanal}_{segment}_{technologie}_{sentence.strip()}"
                         
                         testcase["test_name"] = new_test_name
@@ -373,7 +379,7 @@ def show():
         
         if to_delete != "— none —":
             idx = int(to_delete.split(" - ")[0])
-            if st.button("🗑️ Confirm Delete Test Case", type="secondary"):
+            if st.button("🗑️ Confirm Delete Test Case", type="secondary", use_container_width=True):
                 testcases_filtered = [t for t in st.session_state.projects[project_name]["scenarios"] if t.get("order_no") != idx]
                 for i, t in enumerate(testcases_filtered, start=1):
                     t["order_no"] = i

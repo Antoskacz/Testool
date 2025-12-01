@@ -36,18 +36,18 @@ page = st.sidebar.radio(
     "Go to:",
     [
         "🏗️ Build Test Cases",
-        "✏️ Edit Test Cases", 
+        "🔧 Edit Actions & Steps", 
         "📤 Import from Excel",
         "📝 Text Comparator"
     ]
 )
 
 # Page routing
-if page == "🏗️ Test Cases builder":
+if page == "🏗️ Build Test Cases":
     from pages.build_testcases import show
     show()
-elif page == "✏️ Actions & steps manager":
-    from pages.manage_actions import show
+elif page == "🔧 Edit Actions & Steps":
+    from pages.edit_testcases import show
     show()
 elif page == "📤 Import from Excel":
     st.info("🚧 Excel Import - Coming Soon!")
