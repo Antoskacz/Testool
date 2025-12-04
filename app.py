@@ -6,210 +6,34 @@ import difflib
 import unicodedata
 
 st.set_page_config(
-    page_title="Testool - Test Case Management",
+    page_title="TestTool",
     page_icon="🧪",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded"  # Sidebar vždy rozbalený
 )
 
-# Custom CSS for dark theme with FIXED SIDEBAR
-CUSTOM_CSS = """
-<style>
-/* Hide the top navigation bar that Streamlit creates for multi-page apps */
-[data-testid="stSidebarNav"] {
-    display: none;
-}
-
-/* Hide any other top navigation elements */
-header[data-testid="stHeader"] {
-    display: none;
-}
-
-[data-testid="stToolbar"] {
-    display: none;
-}
-
-.css-1d391kg {
-    display: none;
-}
-
-/* FIXED SIDEBAR - Never collapses completely */
-section[data-testid="stSidebar"] {
-    min-width: 70px !important;
-    max-width: 350px !important;
-    transition: width 0.3s ease;
-}
-
-/* When sidebar is compact */
-section[data-testid="stSidebar"][compact="true"] {
-    width: 70px !important;
-}
-
-/* Compact navigation */
-.compact-nav {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding-top: 20px;
-    gap: 15px;
-}
-
-.compact-icon {
-    font-size: 24px;
-    cursor: pointer;
-    padding: 10px;
-    border-radius: 8px;
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s;
-    text-decoration: none !important;
-}
-
-.compact-icon:hover {
-    background: #333;
-    transform: scale(1.1);
-}
-
-.compact-icon.active {
-    background: #4e54c8;
-    color: white;
-}
-
-/* Expand button in compact mode */
-.expand-btn {
-    position: absolute;
-    top: 10px;
-    right: -15px;
-    background: #4e54c8;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    font-size: 16px;
-    cursor: pointer;
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Main app styling */
-body { 
-    background-color: #121212; 
-    color: #EAEAEA; 
-}
-[data-testid="stAppViewContainer"] { 
-    background: linear-gradient(145deg, #181818, #1E1E1E); 
-}
-h1, h2, h3 { 
-    color: #F1F1F1; 
-    font-weight: 600; 
-}
-div[data-testid="stForm"], div[data-testid="stExpander"] {
-    background-color: #1A1A1A; 
-    border-radius: 10px; 
-    padding: 1rem; 
-    border: 1px solid #333;
-}
-button[kind="primary"] { 
-    background: linear-gradient(90deg, #4e54c8, #8f94fb); 
-    color: white !important; 
-    border: none !important;
-}
-.stTextInput > div > div > input, textarea, select {
-    background-color: #222; 
-    color: #EEE !important; 
-    border-radius: 6px; 
-    border: 1px solid #444;
-}
-
-/* Highlight for differences */
-.highlight-diff {
-    background-color: #ff4444 !important;
-    color: white !important;
-    font-weight: bold;
-    padding: 1px 3px;
-    border-radius: 3px;
-}
-</style>
-"""
-st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
-
-# Initialize session state
-if 'sidebar_compact' not in st.session_state:
-    st.session_state.sidebar_compact = False
-if 'current_page' not in st.session_state:
-    st.session_state.current_page = "build"
-
-# ---------- SIDEBAR RENDERING ----------
-with st.sidebar:
-    # Apply compact mode to sidebar element via HTML attribute
-    if st.session_state.sidebar_compact:
-        st.markdown('<div compact="true"></div>', unsafe_allow_html=True)
-    
-    if st.session_state.sidebar_compact:
-        # COMPACT MODE - Only icons
-        st.markdown('<div class="compact-nav">', unsafe_allow_html=True)
-        
-        # Expand button (always visible in compact mode)
-        if st.button("➡️", key="expand_sidebar", help="Expand sidebar"):
-            st.session_state.sidebar_compact = False
-            st.rerun()
-        
-        # Navigation icons
-        pages = [
-            ("🏗️", "Build Test Cases", "build"),
-            ("🔧", "Edit Actions & Steps", "edit"), 
-            ("📝", "Text Comparator", "comparator")
-        ]
-        
-        for icon, title, key in pages:
-            is_active = st.session_state.current_page == key
-            btn_type = "primary" if is_active else "secondary"
-            
-            if st.button(icon, key=f"nav_compact_{key}", help=title):
-                st.session_state.current_page = key
-                st.rerun()
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    else:
-        # FULL MODE - Normal sidebar with text
-        st.title("🧪 Testool")
-        st.markdown("### Navigation")
-        
-        # Collapse button
-        if st.button("⬅️ Collapse", key="collapse_sidebar", use_container_width=True):
-            st.session_state.sidebar_compact = True
-            st.rerun()
-        
-        st.markdown("---")
-        
-        # Navigation in normal mode
-        page_options = ["🏗️ Build Test Cases", "🔧 Edit Actions & Steps", "📝 Text Comparator"]
-        selected_page = st.radio("Go to:", page_options, key="page_selector")
-        
-        # Map selection to page key
-        if selected_page == "🏗️ Build Test Cases":
-            st.session_state.current_page = "build"
-        elif selected_page == "🔧 Edit Actions & Steps":
-            st.session_state.current_page = "edit"
-        elif selected_page == "📝 Text Comparator":
-            st.session_state.current_page = "comparator"
-
-# ---------- PAGE ROUTING ----------
-# Main title (always visible in main area)
-st.title("🧪 Testool")
+# Žádné custom CSS pro sidebar!
+st.title("🧪 TestTool")
 st.markdown("### Professional test case builder and manager")
 
-# ---------- PAGE 1: BUILD TEST CASES ----------
-def build_test_cases_page():
-    st.title("🏗️ Build Test Cases")
+# ---------- SIDEBAR ----------
+with st.sidebar:
+    st.title("🧪 TestTool")
+    st.markdown("---")
     
+    # Jednoduchá navigace
+    page = st.radio(
+        "Navigation",
+        [
+            "🏗️ Build Test Cases",
+            "🔧 Edit Actions & Steps", 
+            "📝 Text Comparator"
+        ],
+        label_visibility="visible"
+    )
+
+# ---------- PAGE ROUTING ----------
+if page == "🏗️ Build Test Cases":
     # Load data
     BASE_DIR = Path(__file__).resolve().parent
     DATA_DIR = BASE_DIR / "data"
@@ -236,22 +60,22 @@ def build_test_cases_page():
     if 'steps_data' not in st.session_state:
         st.session_state.steps_data = steps_data
     
-    # Project selection in sidebar (only in full mode)
-    if not st.session_state.sidebar_compact:
-        st.sidebar.markdown("---")
-        st.sidebar.subheader("📁 Project")
+    # Project selection in sidebar
+    with st.sidebar:
+        st.markdown("---")
+        st.subheader("📁 Project")
         
         project_names = list(st.session_state.projects.keys())
-        selected = st.sidebar.selectbox(
+        selected = st.selectbox(
             "Select Project",
             options=["— select —"] + project_names,
             index=0,
             key="project_select"
         )
         
-        new_project = st.sidebar.text_input("New Project Name", placeholder="e.g.: CCCTR-XXXX – Name")
+        new_project = st.text_input("New Project Name", placeholder="e.g.: CCCTR-XXXX – Name")
         
-        if st.sidebar.button("✅ Create Project", use_container_width=True):
+        if st.button("✅ Create Project", use_container_width=True):
             if new_project.strip():
                 if new_project.strip() not in st.session_state.projects:
                     st.session_state.projects[new_project.strip()] = {
@@ -262,15 +86,17 @@ def build_test_cases_page():
                     st.session_state.selected_project = new_project.strip()
                     st.rerun()
                 else:
-                    st.sidebar.error("Project already exists!")
+                    st.error("Project already exists!")
         
         if selected != "— select —" and selected in st.session_state.projects:
             st.session_state.selected_project = selected
     
-    # Main content
+    # Main content - BUILD TEST CASES
+    st.title("🏗️ Build Test Cases")
+    
     if st.session_state.selected_project is None:
         st.info("Select or create a project in the sidebar.")
-        return
+        st.stop()
     
     project_name = st.session_state.selected_project
     project_data = st.session_state.projects[project_name]
@@ -347,8 +173,7 @@ def build_test_cases_page():
     else:
         st.info("No test cases yet.")
 
-# ---------- PAGE 2: EDIT ACTIONS & STEPS ----------
-def edit_actions_page():
+elif page == "🔧 Edit Actions & Steps":
     st.title("🔧 Edit Actions & Steps")
     st.markdown("Manage actions and their steps in `kroky.json`")
     
@@ -369,8 +194,7 @@ def edit_actions_page():
     st.subheader("📋 Existing Actions")
     st.info("Feature under development...")
 
-# ---------- PAGE 3: TEXT COMPARATOR ----------
-def text_comparator_page():
+elif page == "📝 Text Comparator":
     st.title("📝 Text Comparator")
     st.markdown("Compare two texts with highlighted differences")
     
@@ -462,13 +286,13 @@ def text_comparator_page():
                         j += 1
                     else:
                         char_display = text1[i] if text1[i] != ' ' else '␣'
-                        result += f'<span class="highlight-diff">{char_display}</span>'
+                        result += f'<span style="background-color: #ff4444; color: white; font-weight: bold; padding: 1px 3px; border-radius: 3px;">{char_display}</span>'
                         i += 1
                         j += 1
                 
                 while i < len(text1):
                     char_display = text1[i] if text1[i] != ' ' else '␣'
-                    result += f'<span class="highlight-diff">{char_display}</span>'
+                    result += f'<span style="background-color: #ff4444; color: white; font-weight: bold; padding: 1px 3px; border-radius: 3px;">{char_display}</span>'
                     i += 1
                 
                 return result
@@ -547,11 +371,3 @@ def text_comparator_page():
             
         else:
             st.warning("Please enter text in both fields to compare.")
-
-# ---------- PAGE ROUTING ----------
-if st.session_state.current_page == "build":
-    build_test_cases_page()
-elif st.session_state.current_page == "edit":
-    edit_actions_page()
-elif st.session_state.current_page == "comparator":
-    text_comparator_page()
