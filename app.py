@@ -6,7 +6,7 @@ import difflib
 import unicodedata
 
 st.set_page_config(
-    page_title="TestTool - Test Case Management",
+    page_title="Testool - Test Case Management",
     page_icon="🧪",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -179,7 +179,7 @@ with st.sidebar:
     
     else:
         # FULL MODE - Normal sidebar with text
-        st.title("🧪 TestTool")
+        st.title("🧪 Testool")
         st.markdown("### Navigation")
         
         # Collapse button
@@ -203,7 +203,7 @@ with st.sidebar:
 
 # ---------- PAGE ROUTING ----------
 # Main title (always visible in main area)
-st.title("🧪 TestTool")
+st.title("🧪 Testool")
 st.markdown("### Professional test case builder and manager")
 
 # ---------- PAGE 1: BUILD TEST CASES ----------
