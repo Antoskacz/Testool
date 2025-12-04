@@ -1,4 +1,10 @@
 [server]
-headless = true
-address = "0.0.0.0"
-port = 8501
+enableXsrfProtection = true
+enableCORS = false
+
+[browser]
+serverAddress = "localhost"
+
+# Zakáže automatické hledání stránek
+[runner]
+magicEnabled = false

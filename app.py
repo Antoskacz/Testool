@@ -1,4 +1,18 @@
+# -*- streamlit run -*-
 import streamlit as st
+
+st.set_page_config(
+    page_title="Testool",
+    page_icon="🧪",
+    layout="wide",
+    initial_sidebar_state="expanded",
+    menu_items={
+        'Get Help': None,
+        'Report a bug': None,
+        'About': None
+    }
+)
+
 import json
 import pandas as pd
 from pathlib import Path
@@ -6,19 +20,19 @@ import difflib
 import unicodedata
 
 st.set_page_config(
-    page_title="TestTool",
+    page_title="Testool",
     page_icon="🧪",
     layout="wide",
     initial_sidebar_state="expanded"  # Sidebar vždy rozbalený
 )
 
 # Žádné custom CSS pro sidebar!
-st.title("🧪 TestTool")
+st.title("🧪 Testool")
 st.markdown("### Professional test case builder and manager")
 
 # ---------- SIDEBAR ----------
 with st.sidebar:
-    st.title("🧪 TestTool")
+    st.title("🧪 Testool")
     st.markdown("---")
     
     # Jednoduchá navigace
