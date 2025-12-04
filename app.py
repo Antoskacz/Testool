@@ -30,14 +30,13 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 st.title("🧪 TestTool")
 st.markdown("### Professional test case builder and manager")
 
-# Navigation in sidebar
-st.sidebar.title("🔧 Navigation")
+# Navigation in sidebar ONLY
+st.sidebar.title("Navigation")
 page = st.sidebar.radio(
-    "Go to:",
+    "",
     [
         "🏗️ Build Test Cases",
         "🔧 Edit Actions & Steps", 
-        "📤 Import from Excel",
         "📝 Text Comparator"
     ]
 )
@@ -49,9 +48,50 @@ if page == "🏗️ Build Test Cases":
 elif page == "🔧 Edit Actions & Steps":
     from pages.edit_testcases import show
     show()
-elif page == "📤 Import from Excel":
-    st.info("🚧 Excel Import - Coming Soon!")
-    st.write("This feature will allow importing test cases from Excel files.")
 elif page == "📝 Text Comparator":
-    st.info("🚧 Text Comparator - Coming Soon!")
-    st.write("This feature will allow comparing two texts with highlighting differences.")
+    # Integrated Text Comparator code
+    st.title("📝 Text Comparator")
+    st.markdown("Compare two texts with highlighted differences")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("Text 1")
+        text1 = st.text_area("Enter first text:", height=300, key="text1")
+    
+    with col2:
+        st.subheader("Text 2")
+        text2 = st.text_area("Enter second text:", height=300, key="text2")
+    
+    st.markdown("---")
+    
+    if st.button("🔍 Compare Texts", use_container_width=True, type="primary"):
+        if text1.strip() and text2.strip():
+            import difflib
+            
+            # Split into lines for better comparison
+            lines1 = text1.splitlines()
+            lines2 = text2.splitlines()
+            
+            # Create HTML diff
+            differ = difflib.HtmlDiff()
+            diff_html = differ.make_file(lines1, lines2, fromdesc="Text 1", todesc="Text 2")
+            
+            # Display the diff
+            st.subheader("📊 Differences")
+            st.markdown(diff_html, unsafe_allow_html=True)
+            
+            # Show statistics
+            seq = difflib.SequenceMatcher(None, text1, text2)
+            similarity = seq.ratio() * 100
+            
+            col_stat1, col_stat2, col_stat3 = st.columns(3)
+            with col_stat1:
+                st.metric("Similarity", f"{similarity:.1f}%")
+            with col_stat2:
+                st.metric("Characters Text 1", len(text1))
+            with col_stat3:
+                st.metric("Characters Text 2", len(text2))
+            
+        else:
+            st.warning("Please enter text in both fields to compare.")
