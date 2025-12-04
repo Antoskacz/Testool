@@ -293,6 +293,7 @@ def edit_actions_page():
     else:
         st.info("No actions yet. Add your first action above.")
 
+
 # ---------- PAGE 3: TEXT COMPARATOR ----------
 def text_comparator_page():
     st.title("📝 Text Comparator")
@@ -302,42 +303,169 @@ def text_comparator_page():
     
     with col1:
         st.subheader("Text 1")
-        text1 = st.text_area("Enter first text:", height=300, key="text1")
+        text1 = st.text_area("Enter first text:", height=300, key="text1", value=st.session_state.get("text1_input", ""))
     
     with col2:
         st.subheader("Text 2")
-        text2 = st.text_area("Enter second text:", height=300, key="text2")
+        text2 = st.text_area("Enter second text:", height=300, key="text2", value=st.session_state.get("text2_input", ""))
     
+    # Text transformation functions
+    def remove_diacritics(text):
+        """Remove diacritics from text"""
+        import unicodedata
+        if not text:
+            return text
+        
+        # Normalize and remove diacritics
+        normalized = unicodedata.normalize('NFKD', text)
+        return ''.join(c for c in normalized if not unicodedata.combining(c))
+    
+    # Text manipulation buttons
     st.markdown("---")
     
-    if st.button("🔍 Compare Texts", use_container_width=True, type="primary"):
+    # Store transformed text in session state
+    if 'text1_input' not in st.session_state:
+        st.session_state.text1_input = ""
+    if 'text2_input' not in st.session_state:
+        st.session_state.text2_input = ""
+    
+    col_buttons1, col_buttons2 = st.columns([2, 3])
+    
+    with col_buttons1:
+        # Buttons in a row
+        col_compare, col_diacritics, col_reset = st.columns(3)
+        
+        with col_compare:
+            compare_btn = st.button("🔍 **Compare**", use_container_width=True, type="primary")
+        
+        with col_diacritics:
+            diacritics_btn = st.button("❌ **Remove Diacritics**", use_container_width=True)
+        
+        with col_reset:
+            reset_btn = st.button("🔄 **Reset**", use_container_width=True)
+    
+    with col_buttons2:
+        # Space for future buttons
+        st.write("")  # Spacer
+    
+    # Button actions
+    if diacritics_btn:
+        if text1 or text2:
+            text1_no_diac = remove_diacritics(text1)
+            text2_no_diac = remove_diacritics(text2)
+            
+            # Store in session state to preserve in text areas
+            st.session_state.text1_input = text1_no_diac
+            st.session_state.text2_input = text2_no_diac
+            
+            st.success("✅ Diacritics removed from both texts")
+            st.rerun()
+        else:
+            st.warning("Enter text in at least one field to remove diacritics")
+    
+    if reset_btn:
+        st.session_state.text1_input = ""
+        st.session_state.text2_input = ""
+        st.success("✅ Texts cleared")
+        st.rerun()
+    
+    if compare_btn:
         if text1.strip() and text2.strip():
-            # Split into lines for better comparison
-            lines1 = text1.splitlines()
-            lines2 = text2.splitlines()
+            # Simple character-by-character comparison
+            st.subheader("📊 Character Comparison")
             
-            # Create HTML diff
-            differ = difflib.HtmlDiff()
-            diff_html = differ.make_file(lines1, lines2, fromdesc="Text 1", todesc="Text 2")
-            
-            # Display the diff
-            st.subheader("📊 Differences")
-            st.markdown(diff_html, unsafe_allow_html=True)
-            
-            # Show statistics
-            seq = difflib.SequenceMatcher(None, text1, text2)
-            similarity = seq.ratio() * 100
-            
+            # Show basic statistics
             col_stat1, col_stat2, col_stat3 = st.columns(3)
             with col_stat1:
-                st.metric("Similarity", f"{similarity:.1f}%")
+                st.metric("Length Text 1", len(text1))
             with col_stat2:
-                st.metric("Characters Text 1", len(text1))
+                st.metric("Length Text 2", len(text2))
             with col_stat3:
-                st.metric("Characters Text 2", len(text2))
+                diff_len = abs(len(text1) - len(text2))
+                st.metric("Length Difference", diff_len)
+            
+            # Simple diff display
+            st.markdown("---")
+            st.subheader("🔍 Differences Highlighted")
+            
+            # Create side-by-side comparison
+            col_diff1, col_diff2 = st.columns(2)
+            
+            with col_diff1:
+                st.markdown("**Text 1:**")
+                display_text1 = ""
+                for i, char in enumerate(text1):
+                    if i < len(text2):
+                        if char != text2[i]:
+                            display_text1 += f"<span style='background-color: #ffcccc; color: #ff0000; font-weight: bold;'>{char if char != ' ' else '␣'}</span>"
+                        else:
+                            display_text1 += char
+                    else:
+                        display_text1 += f"<span style='background-color: #ffcccc; color: #ff0000; font-weight: bold;'>{char if char != ' ' else '␣'}</span>"
+                
+                st.markdown(f"<div style='background-color: #2a2a2a; padding: 15px; border-radius: 5px; font-family: monospace; white-space: pre-wrap;'>{display_text1}</div>", unsafe_allow_html=True)
+            
+            with col_diff2:
+                st.markdown("**Text 2:**")
+                display_text2 = ""
+                for i, char in enumerate(text2):
+                    if i < len(text1):
+                        if char != text1[i]:
+                            display_text2 += f"<span style='background-color: #ffcccc; color: #ff0000; font-weight: bold;'>{char if char != ' ' else '␣'}</span>"
+                        else:
+                            display_text2 += char
+                    else:
+                        display_text2 += f"<span style='background-color: #ffcccc; color: #ff0000; font-weight: bold;'>{char if char != ' ' else '␣'}</span>"
+                
+                st.markdown(f"<div style='background-color: #2a2a2a; padding: 15px; border-radius: 5px; font-family: monospace; white-space: pre-wrap;'>{display_text2}</div>", unsafe_allow_html=True)
+            
+            # Show line-by-line differences if there are line breaks
+            if '\n' in text1 or '\n' in text2:
+                st.markdown("---")
+                st.subheader("📝 Line Differences")
+                
+                lines1 = text1.splitlines()
+                lines2 = text2.splitlines()
+                
+                for i in range(max(len(lines1), len(lines2))):
+                    line1 = lines1[i] if i < len(lines1) else ""
+                    line2 = lines2[i] if i < len(lines2) else ""
+                    
+                    if line1 != line2:
+                        st.markdown(f"**Line {i+1}:**")
+                        col_line1, col_line2 = st.columns(2)
+                        
+                        with col_line1:
+                            st.markdown(f"`{line1}`")
+                        with col_line2:
+                            st.markdown(f"`{line2}`")
+            
+            # Simple similarity calculation
+            matches = sum(1 for i in range(min(len(text1), len(text2))) if text1[i] == text2[i])
+            total_chars = max(len(text1), len(text2))
+            similarity = (matches / total_chars * 100) if total_chars > 0 else 0
+            
+            st.markdown("---")
+            st.info(f"**Similarity:** {similarity:.1f}% ({matches} matching characters out of {total_chars} total)")
             
         else:
             st.warning("Please enter text in both fields to compare.")
+    
+    # Quick help
+    with st.expander("ℹ️ How to use"):
+        st.markdown("""
+        1. **Enter text** in both fields
+        2. Click **🔍 Compare** to see differences highlighted in red
+        3. Use **❌ Remove Diacritics** to strip accents, háčky and čárky
+        4. Use **🔄 Reset** to clear both fields
+        
+        **Features:**
+        - Character-by-character comparison
+        - Red highlighting for differences
+        - Spaces shown as `␣` when different
+        - Line-by-line difference view
+        - Simple similarity percentage
+        """)
 
 # ---------- MAIN APP ----------
 # Title
