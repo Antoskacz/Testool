@@ -299,15 +299,33 @@ def text_comparator_page():
     st.title("📝 Text Comparator")
     st.markdown("Compare two texts with highlighted differences")
     
+    # Initialize session state for text inputs
+    if 'text1_input' not in st.session_state:
+        st.session_state.text1_input = ""
+    if 'text2_input' not in st.session_state:
+        st.session_state.text2_input = ""
+    
     col1, col2 = st.columns(2)
     
     with col1:
         st.subheader("Text 1")
-        text1 = st.text_area("Enter first text:", height=300, key="text1", value=st.session_state.get("text1_input", ""))
+        text1 = st.text_area(
+            "Enter first text:", 
+            height=300, 
+            key="text1_area",
+            value=st.session_state.text1_input,
+            help="Enter or paste your first text here"
+        )
     
     with col2:
         st.subheader("Text 2")
-        text2 = st.text_area("Enter second text:", height=300, key="text2", value=st.session_state.get("text2_input", ""))
+        text2 = st.text_area(
+            "Enter second text:", 
+            height=300, 
+            key="text2_area",
+            value=st.session_state.text2_input,
+            help="Enter or paste your second text here"
+        )
     
     # Text transformation functions
     def remove_diacritics(text):
@@ -323,30 +341,17 @@ def text_comparator_page():
     # Text manipulation buttons
     st.markdown("---")
     
-    # Store transformed text in session state
-    if 'text1_input' not in st.session_state:
-        st.session_state.text1_input = ""
-    if 'text2_input' not in st.session_state:
-        st.session_state.text2_input = ""
+    # Create buttons in a row
+    col_buttons = st.columns([1, 1, 1, 4])  # 3 buttons + spacer
     
-    col_buttons1, col_buttons2 = st.columns([2, 3])
+    with col_buttons[0]:
+        compare_btn = st.button("🔍 **Compare**", use_container_width=True, type="primary", help="Compare texts and highlight differences")
     
-    with col_buttons1:
-        # Buttons in a row
-        col_compare, col_diacritics, col_reset = st.columns(3)
-        
-        with col_compare:
-            compare_btn = st.button("🔍 **Compare**", use_container_width=True, type="primary")
-        
-        with col_diacritics:
-            diacritics_btn = st.button("❌ **Remove Diacritics**", use_container_width=True)
-        
-        with col_reset:
-            reset_btn = st.button("🔄 **Reset**", use_container_width=True)
+    with col_buttons[1]:
+        diacritics_btn = st.button("❌ **Remove Diacritics**", use_container_width=True, help="Remove all accents, háčky and čárky from both texts")
     
-    with col_buttons2:
-        # Space for future buttons
-        st.write("")  # Spacer
+    with col_buttons[2]:
+        reset_btn = st.button("🔄 **Reset**", use_container_width=True, help="Clear both text fields")
     
     # Button actions
     if diacritics_btn:
@@ -371,7 +376,7 @@ def text_comparator_page():
     
     if compare_btn:
         if text1.strip() and text2.strip():
-            # Simple character-by-character comparison
+            # ========== IMPROVED COMPARISON LOGIC ==========
             st.subheader("📊 Character Comparison")
             
             # Show basic statistics
@@ -384,69 +389,163 @@ def text_comparator_page():
                 diff_len = abs(len(text1) - len(text2))
                 st.metric("Length Difference", diff_len)
             
-            # Simple diff display
+            # ========== SMART CHARACTER COMPARISON ==========
             st.markdown("---")
-            st.subheader("🔍 Differences Highlighted")
+            st.subheader("🔍 Character-by-Character Differences")
             
-            # Create side-by-side comparison
+            # Create HTML for highlighted text
+            def highlight_differences(text1, text2):
+                """Smart comparison that only highlights actually different characters"""
+                result = ""
+                i, j = 0, 0
+                
+                while i < len(text1) and j < len(text2):
+                    if text1[i] == text2[j]:
+                        # Characters match
+                        result += text1[i]
+                        i += 1
+                        j += 1
+                    else:
+                        # Characters don't match - highlight
+                        result += f"<span style='background-color: #ff4444; color: white; font-weight: bold;'>{text1[i] if text1[i] != ' ' else '␣'}</span>"
+                        i += 1
+                        j += 1
+                
+                # Handle remaining characters in text1
+                while i < len(text1):
+                    result += f"<span style='background-color: #ff4444; color: white; font-weight: bold;'>{text1[i] if text1[i] != ' ' else '␣'}</span>"
+                    i += 1
+                
+                return result
+            
+            # Get highlighted versions
+            highlighted1 = highlight_differences(text1, text2)
+            highlighted2 = highlight_differences(text2, text1)  # Compare in reverse
+            
+            # Display side by side
             col_diff1, col_diff2 = st.columns(2)
             
             with col_diff1:
                 st.markdown("**Text 1:**")
-                display_text1 = ""
-                for i, char in enumerate(text1):
-                    if i < len(text2):
-                        if char != text2[i]:
-                            display_text1 += f"<span style='background-color: #ffcccc; color: #ff0000; font-weight: bold;'>{char if char != ' ' else '␣'}</span>"
-                        else:
-                            display_text1 += char
-                    else:
-                        display_text1 += f"<span style='background-color: #ffcccc; color: #ff0000; font-weight: bold;'>{char if char != ' ' else '␣'}</span>"
-                
-                st.markdown(f"<div style='background-color: #2a2a2a; padding: 15px; border-radius: 5px; font-family: monospace; white-space: pre-wrap;'>{display_text1}</div>", unsafe_allow_html=True)
+                st.markdown(
+                    f"""<div style='
+                        background-color: #2a2a2a; 
+                        padding: 15px; 
+                        border-radius: 5px; 
+                        font-family: "Courier New", monospace; 
+                        white-space: pre-wrap;
+                        line-height: 1.5;
+                        font-size: 14px;
+                    '>{highlighted1}</div>""", 
+                    unsafe_allow_html=True
+                )
             
             with col_diff2:
                 st.markdown("**Text 2:**")
-                display_text2 = ""
-                for i, char in enumerate(text2):
-                    if i < len(text1):
-                        if char != text1[i]:
-                            display_text2 += f"<span style='background-color: #ffcccc; color: #ff0000; font-weight: bold;'>{char if char != ' ' else '␣'}</span>"
-                        else:
-                            display_text2 += char
-                    else:
-                        display_text2 += f"<span style='background-color: #ffcccc; color: #ff0000; font-weight: bold;'>{char if char != ' ' else '␣'}</span>"
-                
-                st.markdown(f"<div style='background-color: #2a2a2a; padding: 15px; border-radius: 5px; font-family: monospace; white-space: pre-wrap;'>{display_text2}</div>", unsafe_allow_html=True)
+                st.markdown(
+                    f"""<div style='
+                        background-color: #2a2a2a; 
+                        padding: 15px; 
+                        border-radius: 5px; 
+                        font-family: "Courier New", monospace; 
+                        white-space: pre-wrap;
+                        line-height: 1.5;
+                        font-size: 14px;
+                    '>{highlighted2}</div>""", 
+                    unsafe_allow_html=True
+                )
             
-            # Show line-by-line differences if there are line breaks
-            if '\n' in text1 or '\n' in text2:
-                st.markdown("---")
-                st.subheader("📝 Line Differences")
-                
-                lines1 = text1.splitlines()
-                lines2 = text2.splitlines()
-                
-                for i in range(max(len(lines1), len(lines2))):
-                    line1 = lines1[i] if i < len(lines1) else ""
-                    line2 = lines2[i] if i < len(lines2) else ""
-                    
-                    if line1 != line2:
-                        st.markdown(f"**Line {i+1}:**")
-                        col_line1, col_line2 = st.columns(2)
-                        
-                        with col_line1:
-                            st.markdown(f"`{line1}`")
-                        with col_line2:
-                            st.markdown(f"`{line2}`")
-            
-            # Simple similarity calculation
-            matches = sum(1 for i in range(min(len(text1), len(text2))) if text1[i] == text2[i])
-            total_chars = max(len(text1), len(text2))
-            similarity = (matches / total_chars * 100) if total_chars > 0 else 0
-            
+            # ========== LINE-BY-LINE COMPARISON ==========
             st.markdown("---")
-            st.info(f"**Similarity:** {similarity:.1f}% ({matches} matching characters out of {total_chars} total)")
+            st.subheader("📝 Line-by-Line Comparison")
+            
+            lines1 = text1.splitlines()
+            lines2 = text2.splitlines()
+            
+            diff_found = False
+            
+            for i in range(max(len(lines1), len(lines2))):
+                line1 = lines1[i] if i < len(lines1) else ""
+                line2 = lines2[i] if i < len(lines2) else ""
+                
+                if line1 != line2:
+                    diff_found = True
+                    st.markdown(f"**Line {i+1}:**")
+                    
+                    col_line1, col_line2 = st.columns(2)
+                    
+                    with col_line1:
+                        # Highlight differences in this line
+                        line_diff1 = highlight_differences(line1, line2)
+                        st.markdown(
+                            f"""<div style='
+                                background-color: #2a2a2a; 
+                                padding: 10px; 
+                                border-radius: 5px; 
+                                font-family: "Courier New", monospace;
+                                margin-bottom: 5px;
+                            '>{line_diff1}</div>""", 
+                            unsafe_allow_html=True
+                        )
+                    
+                    with col_line2:
+                        line_diff2 = highlight_differences(line2, line1)
+                        st.markdown(
+                            f"""<div style='
+                                background-color: #2a2a2a; 
+                                padding: 10px; 
+                                border-radius: 5px; 
+                                font-family: "Courier New", monospace;
+                                margin-bottom: 5px;
+                            '>{line_diff2}</div>""", 
+                            unsafe_allow_html=True
+                        )
+            
+            if not diff_found:
+                st.success("✅ No differences found in line-by-line comparison!")
+            
+            # ========== SIMILARITY CALCULATION ==========
+            st.markdown("---")
+            
+            # Calculate similarity based on character matches
+            matches = 0
+            total = min(len(text1), len(text2))
+            
+            for i in range(total):
+                if text1[i] == text2[i]:
+                    matches += 1
+            
+            if total > 0:
+                similarity = (matches / total) * 100
+            else:
+                similarity = 0
+            
+            # Create a similarity gauge
+            st.subheader("📈 Similarity Analysis")
+            
+            col_sim1, col_sim2, col_sim3 = st.columns([2, 1, 1])
+            
+            with col_sim1:
+                # Progress bar for similarity
+                st.progress(similarity/100, text=f"Similarity: {similarity:.1f}%")
+            
+            with col_sim2:
+                st.metric("Matching Chars", matches)
+            
+            with col_sim3:
+                st.metric("Total Compared", total)
+            
+            # Summary
+            if similarity == 100:
+                st.success("🎉 Texts are identical!")
+            elif similarity > 90:
+                st.info(f"Texts are very similar ({similarity:.1f}% match)")
+            elif similarity > 70:
+                st.info(f"Texts are somewhat similar ({similarity:.1f}% match)")
+            elif similarity > 50:
+                st.warning(f"Texts have significant differences ({similarity:.1f}% match)")
+            else:
+                st.error(f"Texts are very different ({similarity:.1f}% match)")
             
         else:
             st.warning("Please enter text in both fields to compare.")
@@ -454,17 +553,21 @@ def text_comparator_page():
     # Quick help
     with st.expander("ℹ️ How to use"):
         st.markdown("""
-        1. **Enter text** in both fields
-        2. Click **🔍 Compare** to see differences highlighted in red
-        3. Use **❌ Remove Diacritics** to strip accents, háčky and čárky
-        4. Use **🔄 Reset** to clear both fields
+        **Buttons:**
+        
+        🔍 **Compare** - Compare texts and highlight differences in red
+        ❌ **Remove Diacritics** - Strip all accents, háčky and čárky from both texts
+        🔄 **Reset** - Clear both text fields completely
         
         **Features:**
-        - Character-by-character comparison
-        - Red highlighting for differences
-        - Spaces shown as `␣` when different
-        - Line-by-line difference view
-        - Simple similarity percentage
+        - Smart character-by-character comparison
+        - Only actually different characters are highlighted in red
+        - Spaces shown as `␣` when they are different
+        - Line-by-line comparison for multi-line texts
+        - Similarity percentage with visual gauge
+        - Statistics: character counts and matches
+        
+        **Tip:** For best results, ensure texts are properly aligned before comparing.
         """)
 
 # ---------- MAIN APP ----------
