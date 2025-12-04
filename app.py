@@ -2,7 +2,6 @@ import streamlit as st
 import json
 import pandas as pd
 from pathlib import Path
-import copy
 import difflib
 import unicodedata
 
@@ -299,7 +298,7 @@ def build_test_cases_page():
                 if new_project.strip() not in st.session_state.projects:
                     st.session_state.projects[new_project.strip()] = {
                         "next_id": 1,
-                        "subject": "UAT2\\Antosova\\",
+                        "subject": r"UAT2\Antosova\\",  # Raw string to avoid escape issues
                         "scenarios": []
                     }
                     # Save function would go here
@@ -320,9 +319,10 @@ def build_test_cases_page():
     project_name = st.session_state.selected_project
     project_data = st.session_state.projects[project_name]
     
-    # Project info
+    # Project info - FIXED: use raw string or double the backslashes
+    subject_value = project_data.get('subject', r'UAT2\Antosova\\')
     st.write(f"**Active Project:** {project_name}")
-    st.write(f"**Subject:** {project_data.get('subject', 'UAT2\\Antosova\\')}")
+    st.write(f"**Subject:** {subject_value}")
     st.write(f"**Number of Test Cases:** {len(project_data.get('scenarios', []))}")
     
     st.markdown("---")
