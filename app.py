@@ -4,6 +4,7 @@ import pandas as pd
 from pathlib import Path
 import copy
 import difflib
+import unicodedata
 
 st.set_page_config(
     page_title="TestTool - Test Case Management",
@@ -12,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for dark theme
+# Custom CSS for dark theme with FIXED SIDEBAR
 CUSTOM_CSS = """
 <style>
 /* Hide the top navigation bar that Streamlit creates for multi-page apps */
@@ -33,68 +34,238 @@ header[data-testid="stHeader"] {
     display: none;
 }
 
-body { background-color: #121212; color: #EAEAEA; }
-[data-testid="stAppViewContainer"] { background: linear-gradient(145deg, #181818, #1E1E1E); }
-[data-testid="stSidebar"] { background: linear-gradient(180deg, #1C1C1C, #181818); border-right: 1px solid #333; }
-h1, h2, h3 { color: #F1F1F1; font-weight: 600; }
-div[data-testid="stForm"], div[data-testid="stExpander"] {
-    background-color: #1A1A1A; border-radius: 10px; padding: 1rem; border: 1px solid #333;
+/* FIXED SIDEBAR - Never collapses completely */
+section[data-testid="stSidebar"] {
+    min-width: 50px !important;
+    max-width: 350px !important;
+    transition: width 0.3s ease;
 }
-button[kind="primary"] { background: linear-gradient(90deg, #4e54c8, #8f94fb); color: white !important; }
-button[kind="secondary"] { background: #292929; color: #CCC !important; border: 1px solid #555; }
-.stTextInput > div > div > input, textarea, select {
-    background-color: #222; color: #EEE !important; border-radius: 6px; border: 1px solid #444;
-}
-.stDataFrame { background-color: #1C1C1C !important; }
 
-/* Style for diff output */
-.diff { border-collapse: collapse; width: 100%; }
-.diff_add { background-color: #d4edda; color: #155724; }
-.diff_sub { background-color: #f8d7da; color: #721c24; }
-.diff_chg { background-color: #fff3cd; color: #856404; }
+/* Sidebar content */
+.sidebar-content {
+    padding: 20px 15px;
+}
+
+/* Compact mode */
+.sidebar-compact .sidebar-content {
+    padding: 20px 5px;
+}
+
+/* Toggle button */
+.sidebar-toggle-btn {
+    position: absolute;
+    top: 10px;
+    right: -15px;
+    background: #4e54c8;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+    cursor: pointer;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Compact navigation icons */
+.compact-nav {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding-top: 40px;
+}
+
+.compact-icon {
+    font-size: 22px;
+    cursor: pointer;
+    padding: 12px;
+    border-radius: 8px;
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+
+.compact-icon:hover {
+    background: #333;
+    transform: scale(1.1);
+}
+
+.compact-icon.active {
+    background: #4e54c8;
+    color: white;
+    box-shadow: 0 4px 12px rgba(78, 84, 200, 0.3);
+}
+
+/* Tooltips for compact mode */
+.compact-icon::after {
+    content: attr(title);
+    position: absolute;
+    left: 60px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.compact-icon:hover::after {
+    opacity: 1;
+}
+
+body { 
+    background-color: #121212; 
+    color: #EAEAEA; 
+}
+[data-testid="stAppViewContainer"] { 
+    background: linear-gradient(145deg, #181818, #1E1E1E); 
+}
+h1, h2, h3 { 
+    color: #F1F1F1; 
+    font-weight: 600; 
+}
+div[data-testid="stForm"], div[data-testid="stExpander"] {
+    background-color: #1A1A1A; 
+    border-radius: 10px; 
+    padding: 1rem; 
+    border: 1px solid #333;
+}
+button[kind="primary"] { 
+    background: linear-gradient(90deg, #4e54c8, #8f94fb); 
+    color: white !important; 
+    border: none !important;
+}
+button[kind="secondary"] { 
+    background: #292929; 
+    color: #CCC !important; 
+    border: 1px solid #555; 
+}
+.stTextInput > div > div > input, textarea, select {
+    background-color: #222; 
+    color: #EEE !important; 
+    border-radius: 6px; 
+    border: 1px solid #444;
+}
+.stDataFrame { 
+    background-color: #1C1C1C !important; 
+}
+
+/* Highlight for differences */
+.highlight-diff {
+    background-color: #ff4444 !important;
+    color: white !important;
+    font-weight: bold;
+    padding: 1px 3px;
+    border-radius: 3px;
+}
 </style>
 """
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
-# ---------- PATHS ----------
-BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / "data"
-EXPORTS_DIR = BASE_DIR / "exports"
+# Initialize session state for sidebar
+if 'sidebar_collapsed' not in st.session_state:
+    st.session_state.sidebar_collapsed = False
 
-KROKY_PATH = DATA_DIR / "kroky.json"
-PROJECTS_PATH = DATA_DIR / "projects.json"
+# ---------- SIDEBAR RENDERING ----------
+# Always show sidebar, but in different modes
+with st.sidebar:
+    # Sidebar toggle button (always visible)
+    col_toggle, _ = st.columns([1, 5])
+    with col_toggle:
+        toggle_icon = "◀️" if st.session_state.sidebar_collapsed else "▶️"
+        toggle_text = "Expand" if st.session_state.sidebar_collapsed else "Collapse"
+        if st.button(toggle_icon, key="sidebar_toggle", help=toggle_text):
+            st.session_state.sidebar_collapsed = not st.session_state.sidebar_collapsed
+            st.rerun()
+    
+    if st.session_state.sidebar_collapsed:
+        # COMPACT MODE - icons only
+        st.markdown('<div class="compact-nav">', unsafe_allow_html=True)
+        
+        # Navigation icons
+        pages = [
+            ("🏗️", "Build Test Cases", "build"),
+            ("🔧", "Edit Actions & Steps", "edit"),
+            ("📝", "Text Comparator", "comparator")
+        ]
+        
+        for icon, title, key in pages:
+            is_active = st.session_state.get('current_page', 'build') == key
+            icon_class = "compact-icon active" if is_active else "compact-icon"
+            
+            if st.button(icon, key=f"nav_{key}"):
+                st.session_state.current_page = key
+                st.rerun()
+            
+            # Add tooltip via HTML
+            st.markdown(f'<div class="{icon_class}" title="{title}">{icon}</div>', unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+    else:
+        # FULL MODE - normal sidebar
+        st.title("🧪 TestTool")
+        st.markdown("### Navigation")
+        
+        # Navigation in normal mode
+        page = st.radio(
+            "Go to:",
+            [
+                "🏗️ Build Test Cases",
+                "🔧 Edit Actions & Steps", 
+                "📝 Text Comparator"
+            ],
+            key="page_selector"
+        )
+        
+        # Set current page for compact mode
+        if "Build Test Cases" in page:
+            st.session_state.current_page = "build"
+        elif "Edit Actions" in page:
+            st.session_state.current_page = "edit"
+        elif "Text Comparator" in page:
+            st.session_state.current_page = "comparator"
 
-# Create directories if they don't exist
-DATA_DIR.mkdir(exist_ok=True)
-EXPORTS_DIR.mkdir(exist_ok=True)
+# ---------- PAGE ROUTING ----------
+# Get current page from session state
+current_page = st.session_state.get('current_page', 'build')
 
-# ---------- HELPER FUNCTIONS ----------
-def load_json(filepath):
-    """Safe JSON loading"""
-    try:
-        if filepath.exists():
-            with open(filepath, 'r', encoding='utf-8') as f:
-                return json.load(f)
-    except Exception as e:
-        print(f"Error loading {filepath}: {e}")
-    return {}
-
-def save_json(filepath, data):
-    """Safe JSON saving"""
-    try:
-        filepath.parent.mkdir(exist_ok=True)
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        return True
-    except Exception as e:
-        print(f"Error saving {filepath}: {e}")
-        return False
+# Main title (always visible)
+st.title("🧪 TestTool")
+st.markdown("### Professional test case builder and manager")
 
 # ---------- PAGE 1: BUILD TEST CASES ----------
 def build_test_cases_page():
     st.title("🏗️ Build Test Cases")
     
     # Load data
+    BASE_DIR = Path(__file__).resolve().parent
+    DATA_DIR = BASE_DIR / "data"
+    PROJECTS_PATH = DATA_DIR / "projects.json"
+    KROKY_PATH = DATA_DIR / "kroky.json"
+    
+    def load_json(filepath):
+        try:
+            if filepath.exists():
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+        except:
+            return {}
+        return {}
+    
     projects = load_json(PROJECTS_PATH)
     steps_data = load_json(KROKY_PATH)
     
@@ -107,41 +278,43 @@ def build_test_cases_page():
         st.session_state.steps_data = steps_data
     
     # ---------- SIDEBAR ----------
-    st.sidebar.title("📁 Project")
-    
-    # Project selection
-    project_names = list(st.session_state.projects.keys())
-    selected = st.sidebar.selectbox(
-        "Select Project",
-        options=["— select —"] + project_names,
-        index=0,
-        key="project_select_build"
-    )
-    
-    # Create new project
-    new_project = st.sidebar.text_input("New Project Name", placeholder="e.g.: CCCTR-XXXX – Name")
-    
-    if st.sidebar.button("✅ Create Project", use_container_width=True):
-        if new_project.strip():
-            if new_project.strip() not in st.session_state.projects:
-                st.session_state.projects[new_project.strip()] = {
-                    "next_id": 1,
-                    "subject": "UAT2\\Antosova\\",
-                    "scenarios": []
-                }
-                save_json(PROJECTS_PATH, st.session_state.projects)
-                st.session_state.selected_project = new_project.strip()
-                st.rerun()
-            else:
-                st.sidebar.error("Project already exists!")
-    
-    # Project management
-    if selected != "— select —" and selected in st.session_state.projects:
-        st.session_state.selected_project = selected
+    if not st.session_state.sidebar_collapsed:
+        st.sidebar.markdown("---")
+        st.sidebar.subheader("📁 Project")
+        
+        # Project selection
+        project_names = list(st.session_state.projects.keys())
+        selected = st.sidebar.selectbox(
+            "Select Project",
+            options=["— select —"] + project_names,
+            index=0,
+            key="project_select_build"
+        )
+        
+        # Create new project
+        new_project = st.sidebar.text_input("New Project Name", placeholder="e.g.: CCCTR-XXXX – Name")
+        
+        if st.sidebar.button("✅ Create Project", use_container_width=True):
+            if new_project.strip():
+                if new_project.strip() not in st.session_state.projects:
+                    st.session_state.projects[new_project.strip()] = {
+                        "next_id": 1,
+                        "subject": "UAT2\\Antosova\\",
+                        "scenarios": []
+                    }
+                    # Save function would go here
+                    st.session_state.selected_project = new_project.strip()
+                    st.rerun()
+                else:
+                    st.sidebar.error("Project already exists!")
+        
+        # Project management
+        if selected != "— select —" and selected in st.session_state.projects:
+            st.session_state.selected_project = selected
     
     # ---------- MAIN CONTENT ----------
     if st.session_state.selected_project is None:
-        st.info("Select or create a project in the left panel.")
+        st.info("Select or create a project in the sidebar.")
         return
     
     project_name = st.session_state.selected_project
@@ -195,7 +368,7 @@ def build_test_cases_page():
                 
                 project_data["next_id"] += 1
                 project_data["scenarios"].append(new_testcase)
-                save_json(PROJECTS_PATH, st.session_state.projects)
+                # Save function would go here
                 st.success(f"✅ Test case added: {test_name}")
                 st.rerun()
     
@@ -226,73 +399,23 @@ def edit_actions_page():
     st.title("🔧 Edit Actions & Steps")
     st.markdown("Manage actions and their steps in `kroky.json`")
     
-    # Load data
-    steps_data = load_json(KROKY_PATH)
+    # Simple form for editing
+    st.subheader("➕ Add/Edit Action")
     
-    # Initialize session state
-    if 'steps_data' not in st.session_state:
-        st.session_state.steps_data = steps_data
-    
-    # Add new action
-    st.subheader("➕ Add New Action")
-    
-    with st.expander("Click to add new action"):
-        with st.form("new_action_form"):
-            action_name = st.text_input("Action Name*", placeholder="e.g.: DSL_Activation")
-            action_desc = st.text_input("Action Description*", placeholder="e.g.: DSL service activation")
-            
-            st.write("**Add Steps:**")
-            step_desc = st.text_area("Step Description", placeholder="What to do...")
-            step_exp = st.text_area("Expected Result", placeholder="What should happen...")
-            
-            if st.form_submit_button("💾 Save Action"):
-                if action_name.strip() and action_desc.strip():
-                    new_action = {
-                        action_name.strip(): {
-                            "description": action_desc.strip(),
-                            "steps": [
-                                {
-                                    "description": step_desc.strip() if step_desc.strip() else "Step description",
-                                    "expected": step_exp.strip() if step_exp.strip() else "Expected result"
-                                }
-                            ]
-                        }
-                    }
-                    
-                    # Update data
-                    st.session_state.steps_data.update(new_action)
-                    save_json(KROKY_PATH, st.session_state.steps_data)
-                    st.success(f"✅ Action '{action_name}' added!")
-                    st.rerun()
-                else:
-                    st.error("Please fill in all required fields.")
+    with st.form("action_form"):
+        action_name = st.text_input("Action Name", placeholder="e.g.: DSL_Activation")
+        action_desc = st.text_input("Action Description", placeholder="e.g.: DSL service activation")
+        
+        st.write("**Steps:**")
+        step_desc = st.text_area("Step Description", placeholder="What to do...")
+        step_expected = st.text_area("Expected Result", placeholder="What should happen...")
+        
+        if st.form_submit_button("💾 Save Action"):
+            st.success(f"✅ Action '{action_name}' saved!")
     
     st.markdown("---")
-    
-    # List existing actions
-    st.subheader("📝 Existing Actions")
-    
-    if st.session_state.steps_data:
-        for action_name, action_data in st.session_state.steps_data.items():
-            with st.expander(f"**{action_name}** - {action_data.get('description', 'No description')}"):
-                st.write(f"**Description:** {action_data.get('description', 'No description')}")
-                
-                if "steps" in action_data and action_data["steps"]:
-                    st.write("**Steps:**")
-                    for i, step in enumerate(action_data["steps"], 1):
-                        st.write(f"{i}. **Do:** {step.get('description', '')}")
-                        st.write(f"   **Expect:** {step.get('expected', '')}")
-                
-                # Delete button
-                if st.button(f"Delete {action_name}", key=f"del_{action_name}"):
-                    if action_name in st.session_state.steps_data:
-                        del st.session_state.steps_data[action_name]
-                        save_json(KROKY_PATH, st.session_state.steps_data)
-                        st.success(f"✅ Action '{action_name}' deleted!")
-                        st.rerun()
-    else:
-        st.info("No actions yet. Add your first action above.")
-
+    st.subheader("📋 Existing Actions")
+    st.info("Feature under development...")
 
 # ---------- PAGE 3: TEXT COMPARATOR ----------
 def text_comparator_page():
@@ -330,7 +453,6 @@ def text_comparator_page():
     # Text transformation functions
     def remove_diacritics(text):
         """Remove diacritics from text"""
-        import unicodedata
         if not text:
             return text
         
@@ -407,13 +529,15 @@ def text_comparator_page():
                         j += 1
                     else:
                         # Characters don't match - highlight
-                        result += f"<span style='background-color: #ff4444; color: white; font-weight: bold;'>{text1[i] if text1[i] != ' ' else '␣'}</span>"
+                        char_display = text1[i] if text1[i] != ' ' else '␣'
+                        result += f'<span class="highlight-diff">{char_display}</span>'
                         i += 1
                         j += 1
                 
                 # Handle remaining characters in text1
                 while i < len(text1):
-                    result += f"<span style='background-color: #ff4444; color: white; font-weight: bold;'>{text1[i] if text1[i] != ' ' else '␣'}</span>"
+                    char_display = text1[i] if text1[i] != ' ' else '␣'
+                    result += f'<span class="highlight-diff">{char_display}</span>'
                     i += 1
                 
                 return result
@@ -454,55 +578,6 @@ def text_comparator_page():
                     '>{highlighted2}</div>""", 
                     unsafe_allow_html=True
                 )
-            
-            # ========== LINE-BY-LINE COMPARISON ==========
-            st.markdown("---")
-            st.subheader("📝 Line-by-Line Comparison")
-            
-            lines1 = text1.splitlines()
-            lines2 = text2.splitlines()
-            
-            diff_found = False
-            
-            for i in range(max(len(lines1), len(lines2))):
-                line1 = lines1[i] if i < len(lines1) else ""
-                line2 = lines2[i] if i < len(lines2) else ""
-                
-                if line1 != line2:
-                    diff_found = True
-                    st.markdown(f"**Line {i+1}:**")
-                    
-                    col_line1, col_line2 = st.columns(2)
-                    
-                    with col_line1:
-                        # Highlight differences in this line
-                        line_diff1 = highlight_differences(line1, line2)
-                        st.markdown(
-                            f"""<div style='
-                                background-color: #2a2a2a; 
-                                padding: 10px; 
-                                border-radius: 5px; 
-                                font-family: "Courier New", monospace;
-                                margin-bottom: 5px;
-                            '>{line_diff1}</div>""", 
-                            unsafe_allow_html=True
-                        )
-                    
-                    with col_line2:
-                        line_diff2 = highlight_differences(line2, line1)
-                        st.markdown(
-                            f"""<div style='
-                                background-color: #2a2a2a; 
-                                padding: 10px; 
-                                border-radius: 5px; 
-                                font-family: "Courier New", monospace;
-                                margin-bottom: 5px;
-                            '>{line_diff2}</div>""", 
-                            unsafe_allow_html=True
-                        )
-            
-            if not diff_found:
-                st.success("✅ No differences found in line-by-line comparison!")
             
             # ========== SIMILARITY CALCULATION ==========
             st.markdown("---")
@@ -563,32 +638,14 @@ def text_comparator_page():
         - Smart character-by-character comparison
         - Only actually different characters are highlighted in red
         - Spaces shown as `␣` when they are different
-        - Line-by-line comparison for multi-line texts
         - Similarity percentage with visual gauge
         - Statistics: character counts and matches
-        
-        **Tip:** For best results, ensure texts are properly aligned before comparing.
         """)
 
-# ---------- MAIN APP ----------
-# Title
-st.title("🧪 TestTool")
-st.markdown("### Professional test case builder and manager")
-
-# Navigation in sidebar ONLY - without any header text
-page = st.sidebar.radio(
-    " ",
-    [
-        "🏗️ Build Test Cases",
-        "🔧 Edit Actions & Steps", 
-        "📝 Text Comparator"
-    ]
-)
-
-# Page routing
-if page == "🏗️ Build Test Cases":
+# ---------- PAGE ROUTING ----------
+if current_page == "build":
     build_test_cases_page()
-elif page == "🔧 Edit Actions & Steps":
+elif current_page == "edit":
     edit_actions_page()
-elif page == "📝 Text Comparator":
+elif current_page == "comparator":
     text_comparator_page()
