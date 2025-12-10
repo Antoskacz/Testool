@@ -35,28 +35,6 @@ def save_json(filepath, data):
         st.error(f"Error saving {filepath}: {e}")
         return False
 
-def validate_kroky_structure(steps_data):
-    """Validate kroky.json structure"""
-    if not isinstance(steps_data, dict):
-        return False
-    
-    for action, content in steps_data.items():
-        if isinstance(content, dict):
-            if "steps" not in content:
-                return False
-            if not isinstance(content["steps"], list):
-                return False
-        elif isinstance(content, list):
-            # Starší formát - převedeme na nový
-            steps_data[action] = {
-                "description": f"Action: {action}",
-                "steps": content
-            }
-        else:
-            return False
-    
-    return True
-
 def extract_channel(text: str) -> str:
     """Extract channel from text"""
     t = text.lower()
@@ -92,7 +70,7 @@ def extract_technology(text: str) -> str:
     return "UNKNOWN"
 
 def analyze_scenarios(scenarios: list):
-    """Analyze scenarios for tree structure display - RETURN ONLY CLEAN DATA"""
+    """Analyze scenarios for tree structure display"""
     segment_data = {"B2C": {}, "B2B": {}}
     
     for scenario in scenarios:
@@ -117,18 +95,18 @@ def analyze_scenarios(scenarios: list):
                 technology = tech
                 break
         
-        # Organize data - filter only B2C and B2B
-        if segment == "B2C" or segment == "B2B":
-            # Initialize nested structure if needed
-            if channel not in segment_data[segment]:
-                segment_data[segment][channel] = {}
+        # Organize data
+        if segment not in segment_data:
+            segment_data[segment] = {}
+        
+        if channel not in segment_data[segment]:
+            segment_data[segment][channel] = {}
             
-            if technology not in segment_data[segment][channel]:
-                segment_data[segment][channel][technology] = []
+        if technology not in segment_data[segment][channel]:
+            segment_data[segment][channel][technology] = []
             
-            # Add action if not already present
-            if action not in segment_data[segment][channel][technology]:
-                segment_data[segment][channel][technology].append(action)
+        if action not in segment_data[segment][channel][technology]:
+            segment_data[segment][channel][technology].append(action)
     
     return segment_data
 
@@ -138,7 +116,6 @@ def remove_diacritics(text):
         return text
     normalized = unicodedata.normalize('NFKD', text)
     return ''.join(c for c in normalized if not unicodedata.combining(c))
-
 
 # ---------- HLAVNÍ APLIKACE ----------
 st.title("🧪 Testool")
@@ -170,13 +147,6 @@ if page == "🏗️ Build Test Cases":
     # Načtení dat
     projects = load_json(PROJECTS_PATH)
     steps_data = load_json(KROKY_PATH)
-    
-    #validace struktury
-    if steps_data:
-        if not validate_kroky_structure(steps_data):
-            st.error("❌ Invalid kroky.json structure! Please fix or recreate the file.")
-            steps_data = {}  # Reset na prázdný slovník
-        
     
     # Session state
     if 'projects' not in st.session_state:
@@ -228,9 +198,7 @@ if page == "🏗️ Build Test Cases":
     project_name = st.session_state.selected_project
     project_data = st.session_state.projects[project_name]
     
-
     # ---------- ROW 1: PROJECT OVERVIEW + ANALYSIS ----------
-        # ---------- ROW 1: PROJECT OVERVIEW + ANALYSIS ----------
     col_overview, col_analysis = st.columns([1, 1])
     
     with col_overview:
@@ -278,7 +246,6 @@ if page == "🏗️ Build Test Cases":
             st.info("No test cases for analysis")
     
     st.markdown("---")
-        
     
     # ---------- ROW 2: TEST CASES LIST ----------
     st.subheader("📋 Test Cases List")
@@ -300,8 +267,6 @@ if page == "🏗️ Build Test Cases":
         df = pd.DataFrame(df_data)
         if not df.empty:
             df = df.sort_values(by="Order", ascending=True)
-            # Reset index pro lepší zobrazení
-            df = df.reset_index(drop=True)
         
         st.dataframe(
             df,
@@ -326,17 +291,11 @@ if page == "🏗️ Build Test Cases":
     # ---------- ROW 3: ADD NEW TEST CASE ----------
     st.subheader("➕ Add New Test Case")
     
-
     if not st.session_state.steps_data:
-    # Zkontroluj, zda soubor existuje
-        if KROKY_PATH.exists():
-            st.error("❌ kroky.json exists but is empty or invalid. Please add actions first.")
-        else:
-            st.error(f"❌ File {KROKY_PATH} not found! Please create it first.")
+        st.error("❌ No actions found! Please add actions in 'Edit Actions & Steps' page first.")
         st.stop()
-
     
-    action_list = sorted(list(st.session_state.steps_data.keys()))
+    action_list = list(st.session_state.steps_data.keys())
     
     with st.form("add_testcase_form"):
         sentence = st.text_area("Requirement Sentence", height=100, 
