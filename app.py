@@ -7,6 +7,7 @@ import unicodedata
 import copy
 import plotly.graph_objects as go  # zobrazeni grafu
 import plotly.express as px        # volitelny
+import re
 
 st.set_page_config(
     page_title="Testool",
@@ -36,6 +37,26 @@ def save_json(filepath, data):
     except Exception as e:
         st.error(f"Error saving {filepath}: {e}")
         return False
+    
+def clean_tc_name(name: str) -> str:
+    """
+    Odstraní části 'UNKNOWN' z názvu ticketu a opraví duplicitní podtržítka.
+    """
+    if not name or not isinstance(name, str):
+        return name
+    
+    parts = name.split('_')
+    cleaned_parts = [p for p in parts if p != 'UNKNOWN']
+    result = '_'.join(cleaned_parts)
+    
+    # Opravit případné duplicitní podtržítka
+    while '__' in result:
+        result = result.replace('__', '_')
+    
+    # Odebrat podtržítka na začátku/konci
+    result = result.strip('_')
+    
+    return result
 
 def extract_channel(text: str) -> str:
     """Extract channel from text"""
@@ -208,8 +229,6 @@ if page == "🏗️ Build Test Cases":
         subject_value = project_data.get('subject', r'UAT2\Antosova\\')
         st.write(f"**Active Project:** {project_name}")
         st.write(f"**Subject:** {subject_value}")
-        
-        # Smazáno: Number of Test Cases, B2C/B2B stats - protože máme v grafu
         
         # Actions by Segment - přesunuto sem
         st.markdown("---")
@@ -406,8 +425,19 @@ if page == "🏗️ Build Test Cases":
                 channel = extract_channel(sentence)
                 segment = extract_segment(sentence)
                 technology = extract_technology(sentence)
-                prefix = f"{order:03d}_{channel}_{segment}_{technology}"
+
+                # Sestavíme prefix a vyčistíme UNKNOWN části
+                prefix_parts = [f"{order:03d}", channel, segment, technology]
+                # Filtrujeme UNKNOWN a prázdné hodnoty
+                filtered_parts = [p for p in prefix_parts if p and p != "UNKNOWN"]
+                prefix = "_".join(filtered_parts)
+
+                # Ošetříme případ, že by po filtraci zůstalo jen číslo (např. ["009"])
+
                 test_name = f"{prefix}_{sentence.strip().capitalize()}"
+
+                # Ještě jednou vyčistíme (pro jistotu, pokud by sentence začínalo UNKNOWN apod.)
+                test_name = clean_tc_name(test_name)
                 
                 # Get steps for action
                 kroky_pro_akci = []

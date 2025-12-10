@@ -327,7 +327,7 @@
     "scenarios": []
   },
   "AOTR-1355_test": {
-    "next_id": 9,
+    "next_id": 10,
     "subject": "UAT2\\Antosova\\2025",
     "scenarios": [
       {
@@ -895,6 +895,58 @@
           {
             "description": "Zkontroluj v Siebel vymenene zarizeni a zmenu IMEI a SR muzes uzavrit.",
             "expected": "HW je vymenen a nove IMEI propsano u sluzby."
+          }
+        ]
+      },
+      {
+        "order_no": 9,
+        "test_name": "009_UNKNOWN_B2C_DSL_Proved operaci bulk - nahozeni security na dsl na b2c",
+        "akce": "BULK",
+        "segment": "B2C",
+        "kanal": "UNKNOWN",
+        "priority": "2-Medium",
+        "complexity": "4-Medium",
+        "veta": "proved operaci bulk - nahozeni security na dsl na b2c",
+        "kroky": [
+          {
+            "description": "V Siebel jdi na objednavky mimo zakaznika, hromadne objednavky",
+            "expected": "Otevre se prehled hromadnych objednavek"
+          },
+          {
+            "description": "V zalozce sablony objednavek vytvor novou sablonu dle pozadavku",
+            "expected": "Vypsan typ, nazev a zalozena sablona"
+          },
+          {
+            "description": "Pred ulozenim sablony pridej polozku na pozadovany PO... typ pozadovane akce (nikdy nemichat vic polozek dohromady, muze vznikat duplikace)",
+            "expected": "Polozka byla pridana"
+          },
+          {
+            "description": "Sablonu nyni uloz a aktivuj, opis si jeji cislo",
+            "expected": "Otevre se prehled sablon s nami vytvorenou novou sablonou"
+          },
+          {
+            "description": "Prejdi na hromadne objednavky a klikni na nova hromadna objednavka",
+            "expected": "Otevre se formular objednavky"
+          },
+          {
+            "description": "Napis typ a nazev objednavky a pokracuj",
+            "expected": "Otevre se objednavkovy formular"
+          },
+          {
+            "description": "Stahni soubor .xlxs a vypln pozadovane sloupce - 1. sloupec zkopirovane cislo sablony, cislo sluzby, notifikace",
+            "expected": "Soubor jde stahnout, je vyplneny ulozeny a znovu nahrany"
+          },
+          {
+            "description": "Po par vterinach klikni na aktualizovat stav a odeslat hromadnou objednavku",
+            "expected": "Propsal se nahrany soubor a objednavka sla odeslat"
+          },
+          {
+            "description": "V COM/bulk orders zkontroluj prubeh obejdnavky",
+            "expected": "Objednavka je completed a kladne dokoncena"
+          },
+          {
+            "description": "V Siebel zkontroluj dokoncenou objednavku a provedene akce na sluzbe",
+            "expected": "Objednavka je dokoncena a pozadovana akce se vydarila"
           }
         ]
       }
