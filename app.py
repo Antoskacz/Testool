@@ -58,6 +58,40 @@ def clean_tc_name(name: str) -> str:
     
     return result
 
+def renumber_testcases(scenarios):
+    """
+    Automaticky přečísluje test cases od 001 a aktualizuje jejich názvy.
+    Vrací upravený seznam scenarios a nové next_id.
+    """
+    if not scenarios:
+        return scenarios, 1
+    
+    # Seřadíme podle aktuálního order_no (pro jistotu)
+    scenarios_sorted = sorted(scenarios, key=lambda x: x["order_no"])
+    
+    for i, tc in enumerate(scenarios_sorted, 1):
+        old_order = tc["order_no"]
+        old_name = tc["test_name"]
+        
+        # Pokud se číslo změnilo, aktualizujeme
+        if old_order != i:
+            tc["order_no"] = i
+            
+            # Aktualizujeme název - nahradíme staré číslo novým
+            # Rozdělíme název na části
+            parts = old_name.split('_', 1)
+            if len(parts) > 1:
+                # Extrahujeme zbytek názvu (bez starého čísla)
+                rest_of_name = parts[1]
+                # Vytvoříme nový název
+                new_name = f"{i:03d}_{rest_of_name}"
+                tc["test_name"] = new_name
+            else:
+                # Pokud název nemá podtržítko, přidáme číslo na začátek
+                tc["test_name"] = f"{i:03d}_{old_name}"
+    
+    return scenarios_sorted, len(scenarios_sorted) + 1
+
 def extract_channel(text: str) -> str:
     """Extract channel from text"""
     t = text.lower()
@@ -220,6 +254,12 @@ if page == "🏗️ Build Test Cases":
     
     project_name = st.session_state.selected_project
     project_data = st.session_state.projects[project_name]
+
+        # Automaticky přečíslujeme test cases při každém načtení
+    if "scenarios" in project_data and project_data["scenarios"]:
+        project_data["scenarios"], project_data["next_id"] = renumber_testcases(project_data["scenarios"])
+        # Uložíme opravená data
+        save_json(PROJECTS_PATH, st.session_state.projects)
     
     # ---------- ROW 1: PROJECT OVERVIEW + ANALYSIS ----------
     col_overview, col_analysis = st.columns([1, 1.5])  # Pravá část (graf) větší
@@ -615,6 +655,23 @@ if page == "🏗️ Build Test Cases":
                 st.rerun()
         else:
             st.info("No test cases available to delete.")
+
+
+# ---------- ROW 6: MANUAL RENUMBERING (OPTIONAL) ----------
+with st.expander("🔢 Manual Renumbering", expanded=False):
+    st.warning("Use only if test case numbers are incorrect. Usually automatic renumbering should handle this.")
+    
+    if st.button("🔄 Renumber All Test Cases"):
+        if "scenarios" in project_data and project_data["scenarios"]:
+            before_count = len(project_data["scenarios"])
+            project_data["scenarios"], project_data["next_id"] = renumber_testcases(project_data["scenarios"])
+            after_count = len(project_data["scenarios"])
+            
+            save_json(PROJECTS_PATH, st.session_state.projects)
+            st.success(f"✅ Renumbered {before_count} test cases from 001 to {after_count:03d}")
+            st.rerun()
+        else:
+            st.info("No test cases to renumber.")
 
 
 # ---------- STRÁNKA 2: EDIT ACTIONS & STEPS ----------
