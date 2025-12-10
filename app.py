@@ -228,69 +228,54 @@ if page == "🏗️ Build Test Cases":
             b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
             b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
             
-            # 1. ROW: KPI metrics
-            st.markdown("### 📊 Key Metrics")
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("Total", testcase_count, help="Total test cases")
-            with col2:
-                st.metric("B2C", b2c_count, help="B2C test cases")
-            with col3:
-                st.metric("B2B", b2b_count, help="B2B test cases")
+            # ROW 1: Větší graf uprostřed
+            st.markdown("### 📊 Test Case Distribution")
             
-            # 2. ROW: Grafy
-            st.markdown("### 📈 Distribution")
-            col_chart1, col_chart2 = st.columns(2)
+            # Vytvoř větší donut graf s přesnými čísly
+            fig_segment = go.Figure(data=[go.Pie(
+                labels=['B2C', 'B2B'],
+                values=[b2c_count, b2b_count],
+                hole=0.4,
+                marker_colors=['#4CAF50', '#FF69B4'],  # Zelená a křiklavá růžová
+                textinfo='label+value',  # Zobrazí label a přesné číslo
+                textposition='outside',
+                textfont=dict(size=14),
+                hoverinfo='label+value+percent',
+                hovertemplate='<b>%{label}</b><br>Test Cases: %{value}<br>Percentage: %{percent}<extra></extra>'
+            )])
             
-            with col_chart1:
-                # Segment pie chart
-                fig_segment = go.Figure(data=[go.Pie(
-                    labels=['B2C', 'B2B'],
-                    values=[b2c_count, b2b_count],
-                    hole=0.3,
-                    marker_colors=['#00C853', '#2979FF']
-                )])
-                fig_segment.update_layout(
-                    title="Segment Distribution",
-                    showlegend=True,
-                    height=200,
-                    margin=dict(t=30, b=10, l=10, r=10)
-                )
-                st.plotly_chart(fig_segment, use_container_width=True)
-            
-            with col_chart2:
-                # Top actions bar chart
-                action_counts = {}
-                for tc in testcases:
-                    action = tc.get("akce", "Unknown")
-                    action_counts[action] = action_counts.get(action, 0) + 1
-                
-                if action_counts:
-                    # Získat top 5 akcí
-                    top_actions = sorted(action_counts.items(), key=lambda x: x[1], reverse=True)[:5]
-                    actions = [a[0] for a in top_actions]
-                    counts = [a[1] for a in top_actions]
-                    
-                    fig_actions = go.Figure(data=[
-                        go.Bar(
-                            x=actions,
-                            y=counts,
-                            marker_color='#FF6B6B'
-                        )
-                    ])
-                    fig_actions.update_layout(
-                        title="Top 5 Actions",
-                        xaxis_title="Action",
-                        yaxis_title="Count",
-                        height=200,
-                        margin=dict(t=30, b=30, l=10, r=10)
+            fig_segment.update_layout(
+                title=dict(
+                    text=f"Total Test Cases: {testcase_count}",
+                    font=dict(size=16, color='#333333')
+                ),
+                showlegend=True,
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=-0.1,
+                    xanchor="center",
+                    x=0.5
+                ),
+                height=350,  # 2x větší
+                margin=dict(t=50, b=50, l=20, r=20),
+                annotations=[
+                    dict(
+                        text=f"Total: {testcase_count}",
+                        x=0.5, y=0.5,
+                        font_size=18,
+                        showarrow=False,
+                        font=dict(color='#555555')
                     )
-                    st.plotly_chart(fig_actions, use_container_width=True)
+                ]
+            )
             
-            # 3. ROW: Detailní tabulka
-            st.markdown("### 📋 Action Details")
+            st.plotly_chart(fig_segment, use_container_width=True)
             
-            # Vytvořit strukturovaná data
+            # ROW 2: Akce vedle sebe v expanderech
+            st.markdown("### 📋 Actions by Segment")
+            
+            # Vytvořit strukturovaná data pro akce
             segment_data = {"B2C": {}, "B2B": {}}
             for tc in testcases:
                 segment = tc.get("segment", "UNKNOWN")
@@ -301,20 +286,36 @@ if page == "🏗️ Build Test Cases":
                         segment_data[segment][action] = 0
                     segment_data[segment][action] += 1
             
-            # Zobrazit jako expandery
-            with st.expander("👥 B2C Actions", expanded=True):
-                if segment_data["B2C"]:
-                    for action, count in sorted(segment_data["B2C"].items()):
-                        st.write(f"**{action}:** {count} test case{'s' if count != 1 else ''}")
-                else:
-                    st.write("No B2C test cases")
+            # Dva expandery vedle sebe
+            col_b2c, col_b2b = st.columns(2)
             
-            with st.expander("🏢 B2B Actions", expanded=True):
-                if segment_data["B2B"]:
-                    for action, count in sorted(segment_data["B2B"].items()):
-                        st.write(f"**{action}:** {count} test case{'s' if count != 1 else ''}")
-                else:
-                    st.write("No B2B test cases")
+            with col_b2c:
+                with st.expander(f"👥 B2C Actions ({b2c_count} test cases)", expanded=True):
+                    if segment_data["B2C"]:
+                        # Seřadit akce podle počtu test cases (nejvíc první)
+                        sorted_actions = sorted(
+                            segment_data["B2C"].items(), 
+                            key=lambda x: x[1], 
+                            reverse=True
+                        )
+                        for action, count in sorted_actions:
+                            st.write(f"**{action}:** {count} test case{'s' if count != 1 else ''}")
+                    else:
+                        st.write("No B2C test cases")
+            
+            with col_b2b:
+                with st.expander(f"🏢 B2B Actions ({b2b_count} test cases)", expanded=True):
+                    if segment_data["B2B"]:
+                        # Seřadit akce podle počtu test cases (nejvíc první)
+                        sorted_actions = sorted(
+                            segment_data["B2B"].items(), 
+                            key=lambda x: x[1], 
+                            reverse=True
+                        )
+                        for action, count in sorted_actions:
+                            st.write(f"**{action}:** {count} test case{'s' if count != 1 else ''}")
+                    else:
+                        st.write("No B2B test cases")
                     
         else:
             st.info("No test cases for analysis")
