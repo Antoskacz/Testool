@@ -201,7 +201,7 @@ if page == "🏗️ Build Test Cases":
     project_data = st.session_state.projects[project_name]
     
     # ---------- ROW 1: PROJECT OVERVIEW + ANALYSIS ----------
-    col_overview, col_analysis = st.columns([1, 1])
+    col_overview, col_analysis = st.columns([1, 1.5])  # Pravá část (graf) větší
     
     with col_overview:
         st.subheader("📊 Project Overview")
@@ -209,71 +209,17 @@ if page == "🏗️ Build Test Cases":
         st.write(f"**Active Project:** {project_name}")
         st.write(f"**Subject:** {subject_value}")
         
-        testcase_count = len(project_data.get('scenarios', []))
-        st.write(f"**Number of Test Cases:** {testcase_count}")
+        # Smazáno: Number of Test Cases, B2C/B2B stats - protože máme v grafu
         
-        if testcase_count > 0:
-            testcases = project_data["scenarios"]
-            b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
-            b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
-            st.write(f"**B2C:** {b2c_count} | **B2B:** {b2b_count}")
-    
-    with col_analysis:
-        st.subheader("📈 Analysis Dashboard")
+        # Actions by Segment - přesunuto sem
+        st.markdown("---")
+        st.subheader("📋 Actions by Segment")
+        
         testcases = project_data.get("scenarios", [])
-        
         if testcases:
-            # Základní statistiky
-            testcase_count = len(testcases)
+            # Statistiky pro expandery
             b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
             b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
-            
-            # ROW 1: Větší graf uprostřed
-            st.markdown("### 📊 Test Case Distribution")
-            
-            # Vytvoř větší donut graf s přesnými čísly
-            fig_segment = go.Figure(data=[go.Pie(
-                labels=['B2C', 'B2B'],
-                values=[b2c_count, b2b_count],
-                hole=0.4,
-                marker_colors=['#4CAF50', '#FF69B4'],  # Zelená a křiklavá růžová
-                textinfo='label+value',  # Zobrazí label a přesné číslo
-                textposition='outside',
-                textfont=dict(size=14),
-                hoverinfo='label+value+percent',
-                hovertemplate='<b>%{label}</b><br>Test Cases: %{value}<br>Percentage: %{percent}<extra></extra>'
-            )])
-            
-            fig_segment.update_layout(
-                title=dict(
-                    text=f"Total Test Cases: {testcase_count}",
-                    font=dict(size=16, color='#333333')
-                ),
-                showlegend=True,
-                legend=dict(
-                    orientation="h",
-                    yanchor="bottom",
-                    y=-0.1,
-                    xanchor="center",
-                    x=0.5
-                ),
-                height=350,  # 2x větší
-                margin=dict(t=50, b=50, l=20, r=20),
-                annotations=[
-                    dict(
-                        text=f"Total: {testcase_count}",
-                        x=0.5, y=0.5,
-                        font_size=18,
-                        showarrow=False,
-                        font=dict(color='#555555')
-                    )
-                ]
-            )
-            
-            st.plotly_chart(fig_segment, use_container_width=True)
-            
-            # ROW 2: Akce vedle sebe v expanderech
-            st.markdown("### 📋 Actions by Segment")
             
             # Vytvořit strukturovaná data pro akce
             segment_data = {"B2C": {}, "B2B": {}}
@@ -290,7 +236,7 @@ if page == "🏗️ Build Test Cases":
             col_b2c, col_b2b = st.columns(2)
             
             with col_b2c:
-                with st.expander(f"👥 B2C Actions ({b2c_count} test cases)", expanded=True):
+                with st.expander(f"👥 B2C ({b2c_count})", expanded=True):
                     if segment_data["B2C"]:
                         # Seřadit akce podle počtu test cases (nejvíc první)
                         sorted_actions = sorted(
@@ -299,12 +245,12 @@ if page == "🏗️ Build Test Cases":
                             reverse=True
                         )
                         for action, count in sorted_actions:
-                            st.write(f"**{action}:** {count} test case{'s' if count != 1 else ''}")
+                            st.write(f"**{action}:** {count}")
                     else:
-                        st.write("No B2C test cases")
+                        st.write("No test cases")
             
             with col_b2b:
-                with st.expander(f"🏢 B2B Actions ({b2b_count} test cases)", expanded=True):
+                with st.expander(f"🏢 B2B ({b2b_count})", expanded=True):
                     if segment_data["B2B"]:
                         # Seřadit akce podle počtu test cases (nejvíc první)
                         sorted_actions = sorted(
@@ -313,12 +259,72 @@ if page == "🏗️ Build Test Cases":
                             reverse=True
                         )
                         for action, count in sorted_actions:
-                            st.write(f"**{action}:** {count} test case{'s' if count != 1 else ''}")
+                            st.write(f"**{action}:** {count}")
                     else:
-                        st.write("No B2B test cases")
-                    
+                        st.write("No test cases")
         else:
-            st.info("No test cases for analysis")
+            st.info("No test cases yet")
+    
+    with col_analysis:
+        st.subheader("📈 Distribution Analysis")
+        testcases = project_data.get("scenarios", [])
+        
+        if testcases:
+            # Základní statistiky
+            testcase_count = len(testcases)
+            b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
+            b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
+            
+            # Vytvoř donut graf s hodnotami uvnitř
+            fig_segment = go.Figure(data=[go.Pie(
+                labels=[f'B2C: {b2c_count}', f'B2B: {b2b_count}'],  # Hodnoty v labelu
+                values=[b2c_count, b2b_count],
+                hole=0.5,  # Větší díra uprostřed
+                marker_colors=['#4CAF50', '#9C27B0'],  # Zelená a tmavá magenta
+                textinfo='label',  # Zobrazí pouze label s hodnotou
+                textposition='inside',  # Text uvnitř segmentů
+                textfont=dict(size=16, color='white'),
+                hoverinfo='label+percent',
+                hovertemplate='<b>%{label}</b><br>Percentage: %{percent}<extra></extra>',
+                insidetextorientation='horizontal'
+            )])
+            
+            fig_segment.update_layout(
+                showlegend=False,  # Bez legendy
+                height=400,
+                margin=dict(t=20, b=20, l=20, r=20),
+                annotations=[
+                    dict(
+                        text=f"Total<br>{testcase_count}",
+                        x=0.5, y=0.5,
+                        font_size=24,
+                        showarrow=False,
+                        font=dict(color='#333333', family="Arial Black")
+                    )
+                ]
+            )
+            
+            st.plotly_chart(fig_segment, use_container_width=True)
+            
+        else:
+            # Prázdný graf placeholder
+            fig_empty = go.Figure()
+            fig_empty.update_layout(
+                xaxis=dict(visible=False),
+                yaxis=dict(visible=False),
+                annotations=[
+                    dict(
+                        text="No test cases yet",
+                        x=0.5,
+                        y=0.5,
+                        showarrow=False,
+                        font=dict(size=16)
+                    )
+                ],
+                height=400,
+                margin=dict(t=20, b=20, l=20, r=20)
+            )
+            st.plotly_chart(fig_empty, use_container_width=True)
     
     st.markdown("---")
     

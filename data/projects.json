@@ -327,7 +327,7 @@
     "scenarios": []
   },
   "AOTR-1355_test": {
-    "next_id": 8,
+    "next_id": 9,
     "subject": "UAT2\\Antosova\\2025",
     "scenarios": [
       {
@@ -863,6 +863,38 @@
           {
             "description": "Proved kontrolu notifikaci SMS/Email",
             "expected": "SMS/Email odpovida sablone"
+          }
+        ]
+      },
+      {
+        "order_no": 8,
+        "test_name": "008_SHOP_B2C_FIBER_Vymena hw v ramci poruchy u fiber sluzby pres shop na b2c",
+        "akce": "Vymena HW v ramci poruchy - FIX",
+        "segment": "B2C",
+        "kanal": "SHOP",
+        "priority": "1-High",
+        "complexity": "4-Medium",
+        "veta": "vymena hw v ramci poruchy u fiber sluzby pres shop na b2c",
+        "kroky": [
+          {
+            "description": "NA konkretnim zakaznikovi jdi na pozadovanou sluzbu s HW a zaloz nove SR s parametry: poruchy_technologie_pronajaty hw.",
+            "expected": "SR zalozeno."
+          },
+          {
+            "description": "Otevri si SR a dopln pozadovane informace: komunikacni kanal - interne, popis - vlozit text s IMEI aktualniho zarizeni a nazvem HW, textova pole - vyplnit adresu a kontakt presne, jak je (hacky, carky, velka pismena, do service point id se pise instalacni adresa).",
+            "expected": "Vyplnene detailni informace vcetne adresy."
+          },
+          {
+            "description": "Klikni v SR na JIRA a vybrat technik TMCZ, po odeslani se objevi CIN - ten se posila na OSS v OT pro kontrolu a vymenu HW.",
+            "expected": "CIN vygenerovany."
+          },
+          {
+            "description": "Odešli OT na OSS ke kontrole a pridej i vygenerovany CIN.",
+            "expected": "OSS ok."
+          },
+          {
+            "description": "Zkontroluj v Siebel vymenene zarizeni a zmenu IMEI a SR muzes uzavrit.",
+            "expected": "HW je vymenen a nove IMEI propsano u sluzby."
           }
         ]
       }
