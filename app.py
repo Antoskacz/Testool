@@ -92,7 +92,7 @@ def extract_technology(text: str) -> str:
     return "UNKNOWN"
 
 def analyze_scenarios(scenarios: list):
-    """Analyze scenarios for tree structure display"""
+    """Analyze scenarios for tree structure display - CLEAN VERSION"""
     segment_data = {"B2C": {}, "B2B": {}}
     
     for scenario in scenarios:
@@ -117,18 +117,19 @@ def analyze_scenarios(scenarios: list):
                 technology = tech
                 break
         
-        # Organize data
-        if segment not in segment_data:
-            segment_data[segment] = {}
-        
-        if channel not in segment_data[segment]:
-            segment_data[segment][channel] = {}
+        # Organize data - only if segment is B2C or B2B
+        if segment in ["B2C", "B2B"]:
+            if segment not in segment_data:
+                segment_data[segment] = {}
             
-        if technology not in segment_data[segment][channel]:
-            segment_data[segment][channel][technology] = []
-            
-        if action not in segment_data[segment][channel][technology]:
-            segment_data[segment][channel][technology].append(action)
+            if channel not in segment_data[segment]:
+                segment_data[segment][channel] = {}
+                
+            if technology not in segment_data[segment][channel]:
+                segment_data[segment][channel][technology] = []
+                
+            if action not in segment_data[segment][channel][technology]:
+                segment_data[segment][channel][technology].append(action)
     
     return segment_data
 
@@ -229,7 +230,6 @@ if page == "🏗️ Build Test Cases":
     project_data = st.session_state.projects[project_name]
     
     # ---------- ROW 1: PROJECT OVERVIEW + ANALYSIS ----------
-        # ---------- ROW 1: PROJECT OVERVIEW + ANALYSIS ----------
     col_overview, col_analysis = st.columns([1, 2])  # Zvětšíme Analysis na 2/3
     
     with col_overview:
@@ -259,25 +259,18 @@ if page == "🏗️ Build Test Cases":
             # Analýza struktury
             segment_data = analyze_scenarios(testcases)
             
-            # Přidej CSS pro správné zalamování textu
+                        # CSS pro lepší zobrazení
             st.markdown("""
             <style>
-            .analysis-expander .streamlit-expanderHeader {
-                font-size: 14px !important;
-                padding: 8px 12px;
-                background-color: #f0f2f6;
-                border-radius: 5px;
+            div[data-testid="stExpander"] details summary {
+                font-size: 14px;
+                font-weight: bold;
             }
-            .analysis-expander .streamlit-expanderContent {
-                font-family: 'Courier New', monospace;
-                white-space: pre-wrap;
-                word-break: break-word;
-                line-height: 1.4;
-                padding: 12px 15px;
+            div[data-testid="stExpander"] details div {
+                font-family: 'Segoe UI', Tahoma, sans-serif;
                 font-size: 13px;
-                background-color: #f8f9fa;
-                border-radius: 5px;
-                margin-top: 5px;
+                line-height: 1.5;
+                padding: 10px 15px;
             }
             </style>
             """, unsafe_allow_html=True)
