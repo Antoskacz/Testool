@@ -35,6 +35,28 @@ def save_json(filepath, data):
         st.error(f"Error saving {filepath}: {e}")
         return False
 
+def validate_kroky_structure(steps_data):
+    """Validate kroky.json structure"""
+    if not isinstance(steps_data, dict):
+        return False
+    
+    for action, content in steps_data.items():
+        if isinstance(content, dict):
+            if "steps" not in content:
+                return False
+            if not isinstance(content["steps"], list):
+                return False
+        elif isinstance(content, list):
+            # Starší formát - převedeme na nový
+            steps_data[action] = {
+                "description": f"Action: {action}",
+                "steps": content
+            }
+        else:
+            return False
+    
+    return True
+
 def extract_channel(text: str) -> str:
     """Extract channel from text"""
     t = text.lower()
@@ -148,6 +170,13 @@ if page == "🏗️ Build Test Cases":
     projects = load_json(PROJECTS_PATH)
     steps_data = load_json(KROKY_PATH)
     
+    #validace struktury
+    if steps_data:
+    if not validate_kroky_structure(steps_data):
+        st.error("❌ Invalid kroky.json structure! Please fix or recreate the file.")
+        steps_data = {}  # Reset na prázdný slovník
+        
+    
     # Session state
     if 'projects' not in st.session_state:
         st.session_state.projects = projects
@@ -217,33 +246,52 @@ if page == "🏗️ Build Test Cases":
             st.write(f"**B2C:** {b2c_count} | **B2B:** {b2b_count}")
     
     with col_analysis:
-        st.subheader("📈 Analysis")
-        testcases = project_data.get("scenarios", [])
+    st.subheader("📈 Analysis")
+    testcases = project_data.get("scenarios", [])
+    
+    if testcases:
+        segment_data = analyze_scenarios(testcases)
         
-        if testcases:
-            segment_data = analyze_scenarios(testcases)
-            
-            with st.expander("👥 B2C Analysis", expanded=True):
-                if "B2C" in segment_data and segment_data["B2C"]:
-                    for channel in segment_data["B2C"]:
-                        st.write(f"**{channel}:**")
-                        for technology in segment_data["B2C"][channel]:
-                            action_count = len(segment_data["B2C"][channel][technology])
-                            st.write(f"  {technology}: {action_count} actions")
-                else:
-                    st.write("No B2C test cases")
-            
-            with st.expander("🏢 B2B Analysis", expanded=True):
-                if "B2B" in segment_data and segment_data["B2B"]:
-                    for channel in segment_data["B2B"]:
-                        st.write(f"**{channel}:**")
-                        for technology in segment_data["B2B"][channel]:
-                            action_count = len(segment_data["B2B"][channel][technology])
-                            st.write(f"  {technology}: {action_count} actions")
-                else:
-                    st.write("No B2B test cases")
-        else:
-            st.info("No test cases for analysis")
+        # Přidej CSS pro správné zalamování textu
+        st.markdown("""
+        <style>
+        .analysis-expander {
+            margin-bottom: 10px;
+        }
+        .analysis-expander .streamlit-expanderHeader {
+            font-size: 14px !important;
+        }
+        .analysis-expander .streamlit-expanderContent {
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-word;
+            line-height: 1.4;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        with st.expander("👥 B2C Analysis", expanded=True):
+            if "B2C" in segment_data and segment_data["B2C"]:
+                for channel in segment_data["B2C"]:
+                    st.write(f"**{channel}:**")
+                    for technology in segment_data["B2C"][channel]:
+                        action_count = len(segment_data["B2C"][channel][technology])
+                        st.write(f"  {technology}: {action_count} actions")
+            else:
+                st.write("No B2C test cases")
+        
+        with st.expander("🏢 B2B Analysis", expanded=True):
+            if "B2B" in segment_data and segment_data["B2B"]:
+                for channel in segment_data["B2B"]:
+                    st.write(f"**{channel}:**")
+                    for technology in segment_data["B2B"][channel]:
+                        action_count = len(segment_data["B2B"][channel][technology])
+                        st.write(f"  {technology}: {action_count} actions")
+            else:
+                st.write("No B2B test cases")
+    else:
+        st.info("No test cases for analysis")
+        
     
     st.markdown("---")
     
@@ -267,6 +315,8 @@ if page == "🏗️ Build Test Cases":
         df = pd.DataFrame(df_data)
         if not df.empty:
             df = df.sort_values(by="Order", ascending=True)
+            # Reset index pro lepší zobrazení
+            df = df.reset_index(drop=True)
         
         st.dataframe(
             df,
@@ -291,11 +341,17 @@ if page == "🏗️ Build Test Cases":
     # ---------- ROW 3: ADD NEW TEST CASE ----------
     st.subheader("➕ Add New Test Case")
     
+
     if not st.session_state.steps_data:
-        st.error("❌ No actions found! Please add actions in 'Edit Actions & Steps' page first.")
-        st.stop()
+    # Zkontroluj, zda soubor existuje
+    if KROKY_PATH.exists():
+        st.error("❌ kroky.json exists but is empty or invalid. Please add actions first.")
+    else:
+        st.error(f"❌ File {KROKY_PATH} not found! Please create it first.")
+    st.stop()
+
     
-    action_list = list(st.session_state.steps_data.keys())
+    action_list = sorted(list(st.session_state.steps_data.keys()))
     
     with st.form("add_testcase_form"):
         sentence = st.text_area("Requirement Sentence", height=100, 
