@@ -92,7 +92,7 @@ def extract_technology(text: str) -> str:
     return "UNKNOWN"
 
 def analyze_scenarios(scenarios: list):
-    """Analyze scenarios for tree structure display - CLEAN VERSION"""
+    """Analyze scenarios for tree structure display - RETURN ONLY CLEAN DATA"""
     segment_data = {"B2C": {}, "B2B": {}}
     
     for scenario in scenarios:
@@ -117,17 +117,16 @@ def analyze_scenarios(scenarios: list):
                 technology = tech
                 break
         
-        # Organize data - only if segment is B2C or B2B
-        if segment in ["B2C", "B2B"]:
-            if segment not in segment_data:
-                segment_data[segment] = {}
-            
+        # Organize data - filter only B2C and B2B
+        if segment == "B2C" or segment == "B2B":
+            # Initialize nested structure if needed
             if channel not in segment_data[segment]:
                 segment_data[segment][channel] = {}
-                
+            
             if technology not in segment_data[segment][channel]:
                 segment_data[segment][channel][technology] = []
-                
+            
+            # Add action if not already present
             if action not in segment_data[segment][channel][technology]:
                 segment_data[segment][channel][technology].append(action)
     
