@@ -421,22 +421,25 @@ if page == "🏗️ Build Test Cases":
                 # Generování test case
                 order = project_data["next_id"]
                 
-                # Build test name
+                # Build test name - NOVÁ LOGIKA BEZ UNKNOWN
                 channel = extract_channel(sentence)
                 segment = extract_segment(sentence)
                 technology = extract_technology(sentence)
-
+                
                 # Sestavíme prefix a vyčistíme UNKNOWN části
                 prefix_parts = [f"{order:03d}", channel, segment, technology]
                 # Filtrujeme UNKNOWN a prázdné hodnoty
                 filtered_parts = [p for p in prefix_parts if p and p != "UNKNOWN"]
                 prefix = "_".join(filtered_parts)
-
-                # Ošetříme případ, že by po filtraci zůstalo jen číslo (např. ["009"])
-
+                
+                # Ošetříme případ duplicitních podtržítek v prefixu
+                while '__' in prefix:
+                    prefix = prefix.replace('__', '_')
+                prefix = prefix.strip('_')
+                
                 test_name = f"{prefix}_{sentence.strip().capitalize()}"
-
-                # Ještě jednou vyčistíme (pro jistotu, pokud by sentence začínalo UNKNOWN apod.)
+                
+                # Ještě jednou vyčistíme celý název pro jistotu
                 test_name = clean_tc_name(test_name)
                 
                 # Get steps for action
@@ -466,138 +469,153 @@ if page == "🏗️ Build Test Cases":
                 st.success(f"✅ Test case added: {test_name}")
                 st.rerun()
 
-
-    # ---------- ROW 4: EDIT EXISTING TEST CASE ----------
-    st.subheader("✏️ Edit Existing Test Case")
-    
-    if project_data["scenarios"]:
-        testcase_options = {f"{tc['order_no']:03d} - {tc['test_name']}": tc for tc in project_data["scenarios"]}
-        selected_testcase_key = st.selectbox(
-            "Select Test Case to Edit",
-            options=list(testcase_options.keys()),
-            index=0,
-            key="edit_testcase_select"
-        )
-        
-        if selected_testcase_key:
-            testcase_to_edit = testcase_options[selected_testcase_key]
+    # ---------- ROW 4: EDIT TEST CASE (IN EXPANDER) ----------
+    with st.expander("✏️ Edit Test Case", expanded=False):
+        if project_data["scenarios"]:
+            testcase_options = {f"{tc['order_no']:03d} - {tc['test_name']}": tc for tc in project_data["scenarios"]}
+            selected_testcase_key = st.selectbox(
+                "Select Test Case to Edit",
+                options=list(testcase_options.keys()),
+                index=0,
+                key="edit_testcase_select"
+            )
             
-            with st.form("edit_testcase_form"):
-                # Zobrazíme aktuální hodnoty
-                st.write(f"**Currently editing:** {testcase_to_edit['test_name']}")
+            if selected_testcase_key:
+                testcase_to_edit = testcase_options[selected_testcase_key]
                 
-                sentence = st.text_area(
-                    "Requirement Sentence", 
-                    value=testcase_to_edit["veta"],
-                    height=100,
-                    key="edit_sentence"
-                )
-                
-                action = st.selectbox(
-                    "Action (from kroky.json)", 
-                    options=action_list,
-                    index=action_list.index(testcase_to_edit["akce"]) if testcase_to_edit["akce"] in action_list else 0,
-                    key="edit_action"
-                )
-                
-                col_priority, col_complexity = st.columns(2)
-                with col_priority:
-                    priority = st.selectbox(
-                        "Priority", 
-                        options=PRIORITY_MAP_VALUES,
-                        index=PRIORITY_MAP_VALUES.index(testcase_to_edit["priority"]) if testcase_to_edit["priority"] in PRIORITY_MAP_VALUES else 1,
-                        key="edit_priority"
+                with st.form("edit_testcase_form"):
+                    # Předvyplníme aktuální větu z test case
+                    sentence = st.text_area(
+                        "Requirement Sentence", 
+                        value=testcase_to_edit["veta"],
+                        height=100,
+                        key="edit_sentence"
                     )
-                with col_complexity:
-                    complexity = st.selectbox(
-                        "Complexity", 
-                        options=COMPLEXITY_MAP_VALUES,
-                        index=COMPLEXITY_MAP_VALUES.index(testcase_to_edit["complexity"]) if testcase_to_edit["complexity"] in COMPLEXITY_MAP_VALUES else 3,
-                        key="edit_complexity"
+                    
+                    action = st.selectbox(
+                        "Action (from kroky.json)", 
+                        options=action_list,
+                        index=action_list.index(testcase_to_edit["akce"]) if testcase_to_edit["akce"] in action_list else 0,
+                        key="edit_action"
                     )
+                    
+                    col_priority, col_complexity = st.columns(2)
+                    with col_priority:
+                        priority = st.selectbox(
+                            "Priority", 
+                            options=PRIORITY_MAP_VALUES,
+                            index=PRIORITY_MAP_VALUES.index(testcase_to_edit["priority"]) if testcase_to_edit["priority"] in PRIORITY_MAP_VALUES else 1,
+                            key="edit_priority"
+                        )
+                    with col_complexity:
+                        complexity = st.selectbox(
+                            "Complexity", 
+                            options=COMPLEXITY_MAP_VALUES,
+                            index=COMPLEXITY_MAP_VALUES.index(testcase_to_edit["complexity"]) if testcase_to_edit["complexity"] in COMPLEXITY_MAP_VALUES else 3,
+                            key="edit_complexity"
+                        )
+                    
+                    if st.form_submit_button("💾 Save Changes"):
+                        if not sentence.strip():
+                            st.error("Requirement sentence cannot be empty.")
+                        elif not action:
+                            st.error("Select an action.")
+                        else:
+                            # Re-generate test name with updated values
+                            order = testcase_to_edit["order_no"]
+                            
+                            # Build test name - S NOVOU LOGIKOU BEZ UNKNOWN
+                            channel = extract_channel(sentence)
+                            segment = extract_segment(sentence)
+                            technology = extract_technology(sentence)
+                            
+                            # Sestavíme prefix a vyčistíme UNKNOWN části
+                            prefix_parts = [f"{order:03d}", channel, segment, technology]
+                            # Filtrujeme UNKNOWN a prázdné hodnoty
+                            filtered_parts = [p for p in prefix_parts if p and p != "UNKNOWN"]
+                            prefix = "_".join(filtered_parts)
+                            
+                            # Ošetříme případ duplicitních podtržítek v prefixu
+                            while '__' in prefix:
+                                prefix = prefix.replace('__', '_')
+                            prefix = prefix.strip('_')
+                            
+                            new_test_name = f"{prefix}_{sentence.strip().capitalize()}"
+                            new_test_name = clean_tc_name(new_test_name)
+                            
+                            # Get steps for the new action
+                            kroky_pro_akci = []
+                            if action in st.session_state.steps_data:
+                                action_data = st.session_state.steps_data[action]
+                                if isinstance(action_data, dict) and "steps" in action_data:
+                                    kroky_pro_akci = copy.deepcopy(action_data["steps"])
+                                elif isinstance(action_data, list):
+                                    kroky_pro_akci = copy.deepcopy(action_data)
+                            
+                            # Update the test case
+                            testcase_to_edit.update({
+                                "test_name": new_test_name,
+                                "akce": action,
+                                "segment": segment,
+                                "kanal": channel,
+                                "priority": priority,
+                                "complexity": complexity,
+                                "veta": sentence.strip(),
+                                "kroky": kroky_pro_akci
+                            })
+                            
+                            save_json(PROJECTS_PATH, st.session_state.projects)
+                            st.success(f"✅ Test case updated: {new_test_name}")
+                            st.rerun()
+        else:
+            st.info("No test cases available to edit. Add a test case first.")
+
+    # ---------- ROW 5: DELETE TEST CASE (IN EXPANDER) ----------
+    with st.expander("🗑️ Delete Test Case", expanded=False):
+        if project_data["scenarios"]:
+            delete_options = [f"{tc['order_no']:03d} - {tc['test_name']}" for tc in project_data["scenarios"]]
+            testcase_to_delete = st.selectbox(
+                "Select Test Case to Delete",
+                options=delete_options,
+                index=0,
+                key="delete_testcase_select"
+            )
+            
+            if st.button("⚠️ Delete Selected Test Case", type="secondary"):
+                # Najdeme index test case k smazání
+                index_to_delete = delete_options.index(testcase_to_delete)
                 
-                if st.form_submit_button("💾 Save Changes"):
-                    if not sentence.strip():
-                        st.error("Requirement sentence cannot be empty.")
-                    elif not action:
-                        st.error("Select an action.")
-                    else:
-                        # Re-generate test name with updated values
-                        order = testcase_to_edit["order_no"]
-                        
-                        # Build test name - S NOVOU LOGIKOU BEZ UNKNOWN
-                        channel = extract_channel(sentence)
-                        segment = extract_segment(sentence)
-                        technology = extract_technology(sentence)
-                        
-                        # Sestavíme prefix a vyčistíme UNKNOWN části
-                        prefix_parts = [f"{order:03d}", channel, segment, technology]
-                        # Filtrujeme UNKNOWN a prázdné hodnoty
-                        filtered_parts = [p for p in prefix_parts if p and p != "UNKNOWN"]
-                        prefix = "_".join(filtered_parts)
-                        
-                        # Ošetříme případ duplicitních podtržítek v prefixu
-                        while '__' in prefix:
-                            prefix = prefix.replace('__', '_')
-                        prefix = prefix.strip('_')
-                        
-                        new_test_name = f"{prefix}_{sentence.strip().capitalize()}"
-                        new_test_name = clean_tc_name(new_test_name)
-                        
-                        # Get steps for the new action
-                        kroky_pro_akci = []
-                        if action in st.session_state.steps_data:
-                            action_data = st.session_state.steps_data[action]
-                            if isinstance(action_data, dict) and "steps" in action_data:
-                                kroky_pro_akci = copy.deepcopy(action_data["steps"])
-                            elif isinstance(action_data, list):
-                                kroky_pro_akci = copy.deepcopy(action_data)
-                        
-                        # Update the test case
-                        testcase_to_edit.update({
-                            "test_name": new_test_name,
-                            "akce": action,
-                            "segment": segment,
-                            "kanal": channel,
-                            "priority": priority,
-                            "complexity": complexity,
-                            "veta": sentence.strip(),
-                            "kroky": kroky_pro_akci
-                        })
-                        
-                        save_json(PROJECTS_PATH, st.session_state.projects)
-                        st.success(f"✅ Test case updated: {new_test_name}")
-                        st.rerun()
-    else:
-        st.info("No test cases available to edit. Add a test case first.")
+                # Odstraníme
+                deleted_tc = project_data["scenarios"].pop(index_to_delete)
+                
+                # AUTOMATICKÉ PŘEČÍSLOVÁNÍ
+                # Přečíslujeme zbývající test cases
+                for i, tc in enumerate(project_data["scenarios"], 1):
+                    old_order = tc["order_no"]
+                    tc["order_no"] = i
+                    
+                    # Aktualizujeme název s novým číslem
+                    old_name = tc["test_name"]
+                    # Rozdělíme název na části
+                    parts = old_name.split('_', 1)
+                    if len(parts) > 1:
+                        # Extrahujeme zbytek názvu (bez starého čísla)
+                        rest_of_name = parts[1]
+                        # Vytvoříme nový název
+                        new_name = f"{i:03d}_{rest_of_name}"
+                        tc["test_name"] = new_name
+                
+                # Aktualizujeme next_id
+                project_data["next_id"] = len(project_data["scenarios"]) + 1
+                
+                # Uložíme
+                save_json(PROJECTS_PATH, st.session_state.projects)
+                st.success(f"🗑️ Test case deleted: {deleted_tc['test_name']}")
+                st.success(f"📝 Test cases renumbered from 001")
+                st.rerun()
+        else:
+            st.info("No test cases available to delete.")
 
-
-    # ---------- ROW 5: DELETE TEST CASE ----------
-    st.subheader("🗑️ Delete Test Case")
-    
-    if project_data["scenarios"]:
-        delete_options = [f"{tc['order_no']:03d} - {tc['test_name']}" for tc in project_data["scenarios"]]
-        testcase_to_delete = st.selectbox(
-            "Select Test Case to Delete",
-            options=delete_options,
-            index=0,
-            key="delete_testcase_select"
-        )
-        
-        if st.button("⚠️ Delete Selected Test Case", type="secondary"):
-            # Najdeme index test case k smazání
-            index_to_delete = delete_options.index(testcase_to_delete)
-            
-            # Odstraníme
-            deleted_tc = project_data["scenarios"].pop(index_to_delete)
-            
-            # Uložíme
-            save_json(PROJECTS_PATH, st.session_state.projects)
-            st.success(f"🗑️ Test case deleted: {deleted_tc['test_name']}")
-            st.rerun()
-    else:
-        st.info("No test cases available to delete.")
-        
 
 # ---------- STRÁNKA 2: EDIT ACTIONS & STEPS ----------
 elif page == "🔧 Edit Actions & Steps":
