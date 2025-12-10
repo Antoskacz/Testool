@@ -344,11 +344,11 @@ if page == "🏗️ Build Test Cases":
 
     if not st.session_state.steps_data:
     # Zkontroluj, zda soubor existuje
-    if KROKY_PATH.exists():
-        st.error("❌ kroky.json exists but is empty or invalid. Please add actions first.")
-    else:
-        st.error(f"❌ File {KROKY_PATH} not found! Please create it first.")
-    st.stop()
+        if KROKY_PATH.exists():
+            st.error("❌ kroky.json exists but is empty or invalid. Please add actions first.")
+        else:
+            st.error(f"❌ File {KROKY_PATH} not found! Please create it first.")
+        st.stop()
 
     
     action_list = sorted(list(st.session_state.steps_data.keys()))
