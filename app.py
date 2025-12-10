@@ -139,6 +139,7 @@ def remove_diacritics(text):
     normalized = unicodedata.normalize('NFKD', text)
     return ''.join(c for c in normalized if not unicodedata.combining(c))
 
+
 # ---------- HLAVNÍ APLIKACE ----------
 st.title("🧪 Testool")
 st.markdown("### Professional test case builder and manager")
@@ -228,72 +229,83 @@ if page == "🏗️ Build Test Cases":
     project_data = st.session_state.projects[project_name]
     
     # ---------- ROW 1: PROJECT OVERVIEW + ANALYSIS ----------
-    col_overview, col_analysis = st.columns([1, 1])
+        # ---------- ROW 1: PROJECT OVERVIEW + ANALYSIS ----------
+    col_overview, col_analysis = st.columns([1, 2])  # Zvětšíme Analysis na 2/3
     
     with col_overview:
         st.subheader("📊 Project Overview")
         subject_value = project_data.get('subject', r'UAT2\Antosova\\')
         st.write(f"**Active Project:** {project_name}")
         st.write(f"**Subject:** {subject_value}")
-        
-        testcase_count = len(project_data.get('scenarios', []))
-        st.write(f"**Number of Test Cases:** {testcase_count}")
-        
-        if testcase_count > 0:
-            testcases = project_data["scenarios"]
-            b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
-            b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
-            st.write(f"**B2C:** {b2c_count} | **B2B:** {b2b_count}")
     
     with col_analysis:
         st.subheader("📈 Analysis")
         testcases = project_data.get("scenarios", [])
-    
-    if testcases:
-        segment_data = analyze_scenarios(testcases)
         
-        # Přidej CSS pro správné zalamování textu
-        st.markdown("""
-        <style>
-        .analysis-expander {
-            margin-bottom: 10px;
-        }
-        .analysis-expander .streamlit-expanderHeader {
-            font-size: 14px !important;
-        }
-        .analysis-expander .streamlit-expanderContent {
-            font-family: monospace;
-            white-space: pre-wrap;
-            word-break: break-word;
-            line-height: 1.4;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-        
-        with st.expander("👥 B2C Analysis", expanded=True):
-            if "B2C" in segment_data and segment_data["B2C"]:
-                for channel in segment_data["B2C"]:
-                    st.write(f"**{channel}:**")
-                    for technology in segment_data["B2C"][channel]:
-                        action_count = len(segment_data["B2C"][channel][technology])
-                        st.write(f"  {technology}: {action_count} actions")
-            else:
-                st.write("No B2C test cases")
-        
-        with st.expander("🏢 B2B Analysis", expanded=True):
-            if "B2B" in segment_data and segment_data["B2B"]:
-                for channel in segment_data["B2B"]:
-                    st.write(f"**{channel}:**")
-                    for technology in segment_data["B2B"][channel]:
-                        action_count = len(segment_data["B2B"][channel][technology])
-                        st.write(f"  {technology}: {action_count} actions")
-            else:
-                st.write("No B2B test cases")
-    else:
-        st.info("No test cases for analysis")
-        
+        if testcases:
+            # Statistiky
+            testcase_count = len(testcases)
+            b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
+            b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
+            
+            # Zobraz statistiky
+            st.markdown(f"""
+            **📊 Statistics:**
+            - **Total Test Cases:** {testcase_count}
+            - **B2C:** {b2c_count} test cases
+            - **B2B:** {b2b_count} test cases
+            """)
+            
+            # Analýza struktury
+            segment_data = analyze_scenarios(testcases)
+            
+            # Přidej CSS pro správné zalamování textu
+            st.markdown("""
+            <style>
+            .analysis-expander .streamlit-expanderHeader {
+                font-size: 14px !important;
+                padding: 8px 12px;
+                background-color: #f0f2f6;
+                border-radius: 5px;
+            }
+            .analysis-expander .streamlit-expanderContent {
+                font-family: 'Courier New', monospace;
+                white-space: pre-wrap;
+                word-break: break-word;
+                line-height: 1.4;
+                padding: 12px 15px;
+                font-size: 13px;
+                background-color: #f8f9fa;
+                border-radius: 5px;
+                margin-top: 5px;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            
+            with st.expander("👥 B2C Analysis", expanded=True):
+                if "B2C" in segment_data and segment_data["B2C"]:
+                    for channel in segment_data["B2C"]:
+                        st.write(f"**{channel}:**")
+                        for technology in segment_data["B2C"][channel]:
+                            action_count = len(segment_data["B2C"][channel][technology])
+                            st.write(f"  {technology}: {action_count} actions")
+                else:
+                    st.write("No B2C test cases")
+            
+            with st.expander("🏢 B2B Analysis", expanded=True):
+                if "B2B" in segment_data and segment_data["B2B"]:
+                    for channel in segment_data["B2B"]:
+                        st.write(f"**{channel}:**")
+                        for technology in segment_data["B2B"][channel]:
+                            action_count = len(segment_data["B2B"][channel][technology])
+                            st.write(f"  {technology}: {action_count} actions")
+                else:
+                    st.write("No B2B test cases")
+        else:
+            st.info("No test cases for analysis. Add your first test case below.")
     
     st.markdown("---")
+        
     
     # ---------- ROW 2: TEST CASES LIST ----------
     st.subheader("📋 Test Cases List")
