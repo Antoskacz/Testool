@@ -172,9 +172,9 @@ if page == "🏗️ Build Test Cases":
     
     #validace struktury
     if steps_data:
-    if not validate_kroky_structure(steps_data):
-        st.error("❌ Invalid kroky.json structure! Please fix or recreate the file.")
-        steps_data = {}  # Reset na prázdný slovník
+        if not validate_kroky_structure(steps_data):
+            st.error("❌ Invalid kroky.json structure! Please fix or recreate the file.")
+            steps_data = {}  # Reset na prázdný slovník
         
     
     # Session state
