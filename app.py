@@ -5,6 +5,8 @@ from pathlib import Path
 import difflib
 import unicodedata
 import copy
+import plotly.graph_objects as go  # zobrazeni grafu
+import plotly.express as px        # volitelny
 
 st.set_page_config(
     page_title="Testool",
