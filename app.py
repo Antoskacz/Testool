@@ -295,7 +295,7 @@ if page == "🏗️ Build Test Cases":
         st.error("❌ No actions found! Please add actions in 'Edit Actions & Steps' page first.")
         st.stop()
     
-    action_list = list(st.session_state.steps_data.keys())
+    action_list = sorted(list(st.session_state.steps_data.keys()))
     
     with st.form("add_testcase_form"):
         sentence = st.text_area("Requirement Sentence", height=100, 
