@@ -246,8 +246,8 @@ if page == "🏗️ Build Test Cases":
             st.write(f"**B2C:** {b2c_count} | **B2B:** {b2b_count}")
     
     with col_analysis:
-    st.subheader("📈 Analysis")
-    testcases = project_data.get("scenarios", [])
+        st.subheader("📈 Analysis")
+        testcases = project_data.get("scenarios", [])
     
     if testcases:
         segment_data = analyze_scenarios(testcases)
