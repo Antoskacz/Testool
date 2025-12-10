@@ -229,6 +229,7 @@ if page == "🏗️ Build Test Cases":
     project_name = st.session_state.selected_project
     project_data = st.session_state.projects[project_name]
     
+    
     # ---------- ROW 1: PROJECT OVERVIEW + ANALYSIS ----------
     col_overview, col_analysis = st.columns([1, 2])  # Zvětšíme Analysis na 2/3
     
@@ -238,40 +239,12 @@ if page == "🏗️ Build Test Cases":
         st.write(f"**Active Project:** {project_name}")
         st.write(f"**Subject:** {subject_value}")
     
-    with col_analysis:
+        with col_analysis:
         st.subheader("📈 Analysis")
         testcases = project_data.get("scenarios", [])
         
         if testcases:
-            # Statistiky
-            testcase_count = len(testcases)
-            b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
-            b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
-            
-            # Zobraz statistiky
-            st.write("**📊 Statistics:**")
-            st.write(f"- **Total Test Cases:** {testcase_count}")
-            st.write(f"- **B2C:** {b2c_count} test cases")
-            st.write(f"- **B2B:** {b2b_count} test cases")
-            
-            # Analýza struktury
             segment_data = analyze_scenarios(testcases)
-            
-            # CSS pro lepší zobrazení
-            st.markdown("""
-            <style>
-            div[data-testid="stExpander"] details summary {
-                font-size: 14px;
-                font-weight: bold;
-            }
-            div[data-testid="stExpander"] details div {
-                font-family: 'Segoe UI', Tahoma, sans-serif;
-                font-size: 13px;
-                line-height: 1.5;
-                padding: 10px 15px;
-            }
-            </style>
-            """, unsafe_allow_html=True)
             
             with st.expander("👥 B2C Analysis", expanded=True):
                 if "B2C" in segment_data and segment_data["B2C"]:
@@ -293,7 +266,7 @@ if page == "🏗️ Build Test Cases":
                 else:
                     st.write("No B2B test cases")
         else:
-            st.info("No test cases for analysis. Add your first test case below.")
+            st.info("No test cases for analysis")
     
     st.markdown("---")
         
