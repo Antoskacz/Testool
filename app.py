@@ -249,17 +249,15 @@ if page == "🏗️ Build Test Cases":
             b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
             
             # Zobraz statistiky
-            st.markdown(f"""
-            **📊 Statistics:**
-            - **Total Test Cases:** {testcase_count}
-            - **B2C:** {b2c_count} test cases
-            - **B2B:** {b2b_count} test cases
-            """)
+            st.write("**📊 Statistics:**")
+            st.write(f"- **Total Test Cases:** {testcase_count}")
+            st.write(f"- **B2C:** {b2c_count} test cases")
+            st.write(f"- **B2B:** {b2b_count} test cases")
             
             # Analýza struktury
             segment_data = analyze_scenarios(testcases)
             
-                        # CSS pro lepší zobrazení
+            # CSS pro lepší zobrazení
             st.markdown("""
             <style>
             div[data-testid="stExpander"] details summary {
