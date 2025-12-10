@@ -229,17 +229,27 @@ if page == "🏗️ Build Test Cases":
     project_name = st.session_state.selected_project
     project_data = st.session_state.projects[project_name]
     
-    
+
     # ---------- ROW 1: PROJECT OVERVIEW + ANALYSIS ----------
-    col_overview, col_analysis = st.columns([1, 2])  # Zvětšíme Analysis na 2/3
+        # ---------- ROW 1: PROJECT OVERVIEW + ANALYSIS ----------
+    col_overview, col_analysis = st.columns([1, 1])
     
     with col_overview:
         st.subheader("📊 Project Overview")
         subject_value = project_data.get('subject', r'UAT2\Antosova\\')
         st.write(f"**Active Project:** {project_name}")
         st.write(f"**Subject:** {subject_value}")
+        
+        testcase_count = len(project_data.get('scenarios', []))
+        st.write(f"**Number of Test Cases:** {testcase_count}")
+        
+        if testcase_count > 0:
+            testcases = project_data["scenarios"]
+            b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
+            b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
+            st.write(f"**B2C:** {b2c_count} | **B2B:** {b2b_count}")
     
-        with col_analysis:
+    with col_analysis:
         st.subheader("📈 Analysis")
         testcases = project_data.get("scenarios", [])
         
