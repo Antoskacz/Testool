@@ -217,33 +217,105 @@ if page == "🏗️ Build Test Cases":
             st.write(f"**B2C:** {b2c_count} | **B2B:** {b2b_count}")
     
     with col_analysis:
-        st.subheader("📈 Analysis")
-        testcases = project_data.get("scenarios", [])
+    st.subheader("📈 Analysis Dashboard")
+    testcases = project_data.get("scenarios", [])
+    
+    if testcases:
+        # Základní statistiky
+        testcase_count = len(testcases)
+        b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
+        b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
         
-        if testcases:
-            segment_data = analyze_scenarios(testcases)
+        # 1. ROW: KPI metrics
+        st.markdown("### 📊 Key Metrics")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total", testcase_count, help="Total test cases")
+        with col2:
+            st.metric("B2C", b2c_count, help="B2C test cases")
+        with col3:
+            st.metric("B2B", b2b_count, help="B2B test cases")
+        
+        # 2. ROW: Grafy
+        st.markdown("### 📈 Distribution")
+        col_chart1, col_chart2 = st.columns(2)
+        
+        with col_chart1:
+            # Segment pie chart
+            fig_segment = go.Figure(data=[go.Pie(
+                labels=['B2C', 'B2B'],
+                values=[b2c_count, b2b_count],
+                hole=0.3,
+                marker_colors=['#00C853', '#2979FF']
+            )])
+            fig_segment.update_layout(
+                title="Segment Distribution",
+                showlegend=True,
+                height=200,
+                margin=dict(t=30, b=10, l=10, r=10)
+            )
+            st.plotly_chart(fig_segment, use_container_width=True)
+        
+        with col_chart2:
+            # Top actions bar chart
+            action_counts = {}
+            for tc in testcases:
+                action = tc.get("akce", "Unknown")
+                action_counts[action] = action_counts.get(action, 0) + 1
             
-            with st.expander("👥 B2C Analysis", expanded=True):
-                if "B2C" in segment_data and segment_data["B2C"]:
-                    for channel in segment_data["B2C"]:
-                        st.write(f"**{channel}:**")
-                        for technology in segment_data["B2C"][channel]:
-                            action_count = len(segment_data["B2C"][channel][technology])
-                            st.write(f"  {technology}: {action_count} actions")
-                else:
-                    st.write("No B2C test cases")
+            if action_counts:
+                # Získat top 5 akcí
+                top_actions = sorted(action_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+                actions = [a[0] for a in top_actions]
+                counts = [a[1] for a in top_actions]
+                
+                fig_actions = go.Figure(data=[
+                    go.Bar(
+                        x=actions,
+                        y=counts,
+                        marker_color='#FF6B6B'
+                    )
+                ])
+                fig_actions.update_layout(
+                    title="Top 5 Actions",
+                    xaxis_title="Action",
+                    yaxis_title="Count",
+                    height=200,
+                    margin=dict(t=30, b=30, l=10, r=10)
+                )
+                st.plotly_chart(fig_actions, use_container_width=True)
+        
+        # 3. ROW: Detailní tabulka
+        st.markdown("### 📋 Action Details")
+        
+        # Vytvořit strukturovaná data
+        segment_data = {"B2C": {}, "B2B": {}}
+        for tc in testcases:
+            segment = tc.get("segment", "UNKNOWN")
+            action = tc.get("akce", "UNKNOWN")
             
-            with st.expander("🏢 B2B Analysis", expanded=True):
-                if "B2B" in segment_data and segment_data["B2B"]:
-                    for channel in segment_data["B2B"]:
-                        st.write(f"**{channel}:**")
-                        for technology in segment_data["B2B"][channel]:
-                            action_count = len(segment_data["B2B"][channel][technology])
-                            st.write(f"  {technology}: {action_count} actions")
-                else:
-                    st.write("No B2B test cases")
-        else:
-            st.info("No test cases for analysis")
+            if segment in ["B2C", "B2B"]:
+                if action not in segment_data[segment]:
+                    segment_data[segment][action] = 0
+                segment_data[segment][action] += 1
+        
+        # Zobrazit jako expandery
+        with st.expander("👥 B2C Actions", expanded=True):
+            if segment_data["B2C"]:
+                for action, count in sorted(segment_data["B2C"].items()):
+                    st.write(f"**{action}:** {count} test case{'s' if count != 1 else ''}")
+            else:
+                st.write("No B2C test cases")
+        
+        with st.expander("🏢 B2B Actions", expanded=True):
+            if segment_data["B2B"]:
+                for action, count in sorted(segment_data["B2B"].items()):
+                    st.write(f"**{action}:** {count} test case{'s' if count != 1 else ''}")
+            else:
+                st.write("No B2B test cases")
+                
+    else:
+        st.info("No test cases for analysis")
     
     st.markdown("---")
     
