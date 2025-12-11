@@ -421,8 +421,6 @@ if page == "🏗️ Build Test Cases":
 
 
     # ------------------------------------ EXPORT SECTION ------------------------------------
-    st.markdown("---")
-
     st.markdown(
         """
         <h3 style='margin-top:-5px;'>
@@ -468,7 +466,17 @@ if page == "🏗️ Build Test Cases":
     )
 
     # Skrytý Streamlit button (trigger pro klik HTML tlačítka)
-    export_button = st.button("trigger_export_button", key="export_trigger", label_visibility="collapsed")
+    export_button = st.button("trigger_export_button", key="export_trigger")
+
+    # Hide real trigger button visually
+    st.markdown("""
+        <style>
+        button[kind="secondary"]#trigger_export_button {
+            display:none;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
 
     # --------------------------------------------------------------------------
     if export_button:
