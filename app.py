@@ -145,153 +145,144 @@ st.title("🧪 Testool")
 st.markdown("### Professional test case builder and manager")
 
 # ---------- SIDEBAR ----------
+# Cesty k souborům
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+PROJECTS_PATH = DATA_DIR / "projects.json"
+KROKY_PATH = DATA_DIR / "kroky.json"
+
+# Načtení dat
+projects = load_json(PROJECTS_PATH)
+steps_data = load_json(KROKY_PATH)
+
+# Session state
+if 'projects' not in st.session_state:
+    st.session_state.projects = projects
+if 'selected_project' not in st.session_state:
+    st.session_state.selected_project = None
+if 'steps_data' not in st.session_state:
+    st.session_state.steps_data = steps_data
+        
+
+# ---------- SIDEBAR ----------
 with st.sidebar:
     st.title("🧪 Testool")
     st.markdown("---")
-    
-    # Navigace
+
+    # Navigation
     page = st.radio(
         "Navigation",
         [
             "🏗️ Build Test Cases",
-            "🔧 Edit Actions & Steps", 
+            "🔧 Edit Actions & Steps",
             "📝 Text Comparator"
         ]
     )
 
-    # Project selection and settings in sidebar
-    with st.sidebar:
-        st.markdown("---")
-        st.subheader("📁 Project")
+    st.markdown("---")
+    st.subheader("📁 Project")
 
-        project_names = list(st.session_state.projects.keys())
-        selected = st.selectbox(
-            "Select Project",
-            options=["— select —"] + project_names,
-            index=0,
-            key="project_select"
-        )
+    project_names = list(st.session_state.projects.keys())
+    selected = st.selectbox(
+        "Select Project",
+        options=["— select —"] + project_names,
+        index=0,
+        key="project_select"
+    )
 
-        new_project = st.text_input(
-            "New Project Name",
-            placeholder="e.g.: CCCTR-XXXX – Name"
-        )
+    new_project = st.text_input("New Project Name", placeholder="e.g.: CCCTR-XXXX – Name")
 
-        if st.button("✅ Create Project", use_container_width=True):
-            if new_project.strip():
-                if new_project.strip() not in st.session_state.projects:
-                    st.session_state.projects[new_project.strip()] = {
-                        "next_id": 1,
-                        "subject": r"UAT2\Antosova\\",
-                        "scenarios": []
-                    }
-                    save_json(PROJECTS_PATH, st.session_state.projects)
-                    st.session_state.selected_project = new_project.strip()
-                    st.success(f'Project "{new_project.strip()}" created.')
-                    st.rerun()
-                else:
-                    st.error("Project already exists!")
+    if st.button("✅ Create Project", use_container_width=True):
+        if new_project.strip():
+            if new_project.strip() not in st.session_state.projects:
+                st.session_state.projects[new_project] = {
+                    "next_id": 1,
+                    "subject": r"UAT2\Antosova\\",
+                    "scenarios": []
+                }
+                save_json(PROJECTS_PATH, st.session_state.projects)
+                st.session_state.selected_project = new_project
+                st.success("Project created.")
+                st.rerun()
             else:
+                st.error("Project already exists.")
+        else:
+            st.error("Project name cannot be empty.")
+
+    if selected != "— select —":
+        st.session_state.selected_project = selected
+
+    current_project = st.session_state.get("selected_project")
+
+    if current_project:
+        st.markdown("---")
+        st.subheader("🛠️ Project Settings")
+
+        # Rename project
+        rename_val = st.text_input("Rename project", value=current_project)
+
+        if st.button("✏️ Rename project", use_container_width=True):
+            new_name = rename_val.strip()
+            if not new_name:
                 st.error("Project name cannot be empty.")
+            elif new_name in st.session_state.projects:
+                st.error("A project with this name already exists.")
+            else:
+                st.session_state.projects[new_name] = st.session_state.projects[current_project]
+                del st.session_state.projects[current_project]
+                save_json(PROJECTS_PATH, st.session_state.projects)
+                st.session_state.selected_project = new_name
+                st.success("Project renamed.")
+                st.rerun()
 
-        if selected != "— select —" and selected in st.session_state.projects:
-            st.session_state.selected_project = selected
+        # Delete project (two-step)
+        if "project_to_delete" not in st.session_state:
+            st.session_state.project_to_delete = None
 
-        # --- Project & Subject settings (only if a project is selected) ---
-        current_project = st.session_state.get("selected_project")
-        if current_project and current_project in st.session_state.projects:
-            project_data_sidebar = st.session_state.projects[current_project]
+        if st.button("🗑️ Delete project", use_container_width=True):
+            st.session_state.project_to_delete = current_project
 
-            st.markdown("---")
-            st.subheader("🛠️ Project Settings")
+        if st.session_state.project_to_delete == current_project:
+            st.warning(f'Are you sure you want to delete "{current_project}"?')
+            col_yes, col_no = st.columns(2)
 
-            # Rename project
-            rename_value = st.text_input(
-                "Rename project",
-                value=current_project,
-                key="rename_project_input"
-            )
-
-            if st.button("✏️ Rename project", use_container_width=True):
-                new_name = rename_value.strip()
-                if not new_name:
-                    st.error("Project name cannot be empty.")
-                elif new_name == current_project:
-                    st.info("Project name is unchanged.")
-                elif new_name in st.session_state.projects:
-                    st.error("Project with this name already exists.")
-                else:
-                    # Move data under new key
-                    st.session_state.projects[new_name] = project_data_sidebar
+            with col_yes:
+                if st.button("Yes, delete", use_container_width=True):
                     del st.session_state.projects[current_project]
                     save_json(PROJECTS_PATH, st.session_state.projects)
-                    st.session_state.selected_project = new_name
-                    st.success(f'Project renamed to "{new_name}".')
+                    st.session_state.selected_project = None
+                    st.session_state.project_to_delete = None
+                    st.success("Project deleted.")
                     st.rerun()
 
-            # Two-step delete project
-            if "project_to_delete" not in st.session_state:
-                st.session_state.project_to_delete = None
+            with col_no:
+                if st.button("Cancel", use_container_width=True):
+                    st.session_state.project_to_delete = None
 
-            if st.button("🗑️ Delete project", use_container_width=True):
-                st.session_state.project_to_delete = current_project
+        # Subject settings
+        st.markdown("---")
+        st.subheader("📨 Subject Settings")
 
-            if st.session_state.project_to_delete == current_project:
-                st.warning(
-                    f'Are you sure you want to delete project "{current_project}"? '
-                    "This action cannot be undone."
-                )
-                col_confirm, col_cancel = st.columns(2)
+        subject_val = st.session_state.projects[current_project].get("subject", "")
+        subject_input = st.text_input("Subject", value=subject_val)
 
-                with col_confirm:
-                    if st.button(
-                        "Yes, delete",
-                        use_container_width=True,
-                        key="confirm_delete_project"
-                    ):
-                        del st.session_state.projects[current_project]
-                        save_json(PROJECTS_PATH, st.session_state.projects)
-                        st.session_state.selected_project = None
-                        st.session_state.project_to_delete = None
-                        st.success("Project deleted.")
-                        st.rerun()
+        col_save, col_delete = st.columns(2)
 
-                with col_cancel:
-                    if st.button(
-                        "Cancel",
-                        use_container_width=True,
-                        key="cancel_delete_project"
-                    ):
-                        st.session_state.project_to_delete = None
+        with col_save:
+            if st.button("💾 Save subject", use_container_width=True):
+                st.session_state.projects[current_project]["subject"] = subject_input.strip()
+                save_json(PROJECTS_PATH, st.session_state.projects)
+                st.success("Subject updated.")
 
-            # --- Subject settings ---
-            st.markdown("---")
-            st.subheader("📨 Subject Settings")
-
-            subject_current = project_data_sidebar.get("subject", "")
-            subject_input = st.text_input(
-                "Subject",
-                value=subject_current,
-                key="subject_input"
-            )
-
-            col_save_subject, col_delete_subject = st.columns(2)
-
-            with col_save_subject:
-                if st.button("💾 Save subject", use_container_width=True):
-                    st.session_state.projects[current_project]["subject"] = subject_input.strip()
-                    save_json(PROJECTS_PATH, st.session_state.projects)
-                    st.success("Subject updated.")
-
-            with col_delete_subject:
-                if st.button("🧹 Delete subject", use_container_width=True):
-                    st.session_state.projects[current_project]["subject"] = ""
-                    save_json(PROJECTS_PATH, st.session_state.projects)
-                    st.success("Subject cleared.")
+        with col_delete:
+            if st.button("🧹 Delete subject", use_container_width=True):
+                st.session_state.projects[current_project]["subject"] = ""
+                save_json(PROJECTS_PATH, st.session_state.projects)
+                st.success("Subject cleared.")
 
 
     # ---------- STRÁNKA 1: BUILD TEST CASES ----------
-    # Hlavní obsah
+if page == "🏗️ Build Test Cases":
     st.title("🏗️ Build Test Cases")
     
     if st.session_state.selected_project is None:
