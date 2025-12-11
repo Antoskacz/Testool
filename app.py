@@ -300,7 +300,7 @@ if page == "🏗️ Build Test Cases":
                 labels=[f'B2C: {b2c_count}', f'B2B: {b2b_count}'],  # Hodnoty v labelu
                 values=[b2c_count, b2b_count],
                 hole=0.5,  # Větší díra uprostřed
-                marker_colors=["#16FF1E62", "#FF0084"],  # Zelená a tmavá magenta
+                marker_colors=["#16FF1EE5", "#FF0084"],  # Zelená a tmavá magenta
                 textinfo='label',  # Zobrazí pouze label s hodnotou
                 textposition='inside',  # Text uvnitř segmentů
                 textfont=dict(size=16, color='white'),
