@@ -284,6 +284,7 @@ if page == "🏗️ Build Test Cases":
         else:
             st.info("No test cases yet")
     
+    # ----------------------------GRAF---------------------------
     with col_analysis:
         st.subheader("📈 Distribution Analysis")
         testcases = project_data.get("scenarios", [])
@@ -294,12 +295,12 @@ if page == "🏗️ Build Test Cases":
             b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
             b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
             
-            # Vytvoř donut graf s hodnotami uvnitř
+            # Vytvoři donut graf s hodnotami uvnitř
             fig_segment = go.Figure(data=[go.Pie(
                 labels=[f'B2C: {b2c_count}', f'B2B: {b2b_count}'],  # Hodnoty v labelu
                 values=[b2c_count, b2b_count],
                 hole=0.5,  # Větší díra uprostřed
-                marker_colors=['#4CAF50', '#9C27B0'],  # Zelená a tmavá magenta
+                marker_colors=["#1FFB27", "#FF008C"],  # Zelená a tmavá magenta
                 textinfo='label',  # Zobrazí pouze label s hodnotou
                 textposition='inside',  # Text uvnitř segmentů
                 textfont=dict(size=16, color='white'),
