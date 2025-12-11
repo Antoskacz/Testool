@@ -357,7 +357,7 @@ if page == "🏗️ Build Test Cases":
     
     # ----------------------------GRAF---------------------------
     with col_analysis:
-        st.subheader("📈 Distribution Analysis")
+        st.markdown("<h3 style='text-align: center;'>📈 Distribution Analysis</h3>", unsafe_allow_html=True)
         testcases = project_data.get("scenarios", [])
         
         if testcases:
@@ -418,6 +418,95 @@ if page == "🏗️ Build Test Cases":
             st.plotly_chart(fig_empty, use_container_width=True)
     
     st.markdown("---")
+
+
+    # ------------------------------------ EXPORT SECTION ------------------------------------
+st.markdown("---")
+st.markdown("### 💾 Export Test Cases")
+
+st.write("Generate clean, renumbered & diacritics-free test cases Excel file.")
+
+# The export button will be styled in magenta/green
+export_button = st.button(
+    "💾 Export Test Cases to Excel",
+    use_container_width=True,
+)
+
+if export_button:
+    # 1) Reindex test cases
+    project_data = st.session_state.projects[project_name]
+
+    # Sort TCs by current order_no
+    project_data["scenarios"] = sorted(project_data["scenarios"], key=lambda x: x.get("order_no", 0))
+
+    # Reassign new order numbers
+    for i, tc in enumerate(project_data["scenarios"], start=1):
+        tc["order_no"] = i
+
+        # Rebuild test name with new order
+        channel = tc["kanal"]
+        segment = tc["segment"]
+        technology = extract_technology(tc["veta"])
+        sentence = tc["veta"].strip()
+
+        prefix_parts = [f"{i:03d}", channel, segment, technology]
+        filtered = [p for p in prefix_parts if p and p != "UNKNOWN"]
+        prefix = "_".join(filtered)
+
+        new_name = f"{prefix}_{sentence.capitalize()}"
+        new_name = clean_tc_name(new_name)
+
+        tc["test_name"] = new_name
+
+    # Save updated JSON
+    save_json(PROJECTS_PATH, st.session_state.projects)
+
+    # 2) Build export data
+    rows = []
+    for tc in project_data["scenarios"]:
+        for i, step in enumerate(tc.get("kroky", []), start=1):
+
+            desc = step.get("description", "") if isinstance(step, dict) else ""
+            exp = step.get("expected", "") if isinstance(step, dict) else ""
+
+            rows.append({
+                "Project": project_name,
+                "Subject": project_data.get("subject", ""),
+                "System/Application": "Siebel_CZ",
+                "Description": f"Segment: {tc['segment']}\nChannel: {tc['kanal']}\nAction: {tc['akce']}",
+                "Type": "Manual",
+                "Test Phase": "4-User Acceptance",
+                "Test: Test Phase": "4-User Acceptance",
+                "Test Priority": tc["priority"],
+                "Test Complexity": tc["complexity"],
+                "Test Name": remove_diacritics(tc["test_name"]),
+                "Step Name (Design Steps)": str(i),
+                "Description (Design Steps)": remove_diacritics(desc),
+                "Expected (Design Steps)": remove_diacritics(exp)
+            })
+
+    df = pd.DataFrame(rows)
+
+    # 3) Create Excel memory object
+    import io
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="Test Cases")
+    output.seek(0)
+
+    # 4) Download button
+    safe_name = project_name.replace(" ", "_").replace("/", "_").replace("\\", "_")
+    file_name = f"testcases_{safe_name}.xlsx"
+
+    st.success("Export successful. File is ready for download.")
+
+    st.download_button(
+        label="⬇️ Download Excel file",
+        data=output.getvalue(),
+        file_name=file_name,
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        use_container_width=True,
+    )
     
     # ---------- ROW 2: TEST CASES LIST ----------
     st.subheader("📋 Test Cases List")
