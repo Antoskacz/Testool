@@ -97,7 +97,7 @@ def remove_diacritics(text):
 
 # ---------- PAGE CONFIG ----------
 st.set_page_config(
-    page_title="Test Case Manager",
+    page_title="Testool",
     page_icon="🧪",
     layout="wide"
 )
@@ -111,7 +111,7 @@ if "steps_data" not in st.session_state:
 
 # ---------- NAVIGATION ----------
 # Page selection in sidebar
-st.sidebar.title("🧪 Test Case Manager")
+st.sidebar.title("🧪 Testool")
 
 # Add page selection radio
 page = st.sidebar.radio(
@@ -170,7 +170,7 @@ with st.sidebar:
 # ---------- PAGE 1: TEST CASES ----------
 if page == "📋 Test Cases":
     if not project_names:
-        st.title("Welcome to Test Case Manager 👋")
+        st.title("Welcome to Testool 👋")
         st.info("Create your first project using the sidebar.")
         st.stop()
     
