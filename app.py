@@ -421,28 +421,65 @@ if page == "🏗️ Build Test Cases":
 
 
     # ------------------------------------ EXPORT SECTION ------------------------------------
-    st.markdown("### 💾 Export Test Cases")
+    st.markdown("---")
+
+    st.markdown(
+        """
+        <h3 style='margin-top:-5px;'>
+            💾 Export Test Cases
+        </h3>
+        """,
+        unsafe_allow_html=True
+    )
 
     st.write("Generate clean, renumbered & diacritics-free test cases Excel file.")
 
-    # The export button will be styled in magenta/green
-    export_button = st.button(
-        "💾 Export Test Cases to Excel",
-        use_container_width=True,
+    # --------------------------------------------------------------------------
+    # STYLOVANÉ BAREVNÉ TLAČÍTKO (HTML), které spouští Streamlit trigger níže
+    # --------------------------------------------------------------------------
+    st.markdown(
+        """
+        <style>
+        .export-btn {
+            background-color: #FF0084;
+            border: 2px solid #16FF1E;
+            color: #16FF1E;
+            padding: 14px 22px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            width: 100%;
+            cursor: pointer;
+            text-align: center;
+            transition: 0.2s;
+        }
+        .export-btn:hover {
+            background-color: #cc006a;
+            color: white;
+            border-color: white;
+        }
+        </style>
+
+        <button class="export-btn" onClick="document.getElementById('export_trigger').click()">
+            💾 Export Test Cases to Excel
+        </button>
+        """,
+        unsafe_allow_html=True
     )
 
+    # Skrytý Streamlit button (trigger pro klik HTML tlačítka)
+    export_button = st.button("trigger_export_button", key="export_trigger", label_visibility="collapsed")
+
+    # --------------------------------------------------------------------------
     if export_button:
         # 1) Reindex test cases
         project_data = st.session_state.projects[project_name]
 
-        # Sort TCs by current order_no
         project_data["scenarios"] = sorted(project_data["scenarios"], key=lambda x: x.get("order_no", 0))
 
-        # Reassign new order numbers
         for i, tc in enumerate(project_data["scenarios"], start=1):
             tc["order_no"] = i
 
-            # Rebuild test name with new order
             channel = tc["kanal"]
             segment = tc["segment"]
             technology = extract_technology(tc["veta"])
@@ -454,10 +491,8 @@ if page == "🏗️ Build Test Cases":
 
             new_name = f"{prefix}_{sentence.capitalize()}"
             new_name = clean_tc_name(new_name)
-
             tc["test_name"] = new_name
 
-        # Save updated JSON
         save_json(PROJECTS_PATH, st.session_state.projects)
 
         # 2) Build export data
@@ -506,48 +541,9 @@ if page == "🏗️ Build Test Cases":
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True,
         )
+
     st.markdown("---")
-    
-    # ---------- ROW 2: TEST CASES LIST ----------
-    st.subheader("📋 Test Cases List")
-    
-    if project_data.get("scenarios"):
-        df_data = []
-        for tc in project_data["scenarios"]:
-            df_data.append({
-                "Order": tc.get("order_no"),
-                "Test Name": tc.get("test_name"),
-                "Action": tc.get("akce"),
-                "Segment": tc.get("segment"),
-                "Channel": tc.get("kanal"),
-                "Priority": tc.get("priority"),
-                "Complexity": tc.get("complexity"),
-                "Steps": len(tc.get("kroky", [])) if "kroky" in tc else 0
-            })
-        
-        df = pd.DataFrame(df_data)
-        if not df.empty:
-            df = df.sort_values(by="Order", ascending=True)
-        
-        st.dataframe(
-            df,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "Order": st.column_config.NumberColumn("No.", width="small"),
-                "Test Name": st.column_config.TextColumn("Test Name", width="large"),
-                "Action": st.column_config.TextColumn("Action", width="medium"),
-                "Segment": st.column_config.TextColumn("Segment", width="small"),
-                "Channel": st.column_config.TextColumn("Channel", width="small"),
-                "Priority": st.column_config.TextColumn("Priority", width="small"),
-                "Complexity": st.column_config.TextColumn("Complexity", width="small"),
-                "Steps": st.column_config.NumberColumn("Steps", width="small")
-            }
-        )
-    else:
-        st.info("No test cases yet. Add your first test case below.")
-    
-    st.markdown("---")
+
     
     # ---------- ROW 3: ADD NEW TEST CASE ----------
     st.subheader("➕ Add New Test Case")
