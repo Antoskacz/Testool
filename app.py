@@ -421,7 +421,6 @@ if page == "🏗️ Build Test Cases":
 
 
     # ------------------------------------ EXPORT SECTION ------------------------------------
-    st.markdown("---")
     st.markdown("### 💾 Export Test Cases")
 
     st.write("Generate clean, renumbered & diacritics-free test cases Excel file.")
@@ -507,6 +506,7 @@ if page == "🏗️ Build Test Cases":
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True,
         )
+    st.markdown("---")
     
     # ---------- ROW 2: TEST CASES LIST ----------
     st.subheader("📋 Test Cases List")
