@@ -421,73 +421,44 @@ if page == "🏗️ Build Test Cases":
 
 
     # ------------------------------------ EXPORT SECTION ------------------------------------
-    st.markdown(
-        """
-        <h3 style='margin-top:-5px;'>
-            💾 Export Test Cases
-        </h3>
-        """,
-        unsafe_allow_html=True
-    )
-
+    st.markdown("---")
+    st.markdown("### 💾 Export Test Cases")
     st.write("Generate clean, renumbered & diacritics-free test cases Excel file.")
 
-    # --------------------------------------------------------------------------
-    # STYLOVANÉ BAREVNÉ TLAČÍTKO (HTML), které spouští Streamlit trigger níže
-    # --------------------------------------------------------------------------
-    st.markdown(
-        """
+    # CUSTOM STYLE FOR BUTTON
+    st.markdown("""
         <style>
-        .export-btn {
-            background-color: #FF0084;
-            border: 2px solid #16FF1E;
-            color: #16FF1E;
-            padding: 14px 22px;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: bold;
-            width: 100%;
-            cursor: pointer;
-            text-align: center;
-            transition: 0.2s;
-        }
-        .export-btn:hover {
-            background-color: #cc006a;
-            color: white;
-            border-color: white;
-        }
+            div.stButton > button:first-child  {
+                background-color: #FF0084;
+                color: #16FF1E;
+                border: 2px solid #16FF1E;
+                padding: 14px 22px;
+                border-radius: 12px;
+                font-size: 18px;
+                font-weight: bold;
+                width: 100%;
+                transition: 0.2s;
+            }
+            div.stButton > button:first-child:hover {
+                background-color: #cc006a;
+                color: white;
+                border-color: white;
+            }
         </style>
-
-        <button class="export-btn" onClick="document.getElementById('export_trigger').click()">
-            💾 Export Test Cases to Excel
-        </button>
         """,
         unsafe_allow_html=True
     )
 
-    # Skrytý Streamlit button (trigger pro klik HTML tlačítka)
-    export_button = st.button("trigger_export_button", key="export_trigger")
+    export_button = st.button("💾 Export Test Cases to Excel", use_container_width=True)
 
-    # Hide real trigger button visually
-    st.markdown("""
-        <style>
-        button[kind="secondary"]#trigger_export_button {
-            display:none;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-
-    # --------------------------------------------------------------------------
     if export_button:
-        # 1) Reindex test cases
+        # --- ZBYTEK EXPORT LOGIKY ---
         project_data = st.session_state.projects[project_name]
 
         project_data["scenarios"] = sorted(project_data["scenarios"], key=lambda x: x.get("order_no", 0))
 
         for i, tc in enumerate(project_data["scenarios"], start=1):
             tc["order_no"] = i
-
             channel = tc["kanal"]
             segment = tc["segment"]
             technology = extract_technology(tc["veta"])
@@ -503,11 +474,9 @@ if page == "🏗️ Build Test Cases":
 
         save_json(PROJECTS_PATH, st.session_state.projects)
 
-        # 2) Build export data
         rows = []
         for tc in project_data["scenarios"]:
             for i, step in enumerate(tc.get("kroky", []), start=1):
-
                 desc = step.get("description", "") if isinstance(step, dict) else ""
                 exp = step.get("expected", "") if isinstance(step, dict) else ""
 
@@ -529,14 +498,12 @@ if page == "🏗️ Build Test Cases":
 
         df = pd.DataFrame(rows)
 
-        # 3) Create Excel memory object
         import io
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine="openpyxl") as writer:
             df.to_excel(writer, index=False, sheet_name="Test Cases")
         output.seek(0)
 
-        # 4) Download button
         safe_name = project_name.replace(" ", "_").replace("/", "_").replace("\\", "_")
         file_name = f"testcases_{safe_name}.xlsx"
 
@@ -550,6 +517,49 @@ if page == "🏗️ Build Test Cases":
             use_container_width=True,
         )
 
+    st.markdown("---")
+
+
+
+# ---------- ROW 2: TEST CASES LIST ----------
+    st.subheader("📋 Test Cases List")
+    
+    if project_data.get("scenarios"):
+        df_data = []
+        for tc in project_data["scenarios"]:
+            df_data.append({
+                "Order": tc.get("order_no"),
+                "Test Name": tc.get("test_name"),
+                "Action": tc.get("akce"),
+                "Segment": tc.get("segment"),
+                "Channel": tc.get("kanal"),
+                "Priority": tc.get("priority"),
+                "Complexity": tc.get("complexity"),
+                "Steps": len(tc.get("kroky", [])) if "kroky" in tc else 0
+            })
+        
+        df = pd.DataFrame(df_data)
+        if not df.empty:
+            df = df.sort_values(by="Order", ascending=True)
+        
+        st.dataframe(
+            df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Order": st.column_config.NumberColumn("No.", width="small"),
+                "Test Name": st.column_config.TextColumn("Test Name", width="large"),
+                "Action": st.column_config.TextColumn("Action", width="medium"),
+                "Segment": st.column_config.TextColumn("Segment", width="small"),
+                "Channel": st.column_config.TextColumn("Channel", width="small"),
+                "Priority": st.column_config.TextColumn("Priority", width="small"),
+                "Complexity": st.column_config.TextColumn("Complexity", width="small"),
+                "Steps": st.column_config.NumberColumn("Steps", width="small")
+            }
+        )
+    else:
+        st.info("No test cases yet. Add your first test case below.")
+    
     st.markdown("---")
 
     

@@ -327,7 +327,7 @@
     "scenarios": [
       {
         "order_no": 1,
-        "test_name": "002_SHOP_B2C_DSL_aktivuj dsl na b2c pres shop test",
+        "test_name": "001_SHOP_B2C_DSL_Aktivuj dsl na b2c pres shop test",
         "akce": "Aktivace + VAS - FIX",
         "segment": "B2C",
         "kanal": "SHOP",
@@ -418,8 +418,8 @@
         ]
       },
       {
-        "order_no": 3,
-        "test_name": "003_SHOP_B2C_FIBER_Aktivuj fiber na b2c pres shop",
+        "order_no": 2,
+        "test_name": "002_SHOP_B2C_FIBER_Aktivuj fiber na b2c pres shop",
         "akce": "Aktivace + VAS - FIX",
         "segment": "B2C",
         "kanal": "SHOP",
@@ -510,8 +510,8 @@
         ]
       },
       {
-        "order_no": 6,
-        "test_name": "006_IL_B2C_FWA_BISI_Aktivuj fwa bisi na b2c pres il",
+        "order_no": 3,
+        "test_name": "003_IL_B2C_FWA_BISI_Aktivuj fwa bisi na b2c pres il",
         "akce": "Aktivace - FIX",
         "segment": "B2C",
         "kanal": "IL",
@@ -594,8 +594,8 @@
         ]
       },
       {
-        "order_no": 7,
-        "test_name": "007_SHOP_B2C_FWA_BI_Aktivuj fwa bi na b2c pres shop",
+        "order_no": 4,
+        "test_name": "004_SHOP_B2C_FWA_BI_Aktivuj fwa bi na b2c pres shop",
         "akce": "Aktivace - FIX",
         "segment": "B2C",
         "kanal": "SHOP",
@@ -678,8 +678,8 @@
         ]
       },
       {
-        "order_no": 8,
-        "test_name": "008_SHOP_B2C_FIBER_Vymena hw v ramci poruchy u fiber sluzby pres shop na b2c",
+        "order_no": 5,
+        "test_name": "005_SHOP_B2C_FIBER_Vymena hw v ramci poruchy u fiber sluzby pres shop na b2c",
         "akce": "Vymena HW v ramci poruchy - FIX",
         "segment": "B2C",
         "kanal": "SHOP",
@@ -710,8 +710,8 @@
         ]
       },
       {
-        "order_no": 10,
-        "test_name": "010_IL_B2B_CABLE_Aktivuj cable na b2b pres il",
+        "order_no": 6,
+        "test_name": "006_IL_B2B_CABLE_Aktivuj cable na b2b pres il",
         "akce": "Aktivace + VAS - FIX",
         "segment": "B2B",
         "kanal": "IL",
@@ -802,8 +802,8 @@
         ]
       },
       {
-        "order_no": 11,
-        "test_name": "011_CABLE_Aktivuj cable",
+        "order_no": 7,
+        "test_name": "007_CABLE_Aktivuj cable",
         "akce": "Aktivace + VAS - FIX",
         "segment": "UNKNOWN",
         "kanal": "UNKNOWN",
