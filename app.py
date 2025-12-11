@@ -1,43 +1,25 @@
 import streamlit as st
 import json
-import pandas as pd
-from pathlib import Path
-import difflib
-import unicodedata
+import os
 import copy
-import plotly.graph_objects as go  # zobrazeni grafu
-import plotly.express as px        # volitelny
 import re
+from datetime import datetime
 
-st.set_page_config(
-    page_title="Testool",
-    page_icon="🧪",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# ---------- CONFIG ----------
+PROJECTS_PATH = "projects.json"
+STEPS_PATH = "kroky.json"
 
-# ---------- POMOCNÉ FUNKCE ----------
+# ---------- FUNCTIONS ----------
 def load_json(filepath):
-    """Safe JSON loading"""
-    try:
-        if filepath.exists():
-            with open(filepath, 'r', encoding='utf-8') as f:
-                return json.load(f)
-    except Exception as e:
-        st.error(f"Error loading {filepath}: {e}")
+    if os.path.exists(filepath):
+        with open(filepath, "r", encoding="utf-8") as f:
+            return json.load(f)
     return {}
 
 def save_json(filepath, data):
-    """Safe JSON saving"""
-    try:
-        filepath.parent.mkdir(exist_ok=True)
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        return True
-    except Exception as e:
-        st.error(f"Error saving {filepath}: {e}")
-        return False
-    
+    with open(filepath, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
 def clean_tc_name(name: str) -> str:
     """
     Odstraní části 'UNKNOWN' z názvu ticketu a opraví duplicitní podtržítka.
@@ -58,483 +40,475 @@ def clean_tc_name(name: str) -> str:
     
     return result
 
-def extract_channel(text: str) -> str:
-    """Extract channel from text"""
-    t = text.lower()
-    if "shop" in t:
+def extract_channel(sentence):
+    sentence_lower = sentence.lower()
+    if "shop" in sentence_lower:
         return "SHOP"
-    if "il" in t:
-        return "IL"
+    elif "admin" in sentence_lower:
+        return "ADMIN"
+    elif "crm" in sentence_lower:
+        return "CRM"
+    elif "api" in sentence_lower:
+        return "API"
+    elif "bulk" in sentence_lower:
+        return "BULK"
     return "UNKNOWN"
 
-def extract_segment(text: str) -> str:
-    """Extract segment from text"""
-    t = text.lower()
-    if "b2c" in t:
+def extract_segment(sentence):
+    sentence_lower = sentence.lower()
+    if "b2c" in sentence_lower:
         return "B2C"
-    if "b2b" in t:
+    elif "b2b" in sentence_lower:
         return "B2B"
+    elif "hgu" in sentence_lower:
+        return "HGU"
+    elif "soho" in sentence_lower:
+        return "SOHO"
     return "UNKNOWN"
 
-def extract_technology(text: str) -> str:
-    """Extract technology from text"""
-    t = text.lower()
-    if "hlas" in t or "voice" in t:
-        return "HLAS"
-    if "fwa" in t and "bisi" in t:
-        return "FWA_BISI"
-    if "fwa" in t and "bi" in t:
-        return "FWA_BI"
-    for key in ["dsl", "fiber", "cable"]:
-        if key in t:
-            return key.upper()
-    if "fwa" in t:
-        return "FWA"
+def extract_technology(sentence):
+    sentence_lower = sentence.lower()
+    if "dsl" in sentence_lower:
+        return "DSL"
+    elif "fiber" in sentence_lower or "optika" in sentence_lower:
+        return "FIBER"
+    elif "4g" in sentence_lower or "lte" in sentence_lower:
+        return "4G"
+    elif "5g" in sentence_lower:
+        return "5G"
+    elif "tv" in sentence_lower or "televize" in sentence_lower:
+        return "TV"
     return "UNKNOWN"
 
-def analyze_scenarios(scenarios: list):
-    """Analyze scenarios for tree structure display"""
-    segment_data = {"B2C": {}, "B2B": {}}
-    
-    for scenario in scenarios:
-        segment = scenario.get("segment", "UNKNOWN")
-        channel = scenario.get("kanal", "UNKNOWN")
-        test_name = scenario.get("test_name", "")
-        action = scenario.get("akce", "UNKNOWN")
-        
-        # Detect technology from test name
-        technology = "DSL"
-        tech_keywords = {
-            "FIBER": "FIBER",
-            "FWA_BISI": "FWA BISI", 
-            "FWA_BI": "FWA BI",
-            "CABLE": "CABLE",
-            "HLAS": "HLAS",
-            "DSL": "DSL"
-        }
-        
-        for keyword, tech in tech_keywords.items():
-            if keyword in test_name.upper():
-                technology = tech
-                break
-        
-        # Organize data
-        if segment not in segment_data:
-            segment_data[segment] = {}
-        
-        if channel not in segment_data[segment]:
-            segment_data[segment][channel] = {}
-            
-        if technology not in segment_data[segment][channel]:
-            segment_data[segment][channel][technology] = []
-            
-        if action not in segment_data[segment][channel][technology]:
-            segment_data[segment][channel][technology].append(action)
-    
-    return segment_data
+# ---------- PAGE CONFIG ----------
+st.set_page_config(
+    page_title="Test Case Manager",
+    page_icon="🧪",
+    layout="wide"
+)
 
-def remove_diacritics(text):
-    """Remove diacritics from text"""
-    if not text:
-        return text
-    normalized = unicodedata.normalize('NFKD', text)
-    return ''.join(c for c in normalized if not unicodedata.combining(c))
+# ---------- INIT SESSION STATE ----------
+if "projects" not in st.session_state:
+    st.session_state.projects = load_json(PROJECTS_PATH)
 
-# ---------- HLAVNÍ APLIKACE ----------
-st.title("🧪 Testool")
-st.markdown("### Professional test case builder and manager")
+if "steps_data" not in st.session_state:
+    st.session_state.steps_data = load_json(STEPS_PATH)
 
 # ---------- SIDEBAR ----------
 with st.sidebar:
-    st.title("🧪 Testool")
-    st.markdown("---")
+    st.title("🧪 Test Case Manager")
     
-    # Navigace
-    page = st.radio(
-        "Navigation",
-        [
-            "🏗️ Build Test Cases",
-            "🔧 Edit Actions & Steps", 
-            "📝 Text Comparator"
-        ]
-    )
-
-# ---------- STRÁNKA 1: BUILD TEST CASES ----------
-if page == "🏗️ Build Test Cases":
-    # Cesty k souborům
-    BASE_DIR = Path(__file__).resolve().parent
-    DATA_DIR = BASE_DIR / "data"
-    PROJECTS_PATH = DATA_DIR / "projects.json"
-    KROKY_PATH = DATA_DIR / "kroky.json"
-    
-    # Načtení dat
-    projects = load_json(PROJECTS_PATH)
-    steps_data = load_json(KROKY_PATH)
-    
-    # Session state
-    if 'projects' not in st.session_state:
-        st.session_state.projects = projects
-    if 'selected_project' not in st.session_state:
-        st.session_state.selected_project = None
-    if 'steps_data' not in st.session_state:
-        st.session_state.steps_data = steps_data
-    
-    # Výběr projektu v sidebaru
-    with st.sidebar:
-        st.markdown("---")
-        st.subheader("📁 Project")
-        
-        project_names = list(st.session_state.projects.keys())
-        selected = st.selectbox(
-            "Select Project",
-            options=["— select —"] + project_names,
-            index=0,
-            key="project_select"
-        )
-        
-        new_project = st.text_input("New Project Name", placeholder="e.g.: CCCTR-XXXX – Name")
-        
-        if st.button("✅ Create Project", use_container_width=True):
-            if new_project.strip():
-                if new_project.strip() not in st.session_state.projects:
-                    st.session_state.projects[new_project.strip()] = {
-                        "next_id": 1,
-                        "subject": r"UAT2\Antosova\\",
-                        "scenarios": []
-                    }
-                    save_json(PROJECTS_PATH, st.session_state.projects)
-                    st.session_state.selected_project = new_project.strip()
-                    st.rerun()
-                else:
-                    st.error("Project already exists!")
-        
-        if selected != "— select —" and selected in st.session_state.projects:
-            st.session_state.selected_project = selected
-    
-    # Hlavní obsah
-    st.title("🏗️ Build Test Cases")
-    
-    if st.session_state.selected_project is None:
-        st.info("Select or create a project in the sidebar.")
-        st.stop()
-    
-    project_name = st.session_state.selected_project
-    project_data = st.session_state.projects[project_name]
-    
-    # ---------- ROW 1: PROJECT OVERVIEW + ANALYSIS ----------
-    col_overview, col_analysis = st.columns([1, 1.5])  # Pravá část (graf) větší
-    
-    with col_overview:
-        st.subheader("📊 Project Overview")
-        subject_value = project_data.get('subject', r'UAT2\Antosova\\')
-        st.write(f"**Active Project:** {project_name}")
-        st.write(f"**Subject:** {subject_value}")
-        
-        # Actions by Segment - přesunuto sem
-        st.markdown("---")
-        st.subheader("📋 Actions by Segment")
-        
-        testcases = project_data.get("scenarios", [])
-        if testcases:
-            # Statistiky pro expandery
-            b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
-            b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
-            
-            # Vytvořit strukturovaná data pro akce
-            segment_data = {"B2C": {}, "B2B": {}}
-            for tc in testcases:
-                segment = tc.get("segment", "UNKNOWN")
-                action = tc.get("akce", "UNKNOWN")
-                
-                if segment in ["B2C", "B2B"]:
-                    if action not in segment_data[segment]:
-                        segment_data[segment][action] = 0
-                    segment_data[segment][action] += 1
-            
-            # Dva expandery vedle sebe
-            col_b2c, col_b2b = st.columns(2)
-            
-            with col_b2c:
-                with st.expander(f"👥 B2C ({b2c_count})", expanded=True):
-                    if segment_data["B2C"]:
-                        # Seřadit akce podle počtu test cases (nejvíc první)
-                        sorted_actions = sorted(
-                            segment_data["B2C"].items(), 
-                            key=lambda x: x[1], 
-                            reverse=True
-                        )
-                        for action, count in sorted_actions:
-                            st.write(f"**{action}:** {count}")
-                    else:
-                        st.write("No test cases")
-            
-            with col_b2b:
-                with st.expander(f"🏢 B2B ({b2b_count})", expanded=True):
-                    if segment_data["B2B"]:
-                        # Seřadit akce podle počtu test cases (nejvíc první)
-                        sorted_actions = sorted(
-                            segment_data["B2B"].items(), 
-                            key=lambda x: x[1], 
-                            reverse=True
-                        )
-                        for action, count in sorted_actions:
-                            st.write(f"**{action}:** {count}")
-                    else:
-                        st.write("No test cases")
-        else:
-            st.info("No test cases yet")
-    
-    with col_analysis:
-        st.subheader("📈 Distribution Analysis")
-        testcases = project_data.get("scenarios", [])
-        
-        if testcases:
-            # Základní statistiky
-            testcase_count = len(testcases)
-            b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
-            b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
-            
-            # Vytvoř donut graf s hodnotami uvnitř
-            fig_segment = go.Figure(data=[go.Pie(
-                labels=[f'B2C: {b2c_count}', f'B2B: {b2b_count}'],  # Hodnoty v labelu
-                values=[b2c_count, b2b_count],
-                hole=0.5,  # Větší díra uprostřed
-                marker_colors=['#4CAF50', '#9C27B0'],  # Zelená a tmavá magenta
-                textinfo='label',  # Zobrazí pouze label s hodnotou
-                textposition='inside',  # Text uvnitř segmentů
-                textfont=dict(size=16, color='white'),
-                hoverinfo='label+percent',
-                hovertemplate='<b>%{label}</b><br>Percentage: %{percent}<extra></extra>',
-                insidetextorientation='horizontal'
-            )])
-            
-            fig_segment.update_layout(
-                showlegend=False,  # Bez legendy
-                height=400,
-                margin=dict(t=20, b=20, l=20, r=20),
-                annotations=[
-                    dict(
-                        text=f"Total<br>{testcase_count}",
-                        x=0.5, y=0.5,
-                        font_size=24,
-                        showarrow=False,
-                        font=dict(color='#333333', family="Arial Black")
-                    )
-                ]
-            )
-            
-            st.plotly_chart(fig_segment, use_container_width=True)
-            
-        else:
-            # Prázdný graf placeholder
-            fig_empty = go.Figure()
-            fig_empty.update_layout(
-                xaxis=dict(visible=False),
-                yaxis=dict(visible=False),
-                annotations=[
-                    dict(
-                        text="No test cases yet",
-                        x=0.5,
-                        y=0.5,
-                        showarrow=False,
-                        font=dict(size=16)
-                    )
-                ],
-                height=400,
-                margin=dict(t=20, b=20, l=20, r=20)
-            )
-            st.plotly_chart(fig_empty, use_container_width=True)
-    
-    st.markdown("---")
-    
-    # ---------- ROW 2: TEST CASES LIST ----------
-    st.subheader("📋 Test Cases List")
-    
-    if project_data.get("scenarios"):
-        df_data = []
-        for tc in project_data["scenarios"]:
-            df_data.append({
-                "Order": tc.get("order_no"),
-                "Test Name": tc.get("test_name"),
-                "Action": tc.get("akce"),
-                "Segment": tc.get("segment"),
-                "Channel": tc.get("kanal"),
-                "Priority": tc.get("priority"),
-                "Complexity": tc.get("complexity"),
-                "Steps": len(tc.get("kroky", [])) if "kroky" in tc else 0
-            })
-        
-        df = pd.DataFrame(df_data)
-        if not df.empty:
-            df = df.sort_values(by="Order", ascending=True)
-        
-        st.dataframe(
-            df,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "Order": st.column_config.NumberColumn("No.", width="small"),
-                "Test Name": st.column_config.TextColumn("Test Name", width="large"),
-                "Action": st.column_config.TextColumn("Action", width="medium"),
-                "Segment": st.column_config.TextColumn("Segment", width="small"),
-                "Channel": st.column_config.TextColumn("Channel", width="small"),
-                "Priority": st.column_config.TextColumn("Priority", width="small"),
-                "Complexity": st.column_config.TextColumn("Complexity", width="small"),
-                "Steps": st.column_config.NumberColumn("Steps", width="small")
-            }
-        )
+    # Project selection
+    project_names = list(st.session_state.projects.keys())
+    if not project_names:
+        st.warning("No projects found. Create a new project.")
+        new_project_name = st.text_input("New Project Name")
+        if st.button("Create Project"):
+            if new_project_name:
+                st.session_state.projects[new_project_name] = {
+                    "created": datetime.now().strftime("%Y-%m-%d"),
+                    "next_id": 1,
+                    "scenarios": []
+                }
+                save_json(PROJECTS_PATH, st.session_state.projects)
+                st.success(f"Project '{new_project_name}' created!")
+                st.rerun()
     else:
-        st.info("No test cases yet. Add your first test case below.")
-    
-    st.markdown("---")
-    
- 
-    # ---------- ROW 4: EDIT TEST CASE (IN EXPANDER) ----------
-    with st.expander("✏️ Edit Test Case", expanded=False):
-        if project_data["scenarios"]:
-            testcase_options = {f"{tc['order_no']:03d} - {tc['test_name']}": tc for tc in project_data["scenarios"]}
-            selected_testcase_key = st.selectbox(
-                "Select Test Case to Edit",
-                options=list(testcase_options.keys()),
-                index=0,
-                key="edit_testcase_select"
-            )
-            
-            if selected_testcase_key:
-                testcase_to_edit = testcase_options[selected_testcase_key]
-                
-                with st.form("edit_testcase_form"):
-                    # Předvyplníme aktuální větu z test case
-                    sentence = st.text_area(
-                        "Requirement Sentence", 
-                        value=testcase_to_edit["veta"],
-                        height=100,
-                        key="edit_sentence"
-                    )
-                    
-                    action = st.selectbox(
-                        "Action (from kroky.json)", 
-                        options=action_list,
-                        index=action_list.index(testcase_to_edit["akce"]) if testcase_to_edit["akce"] in action_list else 0,
-                        key="edit_action"
-                    )
-                    
-                    col_priority, col_complexity = st.columns(2)
-                    with col_priority:
-                        priority = st.selectbox(
-                            "Priority", 
-                            options=PRIORITY_MAP_VALUES,
-                            index=PRIORITY_MAP_VALUES.index(testcase_to_edit["priority"]) if testcase_to_edit["priority"] in PRIORITY_MAP_VALUES else 1,
-                            key="edit_priority"
-                        )
-                    with col_complexity:
-                        complexity = st.selectbox(
-                            "Complexity", 
-                            options=COMPLEXITY_MAP_VALUES,
-                            index=COMPLEXITY_MAP_VALUES.index(testcase_to_edit["complexity"]) if testcase_to_edit["complexity"] in COMPLEXITY_MAP_VALUES else 3,
-                            key="edit_complexity"
-                        )
-                    
-                    if st.form_submit_button("💾 Save Changes"):
-                        if not sentence.strip():
-                            st.error("Requirement sentence cannot be empty.")
-                        elif not action:
-                            st.error("Select an action.")
-                        else:
-                            # Re-generate test name with updated values
-                            order = testcase_to_edit["order_no"]
-                            
-                            # Build test name - S NOVOU LOGIKOU BEZ UNKNOWN
-                            channel = extract_channel(sentence)
-                            segment = extract_segment(sentence)
-                            technology = extract_technology(sentence)
-                            
-                            # Sestavíme prefix a vyčistíme UNKNOWN části
-                            prefix_parts = [f"{order:03d}", channel, segment, technology]
-                            # Filtrujeme UNKNOWN a prázdné hodnoty
-                            filtered_parts = [p for p in prefix_parts if p and p != "UNKNOWN"]
-                            prefix = "_".join(filtered_parts)
-                            
-                            # Ošetříme případ duplicitních podtržítek v prefixu
-                            while '__' in prefix:
-                                prefix = prefix.replace('__', '_')
-                            prefix = prefix.strip('_')
-                            
-                            new_test_name = f"{prefix}_{sentence.strip().capitalize()}"
-                            new_test_name = clean_tc_name(new_test_name)
-                            
-                            # Get steps for the new action
-                            kroky_pro_akci = []
-                            if action in st.session_state.steps_data:
-                                action_data = st.session_state.steps_data[action]
-                                if isinstance(action_data, dict) and "steps" in action_data:
-                                    kroky_pro_akci = copy.deepcopy(action_data["steps"])
-                                elif isinstance(action_data, list):
-                                    kroky_pro_akci = copy.deepcopy(action_data)
-                            
-                            # Update the test case
-                            testcase_to_edit.update({
-                                "test_name": new_test_name,
-                                "akce": action,
-                                "segment": segment,
-                                "kanal": channel,
-                                "priority": priority,
-                                "complexity": complexity,
-                                "veta": sentence.strip(),
-                                "kroky": kroky_pro_akci
-                            })
-                            
-                            save_json(PROJECTS_PATH, st.session_state.projects)
-                            st.success(f"✅ Test case updated: {new_test_name}")
-                            st.rerun()
-        else:
-            st.info("No test cases available to edit. Add a test case first.")
+        selected_project = st.selectbox("Select Project", project_names)
+        
+        # Create new project
+        st.markdown("---")
+        st.subheader("New Project")
+        new_project = st.text_input("Project Name")
+        if st.button("Create New Project"):
+            if new_project and new_project not in st.session_state.projects:
+                st.session_state.projects[new_project] = {
+                    "created": datetime.now().strftime("%Y-%m-%d"),
+                    "next_id": 1,
+                    "scenarios": []
+                }
+                save_json(PROJECTS_PATH, st.session_state.projects)
+                st.success(f"Project '{new_project}' created!")
+                st.rerun()
+            elif new_project in st.session_state.projects:
+                st.error("Project already exists!")
+        
+        # Delete project
+        st.markdown("---")
+        st.subheader("Delete Project")
+        project_to_delete = st.selectbox("Select to delete", [""] + project_names)
+        if project_to_delete and st.button("Delete Project", type="secondary"):
+            del st.session_state.projects[project_to_delete]
+            save_json(PROJECTS_PATH, st.session_state.projects)
+            st.success(f"Project '{project_to_delete}' deleted!")
+            st.rerun()
 
-    # ---------- ROW 5: DELETE TEST CASE (IN EXPANDER) ----------
-    with st.expander("🗑️ Delete Test Case", expanded=False):
-        if project_data["scenarios"]:
-            delete_options = [f"{tc['order_no']:03d} - {tc['test_name']}" for tc in project_data["scenarios"]]
-            testcase_to_delete = st.selectbox(
-                "Select Test Case to Delete",
-                options=delete_options,
-                index=0,
-                key="delete_testcase_select"
-            )
+# ---------- MAIN PAGE ----------
+if not project_names:
+    st.title("Welcome to Test Case Manager 👋")
+    st.info("Create your first project using the sidebar.")
+    st.stop()
+
+project_data = st.session_state.projects[selected_project]
+
+# ---------- AUTOMATIC RENUMBERING (RUNS EVERY TIME PAGE LOADS) ----------
+if "scenarios" in project_data and project_data["scenarios"]:
+    # Kontrola, zda je číslování v pořádku
+    orders = [tc["order_no"] for tc in project_data["scenarios"]]
+    expected_orders = list(range(1, len(orders) + 1))
+    
+    # Pokud číslování není v pořádku, přečíslujeme
+    if orders != expected_orders:
+        # Seřadíme podle aktuálního order_no
+        scenarios_sorted = sorted(project_data["scenarios"], key=lambda x: x["order_no"])
+        
+        for i, tc in enumerate(scenarios_sorted, 1):
+            old_order = tc["order_no"]
+            old_name = tc["test_name"]
             
-            if st.button("⚠️ Delete Selected Test Case", type="secondary"):
-                # Najdeme index test case k smazání
-                index_to_delete = delete_options.index(testcase_to_delete)
+            # Pokud se číslo změnilo, aktualizujeme
+            if old_order != i:
+                tc["order_no"] = i
                 
-                # Odstraníme
-                deleted_tc = project_data["scenarios"].pop(index_to_delete)
+                # Aktualizujeme název - nahradíme staré číslo novým
+                parts = old_name.split('_', 1)
+                if len(parts) > 1:
+                    rest_of_name = parts[1]
+                    new_name = f"{i:03d}_{rest_of_name}"
+                    tc["test_name"] = new_name
+        
+        project_data["scenarios"] = scenarios_sorted
+        project_data["next_id"] = len(scenarios_sorted) + 1
+        save_json(PROJECTS_PATH, st.session_state.projects)
+        st.rerun()
+
+# ---------- HEADER ----------
+st.title(f"🧪 {selected_project}")
+st.caption(f"Created: {project_data.get('created', 'N/A')} | Next ID: {project_data.get('next_id', 1)}")
+
+# ---------- ROW 1: TEST CASE LIST ----------
+st.subheader("📋 Test Cases")
+if project_data["scenarios"]:
+    for tc in project_data["scenarios"]:
+        with st.expander(f"{tc['order_no']:03d} - {tc['test_name']}"):
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.write(f"**Action:** {tc['akce']}")
+                st.write(f"**Channel:** {tc['kanal']}")
+            with col2:
+                st.write(f"**Segment:** {tc['segment']}")
+                st.write(f"**Tech:** {tc.get('technology', 'N/A')}")
+            with col3:
+                st.write(f"**Priority:** {tc['priority']}")
+                st.write(f"**Complexity:** {tc['complexity']}")
+            
+            st.write(f"**Requirement:** {tc['veta']}")
+            
+            if tc.get('kroky'):
+                st.write("**Steps:**")
+                for i, step in enumerate(tc['kroky'], 1):
+                    st.write(f"{i}. {step}")
+else:
+    st.info("No test cases yet. Add your first one below!")
+
+# ---------- ROW 2: ADD NEW TEST CASE ----------
+st.subheader("➕ Add New Test Case")
+
+if not st.session_state.steps_data:
+    st.error("❌ No actions found! Please add actions in 'Edit Actions & Steps' page first.")
+    st.stop()
+
+action_list = sorted(list(st.session_state.steps_data.keys()))
+
+with st.form("add_testcase_form"):
+    sentence = st.text_area("Requirement Sentence", height=100, 
+                          placeholder="e.g.: Activate DSL for B2C via SHOP channel...")
+    action = st.selectbox("Action (from kroky.json)", options=action_list)
+    
+    # Priority a Complexity
+    PRIORITY_MAP_VALUES = ["1-High", "2-Medium", "3-Low"]
+    COMPLEXITY_MAP_VALUES = ["1-Giant", "2-Huge", "3-Big", "4-Medium", "5-Low"]
+    
+    col_priority, col_complexity = st.columns(2)
+    with col_priority:
+        priority = st.selectbox("Priority", options=PRIORITY_MAP_VALUES, index=1)
+    with col_complexity:
+        complexity = st.selectbox("Complexity", options=COMPLEXITY_MAP_VALUES, index=3)
+    
+    if st.form_submit_button("➕ Add Test Case"):
+        if not sentence.strip():
+            st.error("Requirement sentence cannot be empty.")
+        elif not action:
+            st.error("Select an action.")
+        else:
+            # Generování test case
+            order = project_data["next_id"]
+            
+            # Build test name - NOVÁ LOGIKA BEZ UNKNOWN
+            channel = extract_channel(sentence)
+            segment = extract_segment(sentence)
+            technology = extract_technology(sentence)
+            
+            # Sestavíme prefix a vyčistíme UNKNOWN části
+            prefix_parts = [f"{order:03d}", channel, segment, technology]
+            # Filtrujeme UNKNOWN a prázdné hodnoty
+            filtered_parts = [p for p in prefix_parts if p and p != "UNKNOWN"]
+            prefix = "_".join(filtered_parts)
+            
+            # Ošetříme případ duplicitních podtržítek v prefixu
+            while '__' in prefix:
+                prefix = prefix.replace('__', '_')
+            prefix = prefix.strip('_')
+            
+            test_name = f"{prefix}_{sentence.strip().capitalize()}"
+            
+            # Ještě jednou vyčistíme celý název pro jistotu
+            test_name = clean_tc_name(test_name)
+            
+            # Get steps for action
+            kroky_pro_akci = []
+            if action in st.session_state.steps_data:
+                action_data = st.session_state.steps_data[action]
+                if isinstance(action_data, dict) and "steps" in action_data:
+                    kroky_pro_akci = copy.deepcopy(action_data["steps"])
+                elif isinstance(action_data, list):
+                    kroky_pro_akci = copy.deepcopy(action_data)
+            
+            new_testcase = {
+                "order_no": order,
+                "test_name": test_name,
+                "akce": action,
+                "segment": segment,
+                "kanal": channel,
+                "priority": priority,
+                "complexity": complexity,
+                "veta": sentence.strip(),
+                "kroky": kroky_pro_akci
+            }
+            
+            project_data["next_id"] += 1
+            project_data["scenarios"].append(new_testcase)
+            save_json(PROJECTS_PATH, st.session_state.projects)
+            st.success(f"✅ Test case added: {test_name}")
+            st.rerun()
+
+# ---------- ROW 3: EDIT TEST CASE (IN EXPANDER) ----------
+with st.expander("✏️ Edit Test Case", expanded=False):
+    if project_data["scenarios"]:
+        testcase_options = {f"{tc['order_no']:03d} - {tc['test_name']}": tc for tc in project_data["scenarios"]}
+        selected_testcase_key = st.selectbox(
+            "Select Test Case to Edit",
+            options=list(testcase_options.keys()),
+            index=0,
+            key="edit_testcase_select"
+        )
+        
+        if selected_testcase_key:
+            testcase_to_edit = testcase_options[selected_testcase_key]
+            
+            with st.form("edit_testcase_form"):
+                # Předvyplníme aktuální větu z test case
+                sentence = st.text_area(
+                    "Requirement Sentence", 
+                    value=testcase_to_edit["veta"],
+                    height=100,
+                    key="edit_sentence"
+                )
                 
-                # AUTOMATICKÉ PŘEČÍSLOVÁNÍ
-                # Přečíslujeme zbývající test cases
-                for i, tc in enumerate(project_data["scenarios"], 1):
-                    old_order = tc["order_no"]
+                action = st.selectbox(
+                    "Action (from kroky.json)", 
+                    options=action_list,
+                    index=action_list.index(testcase_to_edit["akce"]) if testcase_to_edit["akce"] in action_list else 0,
+                    key="edit_action"
+                )
+                
+                col_priority, col_complexity = st.columns(2)
+                with col_priority:
+                    priority = st.selectbox(
+                        "Priority", 
+                        options=PRIORITY_MAP_VALUES,
+                        index=PRIORITY_MAP_VALUES.index(testcase_to_edit["priority"]) if testcase_to_edit["priority"] in PRIORITY_MAP_VALUES else 1,
+                        key="edit_priority"
+                    )
+                with col_complexity:
+                    complexity = st.selectbox(
+                        "Complexity", 
+                        options=COMPLEXITY_MAP_VALUES,
+                        index=COMPLEXITY_MAP_VALUES.index(testcase_to_edit["complexity"]) if testcase_to_edit["complexity"] in COMPLEXITY_MAP_VALUES else 3,
+                        key="edit_complexity"
+                    )
+                
+                if st.form_submit_button("💾 Save Changes"):
+                    if not sentence.strip():
+                        st.error("Requirement sentence cannot be empty.")
+                    elif not action:
+                        st.error("Select an action.")
+                    else:
+                        # Re-generate test name with updated values
+                        order = testcase_to_edit["order_no"]
+                        
+                        # Build test name - S NOVOU LOGIKOU BEZ UNKNOWN
+                        channel = extract_channel(sentence)
+                        segment = extract_segment(sentence)
+                        technology = extract_technology(sentence)
+                        
+                        # Sestavíme prefix a vyčistíme UNKNOWN části
+                        prefix_parts = [f"{order:03d}", channel, segment, technology]
+                        # Filtrujeme UNKNOWN a prázdné hodnoty
+                        filtered_parts = [p for p in prefix_parts if p and p != "UNKNOWN"]
+                        prefix = "_".join(filtered_parts)
+                        
+                        # Ošetříme případ duplicitních podtržítek v prefixu
+                        while '__' in prefix:
+                            prefix = prefix.replace('__', '_')
+                        prefix = prefix.strip('_')
+                        
+                        new_test_name = f"{prefix}_{sentence.strip().capitalize()}"
+                        new_test_name = clean_tc_name(new_test_name)
+                        
+                        # Get steps for the new action
+                        kroky_pro_akci = []
+                        if action in st.session_state.steps_data:
+                            action_data = st.session_state.steps_data[action]
+                            if isinstance(action_data, dict) and "steps" in action_data:
+                                kroky_pro_akci = copy.deepcopy(action_data["steps"])
+                            elif isinstance(action_data, list):
+                                kroky_pro_akci = copy.deepcopy(action_data)
+                        
+                        # Update the test case
+                        testcase_to_edit.update({
+                            "test_name": new_test_name,
+                            "akce": action,
+                            "segment": segment,
+                            "kanal": channel,
+                            "priority": priority,
+                            "complexity": complexity,
+                            "veta": sentence.strip(),
+                            "kroky": kroky_pro_akci
+                        })
+                        
+                        save_json(PROJECTS_PATH, st.session_state.projects)
+                        st.success(f"✅ Test case updated: {new_test_name}")
+                        st.rerun()
+    else:
+        st.info("No test cases available to edit. Add a test case first.")
+
+# ---------- ROW 4: DELETE TEST CASE (IN EXPANDER) ----------
+with st.expander("🗑️ Delete Test Case", expanded=False):
+    if project_data["scenarios"]:
+        delete_options = [f"{tc['order_no']:03d} - {tc['test_name']}" for tc in project_data["scenarios"]]
+        testcase_to_delete = st.selectbox(
+            "Select Test Case to Delete",
+            options=delete_options,
+            index=0,
+            key="delete_testcase_select"
+        )
+        
+        if st.button("⚠️ Delete Selected Test Case", type="secondary"):
+            # Najdeme index test case k smazání
+            index_to_delete = delete_options.index(testcase_to_delete)
+            
+            # Odstraníme
+            deleted_tc = project_data["scenarios"].pop(index_to_delete)
+            
+            # AUTOMATICKÉ PŘEČÍSLOVÁNÍ
+            # Seřadíme podle aktuálního order_no
+            scenarios_sorted = sorted(project_data["scenarios"], key=lambda x: x["order_no"])
+            
+            for i, tc in enumerate(scenarios_sorted, 1):
+                old_order = tc["order_no"]
+                old_name = tc["test_name"]
+                
+                # Pokud se číslo změnilo, aktualizujeme
+                if old_order != i:
                     tc["order_no"] = i
                     
-                    # Aktualizujeme název s novým číslem
-                    old_name = tc["test_name"]
-                    # Rozdělíme název na části
+                    # Aktualizujeme název
                     parts = old_name.split('_', 1)
                     if len(parts) > 1:
-                        # Extrahujeme zbytek názvu (bez starého čísla)
                         rest_of_name = parts[1]
-                        # Vytvoříme nový název
                         new_name = f"{i:03d}_{rest_of_name}"
                         tc["test_name"] = new_name
+            
+            project_data["scenarios"] = scenarios_sorted
+            project_data["next_id"] = len(scenarios_sorted) + 1
+            
+            # Uložíme
+            save_json(PROJECTS_PATH, st.session_state.projects)
+            st.success(f"🗑️ Test case deleted: {deleted_tc['test_name']}")
+            st.success(f"📝 Test cases renumbered from 001")
+            st.rerun()
+    else:
+        st.info("No test cases available to delete.")
+
+# ---------- ROW 5: MANUAL RENUMBERING (OPTIONAL SAFETY) ----------
+with st.expander("🔢 Manual Renumbering (Safety)", expanded=False):
+    st.warning("Use this if automatic renumbering didn't work correctly.")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔄 Check & Renumber All"):
+            if "scenarios" in project_data and project_data["scenarios"]:
+                orders = [tc["order_no"] for tc in project_data["scenarios"]]
+                expected_orders = list(range(1, len(orders) + 1))
                 
-                # Aktualizujeme next_id
-                project_data["next_id"] = len(project_data["scenarios"]) + 1
+                if orders == expected_orders:
+                    st.success("✅ Test cases are already correctly numbered!")
+                else:
+                    # Přečíslujeme
+                    scenarios_sorted = sorted(project_data["scenarios"], key=lambda x: x["order_no"])
+                    
+                    for i, tc in enumerate(scenarios_sorted, 1):
+                        old_order = tc["order_no"]
+                        old_name = tc["test_name"]
+                        
+                        if old_order != i:
+                            tc["order_no"] = i
+                            
+                            parts = old_name.split('_', 1)
+                            if len(parts) > 1:
+                                rest_of_name = parts[1]
+                                new_name = f"{i:03d}_{rest_of_name}"
+                                tc["test_name"] = new_name
+                    
+                    project_data["scenarios"] = scenarios_sorted
+                    project_data["next_id"] = len(scenarios_sorted) + 1
+                    save_json(PROJECTS_PATH, st.session_state.projects)
+                    st.success(f"✅ Renumbered {len(scenarios_sorted)} test cases from 001 to {len(scenarios_sorted):03d}")
+                    st.rerun()
+            else:
+                st.info("No test cases to renumber.")
+    
+    with col2:
+        if st.button("📊 Show Numbering Status"):
+            if "scenarios" in project_data and project_data["scenarios"]:
+                orders = [tc["order_no"] for tc in project_data["scenarios"]]
+                expected_orders = list(range(1, len(orders) + 1))
                 
-                # Uložíme
-                save_json(PROJECTS_PATH, st.session_state.projects)
-                st.success(f"🗑️ Test case deleted: {deleted_tc['test_name']}")
-                st.success(f"📝 Test cases renumbered from 001")
-                st.rerun()
-        else:
-            st.info("No test cases available to delete.")
+                st.write(f"**Current orders:** {orders}")
+                st.write(f"**Expected orders:** {expected_orders}")
+                
+                if orders == expected_orders:
+                    st.success("✅ Numbering is correct!")
+                else:
+                    st.error("❌ Numbering is incorrect!")
+                    
+                    # Najdi chyby
+                    errors = []
+                    for i, (actual, expected) in enumerate(zip(orders, expected_orders), 1):
+                        if actual != expected:
+                            errors.append(f"Position {i}: Expected {expected}, got {actual}")
+                    
+                    if errors:
+                        st.write("**Errors found:**")
+                        for error in errors:
+                            st.write(f"- {error}")
+            else:
+                st.info("No test cases to check.")
+
+# ---------- FOOTER ----------
+st.markdown("---")
+st.caption(f"Project: {selected_project} | Total Test Cases: {len(project_data.get('scenarios', []))}")
         
 
 # ---------- STRÁNKA 2: EDIT ACTIONS & STEPS ----------
