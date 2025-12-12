@@ -776,14 +776,23 @@ elif page == "🔧 Edit Actions & Steps":
     
     # Načtení dat
     steps_data = load_json(KROKY_PATH)
-    
-    # Session state
-    if 'edit_steps_data' not in st.session_state:
+
+        # init session state ONLY ONCE
+    if "edit_steps_data" not in st.session_state:
         st.session_state.edit_steps_data = steps_data
-    if 'editing_action' not in st.session_state:
+
+    if "editing_action" not in st.session_state:
         st.session_state.editing_action = None
-    if 'new_steps' not in st.session_state:
+
+    if "new_steps" not in st.session_state:
         st.session_state.new_steps = []
+
+    if "new_action" not in st.session_state:
+        st.session_state.new_action = False
+
+    if "delete_action" not in st.session_state:
+        st.session_state.delete_action = None
+
     
     # ---------- ADD NEW ACTION ----------
     st.subheader("➕ Add New Action")
@@ -861,6 +870,8 @@ elif page == "🔧 Edit Actions & Steps":
                             "steps": st.session_state.new_steps.copy()
                         }
                         save_json(KROKY_PATH, st.session_state.edit_steps_data)
+                        # 🔄 reload kroky.json into global steps_data
+                        st.session_state.steps_data = load_json(KROKY_PATH)
                         st.success(f"✅ Action '{action_name}' added to kroky.json!")
                         st.session_state.new_action = False
                         st.session_state.new_steps = []
@@ -909,6 +920,8 @@ elif page == "🔧 Edit Actions & Steps":
                     if st.button("Yes, delete", key=f"confirm_del_{action}"):
                         del st.session_state.edit_steps_data[action]
                         save_json(KROKY_PATH, st.session_state.edit_steps_data)
+                        # 🔄 reload kroky.json into global steps_data
+                        st.session_state.steps_data = load_json(KROKY_PATH)
                         st.success(f"✅ Action '{action}' deleted from kroky.json!")
                         st.session_state.delete_action = None
                         st.rerun()
@@ -996,6 +1009,8 @@ elif page == "🔧 Edit Actions & Steps":
                             "steps": st.session_state[f"edit_steps_{action}"].copy()
                         }
                         save_json(KROKY_PATH, st.session_state.edit_steps_data)
+                        # 🔄 reload kroky.json into global steps_data
+                        st.session_state.steps_data = load_json(KROKY_PATH)
                         st.success(f"✅ Action '{action}' updated in kroky.json!")
                         st.session_state.editing_action = None
                         if f"edit_steps_{action}" in st.session_state:
