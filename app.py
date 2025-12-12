@@ -652,7 +652,7 @@ if page == "🏗️ Build Test Cases":
                     "Requirement Sentence",
                     value=st.session_state.edit_sentence_value,
                     height=100,
-                    key="edit_sentence_input"
+                    key=f"edit_sentence_{testcase_to_edit['order_no']}"
                 )
 
                 
@@ -715,7 +715,7 @@ if page == "🏗️ Build Test Cases":
                                 kroky_pro_akci = copy.deepcopy(action_data["steps"])
                             elif isinstance(action_data, list):
                                 kroky_pro_akci = copy.deepcopy(action_data)
-                                
+
                         st.session_state.edit_sentence_value = sentence.strip()
 
                         # Update the test case
