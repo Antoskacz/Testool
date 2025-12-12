@@ -986,176 +986,176 @@ with st.expander("✏️ Edit / Delete Test Cases", expanded=False):
                     st.rerun()
 
 # ---------- STRÁNKA 3: TEXT COMPARATOR ----------
-elif page == "📝 Text Comparator":
-    st.title("📝 Text Comparator")
-    st.markdown("Compare two texts with highlighted differences")
-    
-    if 'text1_input' not in st.session_state:
-        st.session_state.text1_input = ""
-    if 'text2_input' not in st.session_state:
-        st.session_state.text2_input = ""
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("Text 1")
-        text1 = st.text_area(
-            "Enter first text:", 
-            height=300, 
-            key="text1_area",
-            value=st.session_state.text1_input,
-            help="Enter or paste your first text here"
-        )
-    
-    with col2:
-        st.subheader("Text 2")
-        text2 = st.text_area(
-            "Enter second text:", 
-            height=300, 
-            key="text2_area",
-            value=st.session_state.text2_input,
-            help="Enter or paste your second text here"
-        )
-    
-    st.markdown("---")
-    
-    # Create buttons in a row
-    col_buttons = st.columns([1, 1, 1, 4])
-    
-    with col_buttons[0]:
-        compare_btn = st.button("🔍 **Compare**", use_container_width=True, type="primary", help="Compare texts and highlight differences")
-    
-    with col_buttons[1]:
-        diacritics_btn = st.button("❌ **Remove Diacritics**", use_container_width=True, help="Remove all accents, háčky and čárky from both texts")
-    
-    with col_buttons[2]:
-        reset_btn = st.button("🔄 **Reset**", use_container_width=True, help="Clear both text fields")
-    
-    # Button actions
-    if diacritics_btn:
-        if text1 or text2:
-            st.session_state.text1_input = remove_diacritics(text1)
-            st.session_state.text2_input = remove_diacritics(text2)
-            st.success("✅ Diacritics removed from both texts")
+    elif page == "📝 Text Comparator":
+        st.title("📝 Text Comparator")
+        st.markdown("Compare two texts with highlighted differences")
+        
+        if 'text1_input' not in st.session_state:
+            st.session_state.text1_input = ""
+        if 'text2_input' not in st.session_state:
+            st.session_state.text2_input = ""
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("Text 1")
+            text1 = st.text_area(
+                "Enter first text:", 
+                height=300, 
+                key="text1_area",
+                value=st.session_state.text1_input,
+                help="Enter or paste your first text here"
+            )
+        
+        with col2:
+            st.subheader("Text 2")
+            text2 = st.text_area(
+                "Enter second text:", 
+                height=300, 
+                key="text2_area",
+                value=st.session_state.text2_input,
+                help="Enter or paste your second text here"
+            )
+        
+        st.markdown("---")
+        
+        # Create buttons in a row
+        col_buttons = st.columns([1, 1, 1, 4])
+        
+        with col_buttons[0]:
+            compare_btn = st.button("🔍 **Compare**", use_container_width=True, type="primary", help="Compare texts and highlight differences")
+        
+        with col_buttons[1]:
+            diacritics_btn = st.button("❌ **Remove Diacritics**", use_container_width=True, help="Remove all accents, háčky and čárky from both texts")
+        
+        with col_buttons[2]:
+            reset_btn = st.button("🔄 **Reset**", use_container_width=True, help="Clear both text fields")
+        
+        # Button actions
+        if diacritics_btn:
+            if text1 or text2:
+                st.session_state.text1_input = remove_diacritics(text1)
+                st.session_state.text2_input = remove_diacritics(text2)
+                st.success("✅ Diacritics removed from both texts")
+                st.rerun()
+            else:
+                st.warning("Enter text in at least one field to remove diacritics")
+        
+        if reset_btn:
+            st.session_state.text1_input = ""
+            st.session_state.text2_input = ""
+            st.success("✅ Texts cleared")
             st.rerun()
-        else:
-            st.warning("Enter text in at least one field to remove diacritics")
-    
-    if reset_btn:
-        st.session_state.text1_input = ""
-        st.session_state.text2_input = ""
-        st.success("✅ Texts cleared")
-        st.rerun()
-    
-    if compare_btn:
-        if text1.strip() and text2.strip():
-            st.subheader("📊 Character Comparison")
-            
-            col_stat1, col_stat2, col_stat3 = st.columns(3)
-            with col_stat1:
-                st.metric("Length Text 1", len(text1))
-            with col_stat2:
-                st.metric("Length Text 2", len(text2))
-            with col_stat3:
-                diff_len = abs(len(text1) - len(text2))
-                st.metric("Length Difference", diff_len)
-            
-            st.markdown("---")
-            st.subheader("🔍 Character-by-Character Differences")
-            
-            def highlight_differences(text1, text2):
-                result = ""
-                i, j = 0, 0
+        
+        if compare_btn:
+            if text1.strip() and text2.strip():
+                st.subheader("📊 Character Comparison")
                 
-                while i < len(text1) and j < len(text2):
-                    if text1[i] == text2[j]:
-                        result += text1[i]
-                        i += 1
-                        j += 1
-                    else:
+                col_stat1, col_stat2, col_stat3 = st.columns(3)
+                with col_stat1:
+                    st.metric("Length Text 1", len(text1))
+                with col_stat2:
+                    st.metric("Length Text 2", len(text2))
+                with col_stat3:
+                    diff_len = abs(len(text1) - len(text2))
+                    st.metric("Length Difference", diff_len)
+                
+                st.markdown("---")
+                st.subheader("🔍 Character-by-Character Differences")
+                
+                def highlight_differences(text1, text2):
+                    result = ""
+                    i, j = 0, 0
+                    
+                    while i < len(text1) and j < len(text2):
+                        if text1[i] == text2[j]:
+                            result += text1[i]
+                            i += 1
+                            j += 1
+                        else:
+                            char_display = text1[i] if text1[i] != ' ' else '␣'
+                            result += f'<span style="background-color: #ff4444; color: white; font-weight: bold; padding: 1px 3px; border-radius: 3px;">{char_display}</span>'
+                            i += 1
+                            j += 1
+                    
+                    while i < len(text1):
                         char_display = text1[i] if text1[i] != ' ' else '␣'
                         result += f'<span style="background-color: #ff4444; color: white; font-weight: bold; padding: 1px 3px; border-radius: 3px;">{char_display}</span>'
                         i += 1
-                        j += 1
+                    
+                    return result
                 
-                while i < len(text1):
-                    char_display = text1[i] if text1[i] != ' ' else '␣'
-                    result += f'<span style="background-color: #ff4444; color: white; font-weight: bold; padding: 1px 3px; border-radius: 3px;">{char_display}</span>'
-                    i += 1
+                highlighted1 = highlight_differences(text1, text2)
+                highlighted2 = highlight_differences(text2, text1)
                 
-                return result
-            
-            highlighted1 = highlight_differences(text1, text2)
-            highlighted2 = highlight_differences(text2, text1)
-            
-            col_diff1, col_diff2 = st.columns(2)
-            
-            with col_diff1:
-                st.markdown("**Text 1:**")
-                st.markdown(
-                    f"""<div style='
-                        background-color: #2a2a2a; 
-                        padding: 15px; 
-                        border-radius: 5px; 
-                        font-family: "Courier New", monospace; 
-                        white-space: pre-wrap;
-                        line-height: 1.5;
-                        font-size: 14px;
-                    '>{highlighted1}</div>""", 
-                    unsafe_allow_html=True
-                )
-            
-            with col_diff2:
-                st.markdown("**Text 2:**")
-                st.markdown(
-                    f"""<div style='
-                        background-color: #2a2a2a; 
-                        padding: 15px; 
-                        border-radius: 5px; 
-                        font-family: "Courier New", monospace; 
-                        white-space: pre-wrap;
-                        line-height: 1.5;
-                        font-size: 14px;
-                    '>{highlighted2}</div>""", 
-                    unsafe_allow_html=True
-                )
-            
-            matches = 0
-            total = min(len(text1), len(text2))
-            
-            for i in range(total):
-                if text1[i] == text2[i]:
-                    matches += 1
-            
-            if total > 0:
-                similarity = (matches / total) * 100
+                col_diff1, col_diff2 = st.columns(2)
+                
+                with col_diff1:
+                    st.markdown("**Text 1:**")
+                    st.markdown(
+                        f"""<div style='
+                            background-color: #2a2a2a; 
+                            padding: 15px; 
+                            border-radius: 5px; 
+                            font-family: "Courier New", monospace; 
+                            white-space: pre-wrap;
+                            line-height: 1.5;
+                            font-size: 14px;
+                        '>{highlighted1}</div>""", 
+                        unsafe_allow_html=True
+                    )
+                
+                with col_diff2:
+                    st.markdown("**Text 2:**")
+                    st.markdown(
+                        f"""<div style='
+                            background-color: #2a2a2a; 
+                            padding: 15px; 
+                            border-radius: 5px; 
+                            font-family: "Courier New", monospace; 
+                            white-space: pre-wrap;
+                            line-height: 1.5;
+                            font-size: 14px;
+                        '>{highlighted2}</div>""", 
+                        unsafe_allow_html=True
+                    )
+                
+                matches = 0
+                total = min(len(text1), len(text2))
+                
+                for i in range(total):
+                    if text1[i] == text2[i]:
+                        matches += 1
+                
+                if total > 0:
+                    similarity = (matches / total) * 100
+                else:
+                    similarity = 0
+                
+                st.markdown("---")
+                st.subheader("📈 Similarity Analysis")
+                
+                col_sim1, col_sim2, col_sim3 = st.columns([2, 1, 1])
+                
+                with col_sim1:
+                    st.progress(similarity/100, text=f"Similarity: {similarity:.1f}%")
+                
+                with col_sim2:
+                    st.metric("Matching Chars", matches)
+                
+                with col_sim3:
+                    st.metric("Total Compared", total)
+                
+                if similarity == 100:
+                    st.success("🎉 Texts are identical!")
+                elif similarity > 90:
+                    st.info(f"Texts are very similar ({similarity:.1f}% match)")
+                elif similarity > 70:
+                    st.info(f"Texts are somewhat similar ({similarity:.1f}% match)")
+                elif similarity > 50:
+                    st.warning(f"Texts have significant differences ({similarity:.1f}% match)")
+                else:
+                    st.error(f"Texts are very different ({similarity:.1f}% match)")
+                
             else:
-                similarity = 0
-            
-            st.markdown("---")
-            st.subheader("📈 Similarity Analysis")
-            
-            col_sim1, col_sim2, col_sim3 = st.columns([2, 1, 1])
-            
-            with col_sim1:
-                st.progress(similarity/100, text=f"Similarity: {similarity:.1f}%")
-            
-            with col_sim2:
-                st.metric("Matching Chars", matches)
-            
-            with col_sim3:
-                st.metric("Total Compared", total)
-            
-            if similarity == 100:
-                st.success("🎉 Texts are identical!")
-            elif similarity > 90:
-                st.info(f"Texts are very similar ({similarity:.1f}% match)")
-            elif similarity > 70:
-                st.info(f"Texts are somewhat similar ({similarity:.1f}% match)")
-            elif similarity > 50:
-                st.warning(f"Texts have significant differences ({similarity:.1f}% match)")
-            else:
-                st.error(f"Texts are very different ({similarity:.1f}% match)")
-            
-        else:
-            st.warning("Please enter text in both fields to compare.")
+                st.warning("Please enter text in both fields to compare.")
