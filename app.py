@@ -425,31 +425,35 @@ if page == "🏗️ Build Test Cases":
     st.markdown("### 💾 Export Test Cases")
     st.write("Generate clean, renumbered & diacritics-free test cases Excel file.")
 
-    # CUSTOM STYLE FOR BUTTON
+    # Wrap export button inside a uniquely named container
+    st.markdown("<div class='export-container'>", unsafe_allow_html=True)
+
+    # Custom CSS ONLY for buttons inside .export-container
     st.markdown("""
         <style>
-            div.stButton > button:first-child  {
-                background-color: #FF0084;
-                color: #16FF1E;
-                border: 2px solid #16FF1E;
-                padding: 14px 22px;
-                border-radius: 12px;
-                font-size: 18px;
-                font-weight: bold;
-                width: 100%;
-                transition: 0.2s;
-            }
-            div.stButton > button:first-child:hover {
-                background-color: #cc006a;
-                color: white;
-                border-color: white;
-            }
+        .export-container button {
+            background-color: #FF0084 !important;
+            color: #16FF1E !important;
+            border: 2px solid #16FF1E !important;
+            padding: 14px 22px !important;
+            border-radius: 12px !important;
+            font-size: 18px !important;
+            font-weight: bold !important;
+            width: 100% !important;
+            transition: 0.2s !important;
+        }
+        .export-container button:hover {
+            background-color: #cc006a !important;
+            color: white !important;
+            border-color: white !important;
+        }
         </style>
-        """,
-        unsafe_allow_html=True
-    )
+    """, unsafe_allow_html=True)
 
     export_button = st.button("💾 Export Test Cases to Excel", use_container_width=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
 
     if export_button:
         # --- ZBYTEK EXPORT LOGIKY ---
