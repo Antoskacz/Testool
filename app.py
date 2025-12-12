@@ -423,44 +423,26 @@ if page == "🏗️ Build Test Cases":
     st.markdown("### 💾 Export Test Cases")
     st.write("Generate clean, renumbered & diacritics-free test cases Excel file.")
 
-    # 🎨 Export button styling (LOCAL, SAFE)
-    st.markdown("""
-        <style>
-        .export-btn > button {
-            background: linear-gradient(90deg, #FF0084, #16FF1E) !important;
-            color: black !important;
-            border: none !important;
-            padding: 14px 22px !important;
-            border-radius: 14px !important;
-            font-size: 18px !important;
-            font-weight: 700 !important;
-            width: 100% !important;
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
+    col_export, col_future = st.columns([1, 2])
 
-        .export-btn > button:hover {
-            transform: scale(1.02);
-            box-shadow: 0 0 18px rgba(255, 0, 132, 0.6);
-            color: black !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-    export_container = st.container()
-    with export_container:
-        st.markdown("<div class='export-btn'>", unsafe_allow_html=True)
-        export_button = st.button("💾 Export Test Cases to Excel", use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+    with col_export:
+        export_button = st.button(
+            "💾 Export Test Cases to Excel",
+            use_container_width=True
+        )
 
     if export_button:
-        # --- REINDEX TEST CASES ---
+        # 1) Reindex test cases
         project_data = st.session_state.projects[project_name]
+
         project_data["scenarios"] = sorted(
-            project_data["scenarios"], key=lambda x: x.get("order_no", 0)
+            project_data["scenarios"],
+            key=lambda x: x.get("order_no", 0)
         )
 
         for i, tc in enumerate(project_data["scenarios"], start=1):
             tc["order_no"] = i
+
             channel = tc["kanal"]
             segment = tc["segment"]
             technology = extract_technology(tc["veta"])
@@ -477,7 +459,7 @@ if page == "🏗️ Build Test Cases":
 
         save_json(PROJECTS_PATH, st.session_state.projects)
 
-        # --- BUILD EXCEL ---
+        # 2) Build export data
         rows = []
         for tc in project_data["scenarios"]:
             for i, step in enumerate(tc.get("kroky", []), start=1):
@@ -514,9 +496,8 @@ if page == "🏗️ Build Test Cases":
             data=output.getvalue(),
             file_name=f"testcases_{safe_name}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True
+            use_container_width=False
         )
-
 
     st.markdown("---")
 
