@@ -741,115 +741,115 @@ with st.expander("✏️ Edit / Delete Test Cases", expanded=False):
         
 
 # ---------- STRÁNKA 2: EDIT ACTIONS & STEPS ----------
-elif page == "🔧 Edit Actions & Steps":
-    st.title("🔧 Edit Actions & Steps")
-    st.markdown("Manage actions and their steps in `kroky.json`")
-    
-    # Cesty
-    BASE_DIR = Path(__file__).resolve().parent
-    DATA_DIR = BASE_DIR / "data"
-    KROKY_PATH = DATA_DIR / "kroky.json"
-    
-    # Načtení dat
-    steps_data = load_json(KROKY_PATH)
-    
-    # Session state
-    if 'edit_steps_data' not in st.session_state:
-        st.session_state.edit_steps_data = steps_data
-    if 'editing_action' not in st.session_state:
-        st.session_state.editing_action = None
-    if 'new_steps' not in st.session_state:
-        st.session_state.new_steps = []
-    
-    # ---------- ADD NEW ACTION ----------
-    st.subheader("➕ Add New Action")
-    
-    if st.button("➕ Add New Action", key="new_action_main", use_container_width=True):
-        st.session_state.new_action = True
-        st.session_state.editing_action = None
-    
-    # NEW ACTION FORM
-    if st.session_state.get("new_action", False):
+    elif page == "🔧 Edit Actions & Steps":
+        st.title("🔧 Edit Actions & Steps")
+        st.markdown("Manage actions and their steps in `kroky.json`")
+        
+        # Cesty
+        BASE_DIR = Path(__file__).resolve().parent
+        DATA_DIR = BASE_DIR / "data"
+        KROKY_PATH = DATA_DIR / "kroky.json"
+        
+        # Načtení dat
+        steps_data = load_json(KROKY_PATH)
+        
+        # Session state
+        if 'edit_steps_data' not in st.session_state:
+            st.session_state.edit_steps_data = steps_data
+        if 'editing_action' not in st.session_state:
+            st.session_state.editing_action = None
+        if 'new_steps' not in st.session_state:
+            st.session_state.new_steps = []
+        
+        # ---------- ADD NEW ACTION ----------
         st.subheader("➕ Add New Action")
         
-        with st.form("new_action_form"):
-            action_name = st.text_input("Action Name*", placeholder="e.g.: DSL_Activation", key="new_action_name")
-            action_desc = st.text_input("Action Description*", placeholder="e.g.: DSL service activation", key="new_action_desc")
+        if st.button("➕ Add New Action", key="new_action_main", use_container_width=True):
+            st.session_state.new_action = True
+            st.session_state.editing_action = None
+        
+        # NEW ACTION FORM
+        if st.session_state.get("new_action", False):
+            st.subheader("➕ Add New Action")
             
-            st.markdown("---")
-            st.write("**Action Steps:**")
-            
-            # Display existing steps
-            if st.session_state.new_steps:
-                st.write("**Added Steps:**")
+            with st.form("new_action_form"):
+                action_name = st.text_input("Action Name*", placeholder="e.g.: DSL_Activation", key="new_action_name")
+                action_desc = st.text_input("Action Description*", placeholder="e.g.: DSL service activation", key="new_action_desc")
                 
-                for i, step in enumerate(st.session_state.new_steps):
-                    col_step, col_delete = st.columns([4, 1])
+                st.markdown("---")
+                st.write("**Action Steps:**")
+                
+                # Display existing steps
+                if st.session_state.new_steps:
+                    st.write("**Added Steps:**")
                     
-                    with col_step:
-                        st.text_input(f"Step {i+1} - Description", 
-                                    value=step['description'], 
-                                    key=f"view_desc_{i}", 
-                                    disabled=True)
-                        st.text_input(f"Step {i+1} - Expected", 
-                                    value=step['expected'], 
-                                    key=f"view_exp_{i}", 
-                                    disabled=True)
-                    
-                    with col_delete:
-                        if st.form_submit_button("🗑️", key=f"del_new_{i}", use_container_width=True):
-                            st.session_state.new_steps.pop(i)
+                    for i, step in enumerate(st.session_state.new_steps):
+                        col_step, col_delete = st.columns([4, 1])
+                        
+                        with col_step:
+                            st.text_input(f"Step {i+1} - Description", 
+                                        value=step['description'], 
+                                        key=f"view_desc_{i}", 
+                                        disabled=True)
+                            st.text_input(f"Step {i+1} - Expected", 
+                                        value=step['expected'], 
+                                        key=f"view_exp_{i}", 
+                                        disabled=True)
+                        
+                        with col_delete:
+                            if st.form_submit_button("🗑️", key=f"del_new_{i}", use_container_width=True):
+                                st.session_state.new_steps.pop(i)
+                                st.rerun()
+                        
+                        st.markdown("---")
+                
+                # Add new step
+                st.write("**Add New Step:**")
+                new_desc = st.text_area("Description*", key="new_step_desc", height=60, 
+                                    placeholder="Step description - what to do")
+                new_exp = st.text_area("Expected*", key="new_step_exp", height=60, 
+                                    placeholder="Expected result - what should happen")
+                
+                if st.form_submit_button("➕ Add Step", key="add_step_btn"):
+                    if new_desc.strip() and new_exp.strip():
+                        st.session_state.new_steps.append({
+                            "description": new_desc.strip(),
+                            "expected": new_exp.strip()
+                        })
+                        st.rerun()
+                
+                st.markdown("---")
+                
+                # Save/Cancel buttons
+                col_save, col_cancel = st.columns(2)
+                with col_save:
+                    if st.form_submit_button("💾 Save New Action", use_container_width=True, type="primary"):
+                        if not action_name.strip():
+                            st.error("Enter action name")
+                        elif not action_desc.strip():
+                            st.error("Enter action description")
+                        elif not st.session_state.new_steps:
+                            st.error("Add at least one step")
+                        else:
+                            # Save to kroky.json
+                            st.session_state.edit_steps_data[action_name.strip()] = {
+                                "description": action_desc.strip(),
+                                "steps": st.session_state.new_steps.copy()
+                            }
+                            save_json(KROKY_PATH, st.session_state.edit_steps_data)
+                            st.success(f"✅ Action '{action_name}' added to kroky.json!")
+                            st.session_state.new_action = False
+                            st.session_state.new_steps = []
                             st.rerun()
-                    
-                    st.markdown("---")
-            
-            # Add new step
-            st.write("**Add New Step:**")
-            new_desc = st.text_area("Description*", key="new_step_desc", height=60, 
-                                  placeholder="Step description - what to do")
-            new_exp = st.text_area("Expected*", key="new_step_exp", height=60, 
-                                 placeholder="Expected result - what should happen")
-            
-            if st.form_submit_button("➕ Add Step", key="add_step_btn"):
-                if new_desc.strip() and new_exp.strip():
-                    st.session_state.new_steps.append({
-                        "description": new_desc.strip(),
-                        "expected": new_exp.strip()
-                    })
-                    st.rerun()
-            
-            st.markdown("---")
-            
-            # Save/Cancel buttons
-            col_save, col_cancel = st.columns(2)
-            with col_save:
-                if st.form_submit_button("💾 Save New Action", use_container_width=True, type="primary"):
-                    if not action_name.strip():
-                        st.error("Enter action name")
-                    elif not action_desc.strip():
-                        st.error("Enter action description")
-                    elif not st.session_state.new_steps:
-                        st.error("Add at least one step")
-                    else:
-                        # Save to kroky.json
-                        st.session_state.edit_steps_data[action_name.strip()] = {
-                            "description": action_desc.strip(),
-                            "steps": st.session_state.new_steps.copy()
-                        }
-                        save_json(KROKY_PATH, st.session_state.edit_steps_data)
-                        st.success(f"✅ Action '{action_name}' added to kroky.json!")
+                
+                with col_cancel:
+                    if st.form_submit_button("❌ Cancel", use_container_width=True):
                         st.session_state.new_action = False
                         st.session_state.new_steps = []
                         st.rerun()
-            
-            with col_cancel:
-                if st.form_submit_button("❌ Cancel", use_container_width=True):
-                    st.session_state.new_action = False
-                    st.session_state.new_steps = []
-                    st.rerun()
-    
-    st.markdown("---")
-    
+        
+        st.markdown("---")
+        
     # ---------- EXISTING ACTIONS LIST ----------
     st.subheader("📝 Existing Actions")
     
