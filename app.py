@@ -623,12 +623,12 @@ if page == "🏗️ Build Test Cases":
                 st.rerun()
 
 
-   st.markdown("---")
+    st.markdown("---")
 
 with st.expander("✏️ Edit / Delete Test Cases", expanded=False):
 
 
-    # ---------- EDIT EXISTING TEST CASE ----------
+    # ---------- ROW 4: EDIT EXISTING TEST CASE ----------
     st.subheader("✏️ Edit Existing Test Case")
 
     if project_data["scenarios"]:
