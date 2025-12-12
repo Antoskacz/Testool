@@ -623,7 +623,7 @@ if page == "🏗️ Build Test Cases":
                 st.rerun()
 
 
-    st.markdown("---")
+   st.markdown("---")
 
 with st.expander("✏️ Edit / Delete Test Cases", expanded=False):
 
