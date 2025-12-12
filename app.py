@@ -416,8 +416,6 @@ if page == "🏗️ Build Test Cases":
                 margin=dict(t=20, b=20, l=20, r=20)
             )
             st.plotly_chart(fig_empty, use_container_width=True)
-    
-    st.markdown("---")
 
 
     # ------------------------------------ EXPORT SECTION ------------------------------------
@@ -425,41 +423,41 @@ if page == "🏗️ Build Test Cases":
     st.markdown("### 💾 Export Test Cases")
     st.write("Generate clean, renumbered & diacritics-free test cases Excel file.")
 
-    # Wrap export button inside a uniquely named container
-    st.markdown("<div class='export-container'>", unsafe_allow_html=True)
-
-    # Custom CSS ONLY for buttons inside .export-container
+    # 🎨 Export button styling (LOCAL, SAFE)
     st.markdown("""
         <style>
-        .export-container button {
-            background-color: #FF0084 !important;
-            color: #16FF1E !important;
-            border: 2px solid #16FF1E !important;
+        .export-btn > button {
+            background: linear-gradient(90deg, #FF0084, #16FF1E) !important;
+            color: black !important;
+            border: none !important;
             padding: 14px 22px !important;
-            border-radius: 12px !important;
+            border-radius: 14px !important;
             font-size: 18px !important;
-            font-weight: bold !important;
+            font-weight: 700 !important;
             width: 100% !important;
-            transition: 0.2s !important;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
-        .export-container button:hover {
-            background-color: #cc006a !important;
-            color: white !important;
-            border-color: white !important;
+
+        .export-btn > button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 18px rgba(255, 0, 132, 0.6);
+            color: black !important;
         }
         </style>
     """, unsafe_allow_html=True)
 
-    export_button = st.button("💾 Export Test Cases to Excel", use_container_width=True)
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
+    export_container = st.container()
+    with export_container:
+        st.markdown("<div class='export-btn'>", unsafe_allow_html=True)
+        export_button = st.button("💾 Export Test Cases to Excel", use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
     if export_button:
-        # --- ZBYTEK EXPORT LOGIKY ---
+        # --- REINDEX TEST CASES ---
         project_data = st.session_state.projects[project_name]
-
-        project_data["scenarios"] = sorted(project_data["scenarios"], key=lambda x: x.get("order_no", 0))
+        project_data["scenarios"] = sorted(
+            project_data["scenarios"], key=lambda x: x.get("order_no", 0)
+        )
 
         for i, tc in enumerate(project_data["scenarios"], start=1):
             tc["order_no"] = i
@@ -468,22 +466,21 @@ if page == "🏗️ Build Test Cases":
             technology = extract_technology(tc["veta"])
             sentence = tc["veta"].strip()
 
-            prefix_parts = [f"{i:03d}", channel, segment, technology]
-            filtered = [p for p in prefix_parts if p and p != "UNKNOWN"]
-            prefix = "_".join(filtered)
+            prefix = "_".join(
+                p for p in [f"{i:03d}", channel, segment, technology]
+                if p and p != "UNKNOWN"
+            )
 
-            new_name = f"{prefix}_{sentence.capitalize()}"
-            new_name = clean_tc_name(new_name)
-            tc["test_name"] = new_name
+            tc["test_name"] = clean_tc_name(
+                f"{prefix}_{sentence.capitalize()}"
+            )
 
         save_json(PROJECTS_PATH, st.session_state.projects)
 
+        # --- BUILD EXCEL ---
         rows = []
         for tc in project_data["scenarios"]:
             for i, step in enumerate(tc.get("kroky", []), start=1):
-                desc = step.get("description", "") if isinstance(step, dict) else ""
-                exp = step.get("expected", "") if isinstance(step, dict) else ""
-
                 rows.append({
                     "Project": project_name,
                     "Subject": project_data.get("subject", ""),
@@ -496,8 +493,8 @@ if page == "🏗️ Build Test Cases":
                     "Test Complexity": tc["complexity"],
                     "Test Name": remove_diacritics(tc["test_name"]),
                     "Step Name (Design Steps)": str(i),
-                    "Description (Design Steps)": remove_diacritics(desc),
-                    "Expected (Design Steps)": remove_diacritics(exp)
+                    "Description (Design Steps)": remove_diacritics(step.get("description", "")),
+                    "Expected (Design Steps)": remove_diacritics(step.get("expected", ""))
                 })
 
         df = pd.DataFrame(rows)
@@ -509,20 +506,19 @@ if page == "🏗️ Build Test Cases":
         output.seek(0)
 
         safe_name = project_name.replace(" ", "_").replace("/", "_").replace("\\", "_")
-        file_name = f"testcases_{safe_name}.xlsx"
 
         st.success("Export successful. File is ready for download.")
 
         st.download_button(
-            label="⬇️ Download Excel file",
+            "⬇️ Download Excel file",
             data=output.getvalue(),
-            file_name=file_name,
+            file_name=f"testcases_{safe_name}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True,
+            use_container_width=True
         )
 
-    st.markdown("---")
 
+    st.markdown("---")
 
 
 # ---------- ROW 2: TEST CASES LIST ----------
