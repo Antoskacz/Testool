@@ -637,17 +637,24 @@ if page == "🏗️ Build Test Cases":
         
         if selected_testcase_key:
             testcase_to_edit = testcase_options[selected_testcase_key]
+            # Initialize edit sentence only when testcase changes
+            if "edit_sentence_value" not in st.session_state or \
+            st.session_state.get("edit_sentence_tc") != testcase_to_edit["order_no"]:
+                st.session_state.edit_sentence_value = testcase_to_edit["veta"]
+                st.session_state.edit_sentence_tc = testcase_to_edit["order_no"]
+
             
             with st.form("edit_testcase_form"):
                 # Zobrazíme aktuální hodnoty
                 st.write(f"**Currently editing:** {testcase_to_edit['test_name']}")
                 
                 sentence = st.text_area(
-                    "Requirement Sentence", 
-                    value=testcase_to_edit["veta"],
+                    "Requirement Sentence",
+                    value=st.session_state.edit_sentence_value,
                     height=100,
-                    key="edit_sentence"
+                    key="edit_sentence_input"
                 )
+
                 
                 action = st.selectbox(
                     "Action (from kroky.json)", 
@@ -708,7 +715,9 @@ if page == "🏗️ Build Test Cases":
                                 kroky_pro_akci = copy.deepcopy(action_data["steps"])
                             elif isinstance(action_data, list):
                                 kroky_pro_akci = copy.deepcopy(action_data)
-                        
+                                
+                        st.session_state.edit_sentence_value = sentence.strip()
+
                         # Update the test case
                         testcase_to_edit.update({
                             "test_name": new_test_name,
