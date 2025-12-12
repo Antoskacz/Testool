@@ -418,7 +418,7 @@ if page == "🏗️ Build Test Cases":
             st.plotly_chart(fig_empty, use_container_width=True)
 
 
-    # ------------------------------------ EXPORT SECTION ------------------------------------
+    # ------------------------------------ ROW 2: EXPORT SECTION ------------------------------------
     st.markdown("---")
     st.markdown("### 💾 Export Test Cases")
     st.write("Generate clean, renumbered & diacritics-free test cases Excel file.")
@@ -501,8 +501,7 @@ if page == "🏗️ Build Test Cases":
 
     st.markdown("---")
 
-
-# ---------- ROW 2: TEST CASES LIST ----------
+    # ------------------------------------ ROW 3: TEST CASES LIST ------------------------------------
     st.subheader("📋 Test Cases List")
     
     if project_data.get("scenarios"):
@@ -544,7 +543,8 @@ if page == "🏗️ Build Test Cases":
     st.markdown("---")
 
     
-    # ---------- ROW 3: ADD NEW TEST CASE ----------
+
+    # ------------------------------- ROW 4: ADD NEW TEST CASE ----------------------------------
     st.subheader("➕ Add New Test Case")
     
     if not st.session_state.steps_data:
@@ -628,7 +628,7 @@ st.markdown("---")
 with st.expander("✏️ Edit / Delete Test Cases", expanded=False):
 
 
-    # ---------- ROW 4: EDIT EXISTING TEST CASE ----------
+    # ----------------------------------- ROW 5: EDIT EXISTING TEST CASE ---------------------------------
     st.subheader("✏️ Edit Existing Test Case")
 
     if project_data["scenarios"]:
@@ -721,7 +721,7 @@ with st.expander("✏️ Edit / Delete Test Cases", expanded=False):
 
     st.markdown("---")
 
-    # ---------- DELETE TEST CASE ----------
+    # -------------------------------- DELETE TEST CASE ---------------------------------
     st.subheader("🗑️ Delete Test Case")
 
     delete_options = list(testcase_options.keys())
@@ -740,422 +740,177 @@ with st.expander("✏️ Edit / Delete Test Cases", expanded=False):
         st.rerun()
         
 
-# ---------- STRÁNKA 2: EDIT ACTIONS & STEPS ----------
-    elif page == "🔧 Edit Actions & Steps":
-        st.title("🔧 Edit Actions & Steps")
-        st.markdown("Manage actions and their steps in `kroky.json`")
-        
-        # Cesty
-        BASE_DIR = Path(__file__).resolve().parent
-        DATA_DIR = BASE_DIR / "data"
-        KROKY_PATH = DATA_DIR / "kroky.json"
-        
-        # Načtení dat
-        steps_data = load_json(KROKY_PATH)
-        
-        # Session state
-        if 'edit_steps_data' not in st.session_state:
-            st.session_state.edit_steps_data = steps_data
-        if 'editing_action' not in st.session_state:
-            st.session_state.editing_action = None
-        if 'new_steps' not in st.session_state:
-            st.session_state.new_steps = []
-        
-        # ---------- ADD NEW ACTION ----------
-        st.subheader("➕ Add New Action")
-        
-        if st.button("➕ Add New Action", key="new_action_main", use_container_width=True):
-            st.session_state.new_action = True
-            st.session_state.editing_action = None
-        
-        # NEW ACTION FORM
-        if st.session_state.get("new_action", False):
-            st.subheader("➕ Add New Action")
-            
-            with st.form("new_action_form"):
-                action_name = st.text_input("Action Name*", placeholder="e.g.: DSL_Activation", key="new_action_name")
-                action_desc = st.text_input("Action Description*", placeholder="e.g.: DSL service activation", key="new_action_desc")
-                
-                st.markdown("---")
-                st.write("**Action Steps:**")
-                
-                # Display existing steps
-                if st.session_state.new_steps:
-                    st.write("**Added Steps:**")
-                    
-                    for i, step in enumerate(st.session_state.new_steps):
-                        col_step, col_delete = st.columns([4, 1])
-                        
-                        with col_step:
-                            st.text_input(f"Step {i+1} - Description", 
-                                        value=step['description'], 
-                                        key=f"view_desc_{i}", 
-                                        disabled=True)
-                            st.text_input(f"Step {i+1} - Expected", 
-                                        value=step['expected'], 
-                                        key=f"view_exp_{i}", 
-                                        disabled=True)
-                        
-                        with col_delete:
-                            if st.form_submit_button("🗑️", key=f"del_new_{i}", use_container_width=True):
-                                st.session_state.new_steps.pop(i)
-                                st.rerun()
-                        
-                        st.markdown("---")
-                
-                # Add new step
-                st.write("**Add New Step:**")
-                new_desc = st.text_area("Description*", key="new_step_desc", height=60, 
-                                    placeholder="Step description - what to do")
-                new_exp = st.text_area("Expected*", key="new_step_exp", height=60, 
-                                    placeholder="Expected result - what should happen")
-                
-                if st.form_submit_button("➕ Add Step", key="add_step_btn"):
-                    if new_desc.strip() and new_exp.strip():
-                        st.session_state.new_steps.append({
-                            "description": new_desc.strip(),
-                            "expected": new_exp.strip()
-                        })
-                        st.rerun()
-                
-                st.markdown("---")
-                
-                # Save/Cancel buttons
-                col_save, col_cancel = st.columns(2)
-                with col_save:
-                    if st.form_submit_button("💾 Save New Action", use_container_width=True, type="primary"):
-                        if not action_name.strip():
-                            st.error("Enter action name")
-                        elif not action_desc.strip():
-                            st.error("Enter action description")
-                        elif not st.session_state.new_steps:
-                            st.error("Add at least one step")
-                        else:
-                            # Save to kroky.json
-                            st.session_state.edit_steps_data[action_name.strip()] = {
-                                "description": action_desc.strip(),
-                                "steps": st.session_state.new_steps.copy()
-                            }
-                            save_json(KROKY_PATH, st.session_state.edit_steps_data)
-                            st.success(f"✅ Action '{action_name}' added to kroky.json!")
-                            st.session_state.new_action = False
-                            st.session_state.new_steps = []
-                            st.rerun()
-                
-                with col_cancel:
-                    if st.form_submit_button("❌ Cancel", use_container_width=True):
-                        st.session_state.new_action = False
-                        st.session_state.new_steps = []
-                        st.rerun()
-        
-        st.markdown("---")
-        
-    # ---------- EXISTING ACTIONS LIST ----------
-    st.subheader("📝 Existing Actions")
-    
-    if st.session_state.edit_steps_data:
-        for action in sorted(st.session_state.edit_steps_data.keys()):
-            content = st.session_state.edit_steps_data[action]
-            description = content.get("description", "No description") if isinstance(content, dict) else "No description"
-            steps = content.get("steps", []) if isinstance(content, dict) else content
-            step_count = len(steps)
-            
-            col_action, col_edit, col_delete = st.columns([3, 1, 1])
-            
-            with col_action:
-                st.write(f"**{action}**")
-                st.caption(f"{description} | {step_count} steps")
-            
-            with col_edit:
-                if st.button("✏️", key=f"edit_{action}", help="Edit action", use_container_width=True):
-                    st.session_state.editing_action = action
-                    st.session_state.new_action = False
-                    st.rerun()
-            
-            with col_delete:
-                if st.button("🗑️", key=f"delete_{action}", help="Delete action", use_container_width=True):
-                    st.session_state.delete_action = action
-                    st.rerun()
-            
-            # Delete confirmation
-            if st.session_state.get("delete_action") == action:
-                st.warning(f"Are you sure you want to delete action '{action}'?")
-                col_confirm, col_cancel = st.columns(2)
-                with col_confirm:
-                    if st.button("Yes, delete", key=f"confirm_del_{action}"):
-                        del st.session_state.edit_steps_data[action]
-                        save_json(KROKY_PATH, st.session_state.edit_steps_data)
-                        st.success(f"✅ Action '{action}' deleted from kroky.json!")
-                        st.session_state.delete_action = None
-                        st.rerun()
-                with col_cancel:
-                    if st.button("Cancel", key=f"cancel_del_{action}"):
-                        st.session_state.delete_action = None
-                        st.rerun()
-            
-            st.markdown("---")
-    
-    # ---------- EDIT EXISTING ACTION ----------
-    if st.session_state.editing_action:
-        action = st.session_state.editing_action
-        content = st.session_state.edit_steps_data.get(action, {})
-        description = content.get("description", "") if isinstance(content, dict) else ""
-        steps = content.get("steps", []) if isinstance(content, dict) else content
-        
-        st.subheader(f"✏️ Edit Action: {action}")
-        
-        # Initialize session state for editing
-        if f"edit_steps_{action}" not in st.session_state:
-            st.session_state[f"edit_steps_{action}"] = steps.copy()
-        
-        with st.form(f"edit_action_{action}"):
-            new_desc = st.text_input("Action Description*", value=description, key=f"desc_{action}")
-            
+# --------------------------------------- PAGE 2: EDIT ACTIONS & STEPS ---------------------------------------
+elif page == "🔧 Edit Actions & Steps":
+
+    st.title("🔧 Edit Actions & Steps")
+    st.markdown("Manage actions and their steps in `kroky.json`")
+
+    BASE_DIR = Path(__file__).resolve().parent
+    DATA_DIR = BASE_DIR / "data"
+    KROKY_PATH = DATA_DIR / "kroky.json"
+
+    steps_data = load_json(KROKY_PATH)
+
+    if "edit_steps_data" not in st.session_state:
+        st.session_state.edit_steps_data = steps_data
+    if "editing_action" not in st.session_state:
+        st.session_state.editing_action = None
+    if "new_action" not in st.session_state:
+        st.session_state.new_action = False
+    if "new_steps" not in st.session_state:
+        st.session_state.new_steps = []
+    if "delete_action" not in st.session_state:
+        st.session_state.delete_action = None
+
+    # ---------- ADD NEW ACTION ----------
+    st.subheader("➕ Add New Action")
+
+    if st.button("➕ Add New Action", use_container_width=True):
+        st.session_state.new_action = True
+        st.session_state.editing_action = None
+
+    if st.session_state.new_action:
+
+        with st.form("new_action_form"):
+            action_name = st.text_input("Action Name*", placeholder="e.g.: DSL_Activation")
+            action_desc = st.text_input("Action Description*", placeholder="e.g.: DSL service activation")
+
             st.markdown("---")
             st.write("**Action Steps:**")
-            
-            # Display steps for editing
-            steps_to_delete = []
-            for i, step in enumerate(st.session_state[f"edit_steps_{action}"]):
-                col_step, col_delete = st.columns([4, 1])
-                
-                with col_step:
-                    if isinstance(step, dict):
-                        desc = st.text_area(f"Step {i+1} - Description", 
-                                          value=step.get('description', ''),
-                                          key=f"desc_{action}_{i}",
-                                          height=60)
-                        exp = st.text_area(f"Step {i+1} - Expected", 
-                                         value=step.get('expected', ''),
-                                         key=f"exp_{action}_{i}",
-                                         height=60)
-                        st.session_state[f"edit_steps_{action}"][i] = {"description": desc, "expected": exp}
-                
-                with col_delete:
-                    if st.form_submit_button("🗑️", key=f"del_{action}_{i}", use_container_width=True):
-                        steps_to_delete.append(i)
-                
-                st.markdown("---")
-            
-            # Delete marked steps
-            for index in sorted(steps_to_delete, reverse=True):
-                if index < len(st.session_state[f"edit_steps_{action}"]):
-                    st.session_state[f"edit_steps_{action}"].pop(index)
-                    st.rerun()
-            
-            # Add new step
-            st.write("**Add New Step:**")
-            new_desc_input = st.text_area("Description*", key=f"new_desc_{action}", height=60, placeholder="Step description...")
-            new_exp_input = st.text_area("Expected*", key=f"new_exp_{action}", height=60, placeholder="Expected result...")
-            
-            if st.form_submit_button("➕ Add Step", key=f"add_{action}"):
-                if new_desc_input.strip() and new_exp_input.strip():
-                    st.session_state[f"edit_steps_{action}"].append({
-                        "description": new_desc_input.strip(),
-                        "expected": new_exp_input.strip()
+
+            for i, step in enumerate(st.session_state.new_steps):
+                col1, col2 = st.columns([4, 1])
+                with col1:
+                    st.text_input("Description", value=step["description"], disabled=True, key=f"desc_view_{i}")
+                    st.text_input("Expected", value=step["expected"], disabled=True, key=f"exp_view_{i}")
+                with col2:
+                    if st.form_submit_button("🗑️", key=f"del_new_step_{i}"):
+                        st.session_state.new_steps.pop(i)
+                        st.rerun()
+
+            st.markdown("---")
+            new_desc = st.text_area("New Step Description*", height=60)
+            new_exp = st.text_area("New Step Expected*", height=60)
+
+            if st.form_submit_button("➕ Add Step"):
+                if new_desc.strip() and new_exp.strip():
+                    st.session_state.new_steps.append({
+                        "description": new_desc.strip(),
+                        "expected": new_exp.strip()
                     })
                     st.rerun()
-            
+
             st.markdown("---")
-            
-            # Save/Cancel buttons
             col_save, col_cancel = st.columns(2)
+
             with col_save:
-                if st.form_submit_button("💾 Save Changes", use_container_width=True, type="primary"):
-                    if not new_desc.strip():
-                        st.error("Enter action description")
-                    elif not st.session_state[f"edit_steps_{action}"]:
-                        st.error("Action must have at least one step")
+                if st.form_submit_button("💾 Save Action"):
+                    if not action_name or not action_desc or not st.session_state.new_steps:
+                        st.error("Fill all fields and add at least one step.")
                     else:
-                        st.session_state.edit_steps_data[action] = {
-                            "description": new_desc.strip(),
-                            "steps": st.session_state[f"edit_steps_{action}"].copy()
+                        st.session_state.edit_steps_data[action_name] = {
+                            "description": action_desc,
+                            "steps": st.session_state.new_steps.copy()
                         }
                         save_json(KROKY_PATH, st.session_state.edit_steps_data)
-                        st.success(f"✅ Action '{action}' updated in kroky.json!")
-                        st.session_state.editing_action = None
-                        if f"edit_steps_{action}" in st.session_state:
-                            del st.session_state[f"edit_steps_{action}"]
+                        st.session_state.new_action = False
+                        st.session_state.new_steps = []
+                        st.success("Action created.")
                         st.rerun()
-            
+
             with col_cancel:
-                if st.form_submit_button("❌ Cancel", use_container_width=True):
-                    st.session_state.editing_action = None
-                    if f"edit_steps_{action}" in st.session_state:
-                        del st.session_state[f"edit_steps_{action}"]
+                if st.form_submit_button("❌ Cancel"):
+                    st.session_state.new_action = False
+                    st.session_state.new_steps = []
                     st.rerun()
 
-# ---------- STRÁNKA 3: TEXT COMPARATOR ----------
-    elif page == "📝 Text Comparator":
-        st.title("📝 Text Comparator")
-        st.markdown("Compare two texts with highlighted differences")
-        
-        if 'text1_input' not in st.session_state:
-            st.session_state.text1_input = ""
-        if 'text2_input' not in st.session_state:
-            st.session_state.text2_input = ""
-        
-        col1, col2 = st.columns(2)
-        
+    st.markdown("---")
+
+    # ---------- EXISTING ACTIONS ----------
+    st.subheader("📝 Existing Actions")
+
+    for action, content in st.session_state.edit_steps_data.items():
+
+        steps = content.get("steps", [])
+        col1, col2, col3 = st.columns([3, 1, 1])
+
         with col1:
-            st.subheader("Text 1")
-            text1 = st.text_area(
-                "Enter first text:", 
-                height=300, 
-                key="text1_area",
-                value=st.session_state.text1_input,
-                help="Enter or paste your first text here"
-            )
-        
+            st.write(f"**{action}**")
+            st.caption(f"{len(steps)} steps")
+
         with col2:
-            st.subheader("Text 2")
-            text2 = st.text_area(
-                "Enter second text:", 
-                height=300, 
-                key="text2_area",
-                value=st.session_state.text2_input,
-                help="Enter or paste your second text here"
-            )
-        
+            if st.button("✏️", key=f"edit_{action}"):
+                st.session_state.editing_action = action
+
+        with col3:
+            if st.button("🗑️", key=f"delete_{action}"):
+                st.session_state.delete_action = action
+
+        if st.session_state.delete_action == action:
+            st.warning(f"Delete action '{action}'?")
+            c1, c2 = st.columns(2)
+            with c1:
+                if st.button("Yes", key=f"confirm_{action}"):
+                    del st.session_state.edit_steps_data[action]
+                    save_json(KROKY_PATH, st.session_state.edit_steps_data)
+                    st.session_state.delete_action = None
+                    st.success("Action deleted.")
+                    st.rerun()
+            with c2:
+                if st.button("Cancel", key=f"cancel_{action}"):
+                    st.session_state.delete_action = None
+
         st.markdown("---")
-        
-        # Create buttons in a row
-        col_buttons = st.columns([1, 1, 1, 4])
-        
-        with col_buttons[0]:
-            compare_btn = st.button("🔍 **Compare**", use_container_width=True, type="primary", help="Compare texts and highlight differences")
-        
-        with col_buttons[1]:
-            diacritics_btn = st.button("❌ **Remove Diacritics**", use_container_width=True, help="Remove all accents, háčky and čárky from both texts")
-        
-        with col_buttons[2]:
-            reset_btn = st.button("🔄 **Reset**", use_container_width=True, help="Clear both text fields")
-        
-        # Button actions
-        if diacritics_btn:
-            if text1 or text2:
-                st.session_state.text1_input = remove_diacritics(text1)
-                st.session_state.text2_input = remove_diacritics(text2)
-                st.success("✅ Diacritics removed from both texts")
+
+    # ---------- EDIT ACTION ----------
+    if st.session_state.editing_action:
+        action = st.session_state.editing_action
+        content = st.session_state.edit_steps_data[action]
+
+        st.subheader(f"✏️ Edit Action: {action}")
+
+        if f"edit_steps_{action}" not in st.session_state:
+            st.session_state[f"edit_steps_{action}"] = copy.deepcopy(content["steps"])
+
+        with st.form("edit_action_form"):
+            desc = st.text_input("Action Description", value=content["description"])
+
+            for i, step in enumerate(st.session_state[f"edit_steps_{action}"]):
+                st.text_area(f"Step {i+1} Description", value=step["description"], key=f"e_desc_{i}")
+                st.text_area(f"Step {i+1} Expected", value=step["expected"], key=f"e_exp_{i}")
+
+            if st.form_submit_button("💾 Save Changes"):
+                st.session_state.edit_steps_data[action] = {
+                    "description": desc,
+                    "steps": st.session_state[f"edit_steps_{action}"]
+                }
+                save_json(KROKY_PATH, st.session_state.edit_steps_data)
+                st.session_state.editing_action = None
+                st.success("Action updated.")
                 st.rerun()
-            else:
-                st.warning("Enter text in at least one field to remove diacritics")
-        
-        if reset_btn:
-            st.session_state.text1_input = ""
-            st.session_state.text2_input = ""
-            st.success("✅ Texts cleared")
-            st.rerun()
-        
-        if compare_btn:
-            if text1.strip() and text2.strip():
-                st.subheader("📊 Character Comparison")
-                
-                col_stat1, col_stat2, col_stat3 = st.columns(3)
-                with col_stat1:
-                    st.metric("Length Text 1", len(text1))
-                with col_stat2:
-                    st.metric("Length Text 2", len(text2))
-                with col_stat3:
-                    diff_len = abs(len(text1) - len(text2))
-                    st.metric("Length Difference", diff_len)
-                
-                st.markdown("---")
-                st.subheader("🔍 Character-by-Character Differences")
-                
-                def highlight_differences(text1, text2):
-                    result = ""
-                    i, j = 0, 0
-                    
-                    while i < len(text1) and j < len(text2):
-                        if text1[i] == text2[j]:
-                            result += text1[i]
-                            i += 1
-                            j += 1
-                        else:
-                            char_display = text1[i] if text1[i] != ' ' else '␣'
-                            result += f'<span style="background-color: #ff4444; color: white; font-weight: bold; padding: 1px 3px; border-radius: 3px;">{char_display}</span>'
-                            i += 1
-                            j += 1
-                    
-                    while i < len(text1):
-                        char_display = text1[i] if text1[i] != ' ' else '␣'
-                        result += f'<span style="background-color: #ff4444; color: white; font-weight: bold; padding: 1px 3px; border-radius: 3px;">{char_display}</span>'
-                        i += 1
-                    
-                    return result
-                
-                highlighted1 = highlight_differences(text1, text2)
-                highlighted2 = highlight_differences(text2, text1)
-                
-                col_diff1, col_diff2 = st.columns(2)
-                
-                with col_diff1:
-                    st.markdown("**Text 1:**")
-                    st.markdown(
-                        f"""<div style='
-                            background-color: #2a2a2a; 
-                            padding: 15px; 
-                            border-radius: 5px; 
-                            font-family: "Courier New", monospace; 
-                            white-space: pre-wrap;
-                            line-height: 1.5;
-                            font-size: 14px;
-                        '>{highlighted1}</div>""", 
-                        unsafe_allow_html=True
-                    )
-                
-                with col_diff2:
-                    st.markdown("**Text 2:**")
-                    st.markdown(
-                        f"""<div style='
-                            background-color: #2a2a2a; 
-                            padding: 15px; 
-                            border-radius: 5px; 
-                            font-family: "Courier New", monospace; 
-                            white-space: pre-wrap;
-                            line-height: 1.5;
-                            font-size: 14px;
-                        '>{highlighted2}</div>""", 
-                        unsafe_allow_html=True
-                    )
-                
-                matches = 0
-                total = min(len(text1), len(text2))
-                
-                for i in range(total):
-                    if text1[i] == text2[i]:
-                        matches += 1
-                
-                if total > 0:
-                    similarity = (matches / total) * 100
-                else:
-                    similarity = 0
-                
-                st.markdown("---")
-                st.subheader("📈 Similarity Analysis")
-                
-                col_sim1, col_sim2, col_sim3 = st.columns([2, 1, 1])
-                
-                with col_sim1:
-                    st.progress(similarity/100, text=f"Similarity: {similarity:.1f}%")
-                
-                with col_sim2:
-                    st.metric("Matching Chars", matches)
-                
-                with col_sim3:
-                    st.metric("Total Compared", total)
-                
-                if similarity == 100:
-                    st.success("🎉 Texts are identical!")
-                elif similarity > 90:
-                    st.info(f"Texts are very similar ({similarity:.1f}% match)")
-                elif similarity > 70:
-                    st.info(f"Texts are somewhat similar ({similarity:.1f}% match)")
-                elif similarity > 50:
-                    st.warning(f"Texts have significant differences ({similarity:.1f}% match)")
-                else:
-                    st.error(f"Texts are very different ({similarity:.1f}% match)")
-                
-            else:
-                st.warning("Please enter text in both fields to compare.")
+
+
+# --------------------------------------- PAGE 3: TEXT COMPARATOR ---------------------------------------
+elif page == "📝 Text Comparator":
+
+    st.title("📝 Text Comparator")
+    st.markdown("Compare two texts")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        text1 = st.text_area("Text 1", height=300)
+    with col2:
+        text2 = st.text_area("Text 2", height=300)
+
+    st.markdown("---")
+
+    if st.button("❌ Remove Diacritics"):
+        text1 = remove_diacritics(text1)
+        text2 = remove_diacritics(text2)
+        st.success("Diacritics removed.")
+
+    if st.button("🔍 Compare"):
+        matcher = difflib.SequenceMatcher(None, text1, text2)
+        st.write(f"Similarity: {matcher.ratio() * 100:.1f}%")
