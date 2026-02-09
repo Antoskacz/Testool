@@ -140,6 +140,30 @@ def remove_diacritics(text):
     normalized = unicodedata.normalize('NFKD', text)
     return ''.join(c for c in normalized if not unicodedata.combining(c))
 
+def update_scenarios_with_action_steps(projects_data: dict, steps_data: dict, action_name: str):
+    """
+    Update all scenarios that use a specific action with the latest steps from kroky.json
+    Propagates changes to all test cases that use this action
+    """
+    updated_count = 0
+    for project_key, project_data in projects_data.items():
+        if not isinstance(project_data, dict) or "scenarios" not in project_data:
+            continue
+        
+        for scenario in project_data.get("scenarios", []):
+            if scenario.get("akce") == action_name:
+                # Get updated steps from kroky.json
+                if action_name in steps_data:
+                    action_data = steps_data[action_name]
+                    if isinstance(action_data, dict) and "steps" in action_data:
+                        scenario["kroky"] = copy.deepcopy(action_data["steps"])
+                        updated_count += 1
+                    elif isinstance(action_data, list):
+                        scenario["kroky"] = copy.deepcopy(action_data)
+                        updated_count += 1
+    
+    return updated_count
+
 # ---------- HLAVNÍ APLIKACE ----------
 st.title("🧪 Testool")
 st.markdown("### Professional test case builder and manager")
@@ -914,15 +938,38 @@ elif page == "🔧 Edit Actions & Steps":
             
             # Delete confirmation
             if st.session_state.get("delete_action") == action:
+                # Count scenarios using this action
+                affected_count = 0
+                for project_data in st.session_state.projects.values():
+                    if isinstance(project_data, dict) and "scenarios" in project_data:
+                        for scenario in project_data["scenarios"]:
+                            if scenario.get("akce") == action:
+                                affected_count += 1
+                
+                if affected_count > 0:
+                    st.warning(f"⚠️ {affected_count} test case(s) use this action! Deleting will remove their steps.")
+                
                 st.warning(f"Are you sure you want to delete action '{action}'?")
                 col_confirm, col_cancel = st.columns(2)
                 with col_confirm:
                     if st.button("Yes, delete", key=f"confirm_del_{action}"):
+                        # Remove action from kroky.json
                         del st.session_state.edit_steps_data[action]
                         save_json(KROKY_PATH, st.session_state.edit_steps_data)
+                        
+                        # Clear steps from all affected scenarios
+                        for project_data in st.session_state.projects.values():
+                            if isinstance(project_data, dict) and "scenarios" in project_data:
+                                for scenario in project_data["scenarios"]:
+                                    if scenario.get("akce") == action:
+                                        scenario["kroky"] = []
+                        save_json(PROJECTS_PATH, st.session_state.projects)
+                        
                         # 🔄 reload kroky.json into global steps_data
                         st.session_state.steps_data = load_json(KROKY_PATH)
                         st.success(f"✅ Action '{action}' deleted from kroky.json!")
+                        if affected_count > 0:
+                            st.info(f"📊 Cleared steps from {affected_count} test case(s)")
                         st.session_state.delete_action = None
                         st.rerun()
                 with col_cancel:
@@ -1011,7 +1058,15 @@ elif page == "🔧 Edit Actions & Steps":
                         save_json(KROKY_PATH, st.session_state.edit_steps_data)
                         # 🔄 reload kroky.json into global steps_data
                         st.session_state.steps_data = load_json(KROKY_PATH)
+                        
+                        # 🔄 Propagate changes to all scenarios using this action
+                        updated = update_scenarios_with_action_steps(st.session_state.projects, st.session_state.steps_data, action)
+                        save_json(PROJECTS_PATH, st.session_state.projects)
+                        
                         st.success(f"✅ Action '{action}' updated in kroky.json!")
+                        if updated > 0:
+                            st.info(f"📊 Updated {updated} test case(s) with new steps")
+                        
                         st.session_state.editing_action = None
                         if f"edit_steps_{action}" in st.session_state:
                             del st.session_state[f"edit_steps_{action}"]
