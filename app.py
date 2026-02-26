@@ -16,12 +16,27 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# custom CSS to style expander content backgrounds
+# custom CSS to style add section and expander content
 st.markdown("""
 <style>
-.add-content { background-color: #20b2aa; padding: 0.5rem; border-radius: 4px; }
-.edit-content { background-color: #9932cc; padding: 0.5rem; border-radius: 4px; }
-.delete-content { background-color: #b22222; padding: 0.5rem; border-radius: 4px; }
+/* add section always has teal left border and slight background */
+.add-section {
+  padding: 1rem;
+  border-left: 4px solid #20b2aa;
+  background-color: rgba(32,178,170,0.08);
+  margin-bottom: 1rem;
+}
+/* highlight inside edit and delete windows when expander is open */
+#edit-highlight {
+  background-color: rgba(153,50,204,0.1);
+  padding: 0.5rem;
+  border-radius: 5px;
+}
+#delete-highlight {
+  background-color: rgba(178,34,34,0.1);
+  padding: 0.5rem;
+  border-radius: 5px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -620,7 +635,7 @@ if page == "🏗️ Build Test Cases":
     
     # ---------- ROW 3: ADD NEW TEST CASE ----------
     st.subheader("➕ Add New Test Case")
-    st.markdown('<div class="add-content">', unsafe_allow_html=True)
+    st.markdown('<div class="add-section">', unsafe_allow_html=True)
     
     if not st.session_state.steps_data:
         st.error("❌ No actions found! Please add actions in 'Edit Actions & Steps' page first.")
@@ -699,13 +714,13 @@ if page == "🏗️ Build Test Cases":
                 save_and_update_projects(st.session_state.projects)
                 st.success(f"✅ Test case added: {test_name}")
                 st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)  # close add-content
+    st.markdown('</div>', unsafe_allow_html=True)  # close add-section
 
     # ---------- ROW 4: EDIT EXISTING TEST CASE ----------
     # ---------- ROW 4: EDIT EXISTING TEST CASE ----------
     # no wrapper, styling applied inside expander
     with st.expander("✏️ Edit Existing Test Case", expanded=False):
-        st.markdown('<div class="edit-content">', unsafe_allow_html=True)
+        st.markdown('<div id="edit-highlight">', unsafe_allow_html=True)
     
         if project_data["scenarios"]:
             testcase_options = {f"{tc['order_no']:03d} - {tc['test_name']}": tc for tc in project_data["scenarios"]}
@@ -832,11 +847,11 @@ if page == "🏗️ Build Test Cases":
                             st.rerun()
         else:
             st.info("No test cases available to edit. Add a test case first.")
-        st.markdown('</div>', unsafe_allow_html=True)  # close edit-content
+        st.markdown('</div>', unsafe_allow_html=True)  # close edit-highlight
 
     # ---------- ROW 5: DELETE TEST CASE ----------
     with st.expander("🗑️ Delete Test Case", expanded=False):
-        st.markdown('<div class="delete-content">', unsafe_allow_html=True)
+        st.markdown('<div id="delete-highlight">', unsafe_allow_html=True)
     
         if project_data["scenarios"]:
             delete_options = [f"{tc['order_no']:03d} - {tc['test_name']}" for tc in project_data["scenarios"]]
@@ -877,7 +892,6 @@ if page == "🏗️ Build Test Cases":
                 st.rerun()
         else:
             st.info("No test cases available to delete.")
-        st.markdown('</div>', unsafe_allow_html=True)  # close delete-content
     # end delete expander
             
 
