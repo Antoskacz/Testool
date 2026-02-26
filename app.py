@@ -37,6 +37,25 @@ def save_json(filepath, data):
     except Exception as e:
         st.error(f"Error saving {filepath}: {e}")
         return False
+
+def save_and_update_projects(data):
+    """Uloží projekty do souboru a aktualizuje session_state"""
+    base_dir = Path(__file__).resolve().parent
+    projects_path = base_dir / "data" / "projects.json"
+    success = save_json(projects_path, data)
+    if success:
+        st.session_state.projects = copy.deepcopy(data)
+    return success
+
+def save_and_update_steps(data):
+    """Uloží kroky do souboru a aktualizuje session_state"""
+    base_dir = Path(__file__).resolve().parent
+    kroky_path = base_dir / "data" / "kroky.json"
+    success = save_json(kroky_path, data)
+    if success:
+        st.session_state.steps_data = copy.deepcopy(data)
+    return success
+	
     
 def clean_tc_name(name: str) -> str:
     """
@@ -175,17 +194,39 @@ DATA_DIR = BASE_DIR / "data"
 PROJECTS_PATH = DATA_DIR / "projects.json"
 KROKY_PATH = DATA_DIR / "kroky.json"
 
+# Inicializace datových souborů až budou existovat
+DATA_DIR.mkdir(exist_ok=True)
+
 # Načtení dat
 projects = load_json(PROJECTS_PATH)
 steps_data = load_json(KROKY_PATH)
 
-# Session state
+# Zajistíme, aby se prázdné soubory inicializovaly s minimem dat
+if not projects or projects == {}:
+    projects = {}
+    save_json(PROJECTS_PATH, projects)
+
+if not steps_data or steps_data == {}:
+    steps_data = {}
+    save_json(KROKY_PATH, steps_data)
+
+# Session state - vždy načteme čerstvá data ze souborů
+# To zajistí, že se neutrácejí změny mezi restarty aplikace
 if 'projects' not in st.session_state:
-    st.session_state.projects = projects
+    st.session_state.projects = copy.deepcopy(projects)
+else:
+    # Při každém novém spuštění znovu načteme data ze souboru
+    # aby se neztratily žádné změny mezi restarty
+    st.session_state.projects = copy.deepcopy(projects)
+
 if 'selected_project' not in st.session_state:
     st.session_state.selected_project = None
+
 if 'steps_data' not in st.session_state:
-    st.session_state.steps_data = steps_data
+    st.session_state.steps_data = copy.deepcopy(steps_data)
+else:
+    # Znovu načteme aktuální data ze souboru
+    st.session_state.steps_data = copy.deepcopy(steps_data)
         
 
 # ---------- SIDEBAR ----------
@@ -224,7 +265,7 @@ with st.sidebar:
                     "subject": r"UAT2\Antosova\\",
                     "scenarios": []
                 }
-                save_json(PROJECTS_PATH, st.session_state.projects)
+                save_and_update_projects(st.session_state.projects)
                 st.session_state.selected_project = new_project
                 st.success("Project created.")
                 st.rerun()
@@ -254,7 +295,7 @@ with st.sidebar:
             else:
                 st.session_state.projects[new_name] = st.session_state.projects[current_project]
                 del st.session_state.projects[current_project]
-                save_json(PROJECTS_PATH, st.session_state.projects)
+                save_and_update_projects(st.session_state.projects)
                 st.session_state.selected_project = new_name
                 st.success("Project renamed.")
                 st.rerun()
@@ -273,7 +314,7 @@ with st.sidebar:
             with col_yes:
                 if st.button("Yes, delete", use_container_width=True):
                     del st.session_state.projects[current_project]
-                    save_json(PROJECTS_PATH, st.session_state.projects)
+                    save_and_update_projects(st.session_state.projects)
                     st.session_state.selected_project = None
                     st.session_state.project_to_delete = None
                     st.success("Project deleted.")
@@ -295,13 +336,13 @@ with st.sidebar:
         with col_save:
             if st.button("💾 Save subject", use_container_width=True):
                 st.session_state.projects[current_project]["subject"] = subject_input.strip()
-                save_json(PROJECTS_PATH, st.session_state.projects)
+                save_and_update_projects(st.session_state.projects)
                 st.success("Subject updated.")
 
         with col_delete:
             if st.button("🧹 Delete subject", use_container_width=True):
                 st.session_state.projects[current_project]["subject"] = ""
-                save_json(PROJECTS_PATH, st.session_state.projects)
+                save_and_update_projects(st.session_state.projects)
                 st.success("Subject cleared.")
 
 
@@ -481,7 +522,7 @@ if page == "🏗️ Build Test Cases":
                 f"{prefix}_{sentence.capitalize()}"
             )
 
-        save_json(PROJECTS_PATH, st.session_state.projects)
+        save_and_update_projects(st.session_state.projects)
 
         # 2) Build export data
         rows = []
@@ -642,7 +683,7 @@ if page == "🏗️ Build Test Cases":
                 
                 project_data["next_id"] += 1
                 project_data["scenarios"].append(new_testcase)
-                save_json(PROJECTS_PATH, st.session_state.projects)
+                save_and_update_projects(st.session_state.projects)
                 st.success(f"✅ Test case added: {test_name}")
                 st.rerun()
 
@@ -754,7 +795,7 @@ if page == "🏗️ Build Test Cases":
                                 "kroky": kroky_pro_akci
                             })
                             
-                            save_json(PROJECTS_PATH, st.session_state.projects)
+                            save_and_update_projects(st.session_state.projects)
                             st.success(f"✅ Test case updated: {new_test_name}")
                             st.rerun()
         else:
@@ -779,9 +820,26 @@ if page == "🏗️ Build Test Cases":
                 
                 # Odstraníme
                 deleted_tc = project_data["scenarios"].pop(index_to_delete)
-                
+
+                # Přečíslujeme všechny zbývající test case tak, aby šly za sebou od 1
+                for idx, tc in enumerate(project_data["scenarios"], start=1):
+                    tc["order_no"] = idx
+                    # Také aktualizujeme test_name aby odrážel nové pořadové číslo
+                    # Nahradíme původní 3-místné číslo na začátku (XXX_) novým
+                    if tc["test_name"].startswith(f"{idx-1:03d}_"):
+                        # Pokud se číslo změnilo, aktualizuj ho
+                        tc["test_name"] = f"{idx:03d}_" + tc["test_name"][4:]
+                    elif "_" in tc["test_name"]:
+                        # Fallback: pokud format není očekávaný, zkus najít a nahradit 3-místné číslo
+                        parts = tc["test_name"].split("_", 1)
+                        if len(parts[0]) == 3 and parts[0].isdigit():
+                            tc["test_name"] = f"{idx:03d}_" + parts[1]
+
+                # Aktualizujeme next_id tak, aby nový TC dostal další pořadové číslo
+                project_data["next_id"] = len(project_data["scenarios"]) + 1
+
                 # Uložíme
-                save_json(PROJECTS_PATH, st.session_state.projects)
+                save_and_update_projects(st.session_state.projects)
                 st.success(f"🗑️ Test case deleted: {deleted_tc['test_name']}")
                 st.rerun()
         else:
@@ -963,7 +1021,7 @@ elif page == "🔧 Edit Actions & Steps":
                                 for scenario in project_data["scenarios"]:
                                     if scenario.get("akce") == action:
                                         scenario["kroky"] = []
-                        save_json(PROJECTS_PATH, st.session_state.projects)
+                        save_and_update_projects(st.session_state.projects)
                         
                         # 🔄 reload kroky.json into global steps_data
                         st.session_state.steps_data = load_json(KROKY_PATH)
@@ -1061,7 +1119,7 @@ elif page == "🔧 Edit Actions & Steps":
                         
                         # 🔄 Propagate changes to all scenarios using this action
                         updated = update_scenarios_with_action_steps(st.session_state.projects, st.session_state.steps_data, action)
-                        save_json(PROJECTS_PATH, st.session_state.projects)
+                        save_and_update_projects(st.session_state.projects)
                         
                         st.success(f"✅ Action '{action}' updated in kroky.json!")
                         if updated > 0:
