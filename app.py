@@ -16,17 +16,12 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# custom CSS to visually separate form sections
+# custom CSS to style expander content backgrounds
 st.markdown("""
 <style>
-.section-add, .section-edit, .section-delete {
-  padding: 1rem;
-  border-radius: 5px;
-  margin-bottom: 1rem;
-}
-.section-add {background-color: #e6f7ff; border-left: 4px solid #1890ff;}
-.section-edit {background-color: #fffbe6; border-left: 4px solid #faad14;}
-.section-delete {background-color: #fff1f0; border-left: 4px solid #f5222d;}
+.add-content { background-color: #20b2aa; padding: 0.5rem; border-radius: 4px; }
+.edit-content { background-color: #9932cc; padding: 0.5rem; border-radius: 4px; }
+.delete-content { background-color: #b22222; padding: 0.5rem; border-radius: 4px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -624,8 +619,8 @@ if page == "🏗️ Build Test Cases":
 
     
     # ---------- ROW 3: ADD NEW TEST CASE ----------
-    st.markdown('<div class="section-add">', unsafe_allow_html=True)
     st.subheader("➕ Add New Test Case")
+    st.markdown('<div class="add-content">', unsafe_allow_html=True)
     
     if not st.session_state.steps_data:
         st.error("❌ No actions found! Please add actions in 'Edit Actions & Steps' page first.")
@@ -704,12 +699,13 @@ if page == "🏗️ Build Test Cases":
                 save_and_update_projects(st.session_state.projects)
                 st.success(f"✅ Test case added: {test_name}")
                 st.rerun()
-
+    st.markdown('</div>', unsafe_allow_html=True)  # close add-content
 
     # ---------- ROW 4: EDIT EXISTING TEST CASE ----------
-    st.markdown('</div>', unsafe_allow_html=True)  # close add section
-    st.markdown('<div class="section-edit">', unsafe_allow_html=True)
+    # ---------- ROW 4: EDIT EXISTING TEST CASE ----------
+    # no wrapper, styling applied inside expander
     with st.expander("✏️ Edit Existing Test Case", expanded=False):
+        st.markdown('<div class="edit-content">', unsafe_allow_html=True)
     
         if project_data["scenarios"]:
             testcase_options = {f"{tc['order_no']:03d} - {tc['test_name']}": tc for tc in project_data["scenarios"]}
@@ -836,12 +832,11 @@ if page == "🏗️ Build Test Cases":
                             st.rerun()
         else:
             st.info("No test cases available to edit. Add a test case first.")
+        st.markdown('</div>', unsafe_allow_html=True)  # close edit-content
 
-
-    st.markdown('</div>', unsafe_allow_html=True)  # close edit section
     # ---------- ROW 5: DELETE TEST CASE ----------
-    st.markdown('<div class="section-delete">', unsafe_allow_html=True)
     with st.expander("🗑️ Delete Test Case", expanded=False):
+        st.markdown('<div class="delete-content">', unsafe_allow_html=True)
     
         if project_data["scenarios"]:
             delete_options = [f"{tc['order_no']:03d} - {tc['test_name']}" for tc in project_data["scenarios"]]
@@ -882,7 +877,8 @@ if page == "🏗️ Build Test Cases":
                 st.rerun()
         else:
             st.info("No test cases available to delete.")
-    st.markdown('</div>', unsafe_allow_html=True)  # close delete section
+        st.markdown('</div>', unsafe_allow_html=True)  # close delete-content
+    # end delete expander
             
 
 # ---------- STRÁNKA 2: EDIT ACTIONS & STEPS ----------
