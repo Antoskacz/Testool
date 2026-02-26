@@ -918,7 +918,7 @@ if page == "🏗️ Build Test Cases":
 # ---------- STRÁNKA 2: EDIT ACTIONS & STEPS ----------
 elif page == "🔧 Edit Actions & Steps":
     st.title("🔧 Edit Actions & Steps")
-    st.markdown("Manage actions and their steps in `kroky.json` and `kroky_custom.json`")
+    st.markdown("Manage actions and their steps. Every change is written to `kroky.json` and mirrored to `kroky_custom.json` (backup/fallback). You can merge/clear the custom file using the controls below.")
     
     # show last-modified times
     import os, datetime
