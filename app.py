@@ -51,19 +51,47 @@ def save_and_update_projects(data):
 def save_and_update_steps(data):
     """Uloží kroky do souboru a aktualizuje session_state.
 
-    To keep the JSON easy to browse and to ensure newly added actions
-    appear in a predictable place, we sort the dictionary by key before
-    writing. This mirrors how the UI lists actions (sorted) so the file
-    order matches the on‑screen order.
+    Tries to save to kroky.json first (original file). If that fails,
+    falls back to kroky_custom.json. On startup, both files are loaded
+    and merged so users never lose data.
     """
     base_dir = Path(__file__).resolve().parent
     kroky_path = base_dir / "data" / "kroky.json"
+    kroky_custom_path = base_dir / "data" / "kroky_custom.json"
 
-    # sort keys so file is alphabetical (python 3.7+ preserves order)
+    # sort keys so file is alphabetical
     ordered = dict(sorted(data.items(), key=lambda kv: kv[0].lower()))
+    
+    # Try primary file first
     success = save_json(kroky_path, ordered)
+    saved_to = "kroky.json"
+    
+    # If primary fails, fallback to custom file
+    if not success:
+        st.warning(
+            "⚠️ Could not write to kroky.json. "
+            "Saving to kroky_custom.json instead. Your data is safe!"
+        )
+        success = save_json(kroky_custom_path, ordered)
+        saved_to = "kroky_custom.json"
+        if success:
+            st.info(
+                "ℹ️ Next app restart will automatically merge "
+                "kroky_custom.json into kroky.json"
+            )
+    else:
+        # Also keep custom file in sync if it exists
+        if kroky_custom_path.exists():
+            save_json(kroky_custom_path, ordered)
+            saved_to = "both kroky.json and kroky_custom.json"
+    
     if success:
         st.session_state.steps_data = copy.deepcopy(ordered)
+        # Add subtle debug info if in dev mode
+        st.toast(f"✅ Saved to {saved_to}", icon="💾")
+    else:
+        st.error("❌ Failed to save actions. Please contact admin.")
+    
     return success
 	
     
@@ -203,6 +231,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 PROJECTS_PATH = DATA_DIR / "projects.json"
 KROKY_PATH = DATA_DIR / "kroky.json"
+KROKY_CUSTOM_PATH = DATA_DIR / "kroky_custom.json"  # fallback file for custom actions
 
 # Inicializace datových souborů až budou existovat
 DATA_DIR.mkdir(exist_ok=True)
@@ -210,6 +239,14 @@ DATA_DIR.mkdir(exist_ok=True)
 # Načtení dat
 projects = load_json(PROJECTS_PATH)
 steps_data = load_json(KROKY_PATH)
+
+# Load custom actions (fallback file) and merge them with primary
+custom_steps = load_json(KROKY_CUSTOM_PATH)
+if custom_steps:
+    # Merge custom actions into primary
+    steps_data.update(custom_steps)
+    # optionally log that we found custom actions
+
 
 # Zajistíme, aby se prázdné soubory inicializovaly s minimem dat
 if not projects or projects == {}:
@@ -879,19 +916,22 @@ if page == "🏗️ Build Test Cases":
 # ---------- STRÁNKA 2: EDIT ACTIONS & STEPS ----------
 elif page == "🔧 Edit Actions & Steps":
     st.title("🔧 Edit Actions & Steps")
-    st.markdown("Manage actions and their steps in `kroky.json`")
+    st.markdown("Manage actions and their steps in `kroky.json` and `kroky_custom.json`")
     
-    # Cesty
-    BASE_DIR = Path(__file__).resolve().parent
-    DATA_DIR = BASE_DIR / "data"
-    KROKY_PATH = DATA_DIR / "kroky.json"
-    
-    # Načtení dat
-    steps_data = load_json(KROKY_PATH)
+    # Display status of custom file if it exists
+    if KROKY_CUSTOM_PATH.exists():
+        custom_data = load_json(KROKY_CUSTOM_PATH)
+        if custom_data:
+            st.info(
+                f"ℹ️ Found {len(custom_data)} custom action(s) in `kroky_custom.json`. "
+                "These will be merged with the main file on startup."
+            )
 
-        # init session state ONLY ONCE
+    # Use global steps_data which already includes merged custom actions
+    # NOT local load of just kroky.json
+    # init session state ONLY ONCE
     if "edit_steps_data" not in st.session_state:
-        st.session_state.edit_steps_data = steps_data
+        st.session_state.edit_steps_data = st.session_state.steps_data.copy()
 
     if "editing_action" not in st.session_state:
         st.session_state.editing_action = None
@@ -1163,6 +1203,49 @@ elif page == "🔧 Edit Actions & Steps":
                     if f"edit_steps_{action}" in st.session_state:
                         del st.session_state[f"edit_steps_{action}"]
                     st.rerun()
+
+    # ---------- MANAGEMENT OF CUSTOM FILE ----------
+    st.markdown("---")
+    st.subheader("📁 File Management")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("**Primary File (kroky.json):**")
+        primary_count = len(load_json(KROKY_PATH))
+        st.metric("Actions", primary_count)
+    
+    with col2:
+        st.write("**Custom File (kroky_custom.json):**")
+        custom_count = len(load_json(KROKY_CUSTOM_PATH)) if KROKY_CUSTOM_PATH.exists() else 0
+        st.metric("Actions", custom_count)
+    
+    if custom_count > 0:
+        st.info(f"ℹ️ Found {custom_count} custom action(s). They are automatically merged with primary on startup.")
+        
+        col_merge, col_clear = st.columns(2)
+        with col_merge:
+            if st.button("🔄 Merge Custom → Primary", use_container_width=True):
+                # Load both files
+                primary = load_json(KROKY_PATH)
+                custom = load_json(KROKY_CUSTOM_PATH)
+                
+                # Merge custom into primary
+                primary.update(custom)
+                
+                # Save merged result back to primary
+                save_and_update_steps(primary)
+                
+                # Clear custom file
+                KROKY_CUSTOM_PATH.unlink()
+                
+                st.success("✅ Merged! Custom file deleted.")
+                st.rerun()
+        
+        with col_clear:
+            if st.button("🗑️ Clear Custom File", use_container_width=True):
+                KROKY_CUSTOM_PATH.unlink()
+                st.success("✅ Custom file deleted.")
+                st.rerun()
 
 # ---------- STRÁNKA 3: TEXT COMPARATOR ----------
 elif page == "📝 Text Comparator":
