@@ -940,9 +940,9 @@ elif page == "🔧 Edit Actions & Steps":
     
     # Use global steps_data which already includes merged custom actions
     # NOT local load of just kroky.json
-    # init session state ONLY ONCE
-    if "edit_steps_data" not in st.session_state:
-        st.session_state.edit_steps_data = st.session_state.steps_data.copy()
+    # ALWAYS sync edit_steps_data from current steps_data
+    # This ensures after st.rerun() we have latest file state
+    st.session_state.edit_steps_data = st.session_state.steps_data.copy()
 
     if "editing_action" not in st.session_state:
         st.session_state.editing_action = None
