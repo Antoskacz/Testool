@@ -617,14 +617,6 @@
       }
     ]
   },
-  "test2": {
-    "description": "desc",
-    "steps": []
-  },
-  "test3": {
-    "description": "desc",
-    "steps": []
-  },
   "Vymena HW - FIX": {
     "description": "Výměna HW u fixní služby přes objednávku.",
     "steps": [
