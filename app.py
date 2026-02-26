@@ -41,7 +41,8 @@ def save_json(filepath, data):
 
 def save_and_update_projects(data):
     """Uloží projekty do souboru a aktualizuje session_state"""
-    base_dir = Path(__file__).resolve().parent
+    # use working directory so that streamlit's temp copying doesn't confuse paths
+    base_dir = Path.cwd()
     projects_path = base_dir / "data" / "projects.json"
     success = save_json(projects_path, data)
     if success:
@@ -55,7 +56,8 @@ def save_and_update_steps(data):
     falls back to kroky_custom.json. On startup, both files are loaded
     and merged so users never lose data.
     """
-    base_dir = Path(__file__).resolve().parent
+    # use current working directory to avoid streamlit temp path issue
+    base_dir = Path.cwd()
     kroky_path = base_dir / "data" / "kroky.json"
     kroky_custom_path = base_dir / "data" / "kroky_custom.json"
 
@@ -227,7 +229,8 @@ st.markdown("### Professional test case builder and manager")
 
 # ---------- SIDEBAR ----------
 # Cesty k souborům
-BASE_DIR = Path(__file__).resolve().parent
+# prefer working directory as root location (streamlit copies script to /tmp)
+BASE_DIR = Path.cwd()
 DATA_DIR = BASE_DIR / "data"
 PROJECTS_PATH = DATA_DIR / "projects.json"
 KROKY_PATH = DATA_DIR / "kroky.json"
@@ -918,6 +921,15 @@ elif page == "🔧 Edit Actions & Steps":
     st.title("🔧 Edit Actions & Steps")
     st.markdown("Manage actions and their steps in `kroky.json` and `kroky_custom.json`")
     
+    # show last-modified times
+    import os, datetime
+    if KROKY_PATH.exists():
+        m = datetime.datetime.fromtimestamp(os.path.getmtime(KROKY_PATH))
+        st.caption(f"Primary file last modified: {m}")
+    if KROKY_CUSTOM_PATH.exists():
+        m = datetime.datetime.fromtimestamp(os.path.getmtime(KROKY_CUSTOM_PATH))
+        st.caption(f"Custom fallback file last modified: {m}")
+    
     # Display status of custom file if it exists
     if KROKY_CUSTOM_PATH.exists():
         custom_data = load_json(KROKY_CUSTOM_PATH)
@@ -926,6 +938,12 @@ elif page == "🔧 Edit Actions & Steps":
                 f"ℹ️ Found {len(custom_data)} custom action(s) in `kroky_custom.json`. "
                 "These will be merged with the main file on startup."
             )
+    
+    # manual commit button
+    if st.button("💾 Commit All Changes to JSON", help="Writes the current list of actions to disk immediately"):
+        save_and_update_steps(st.session_state.edit_steps_data)
+        st.success("All actions pushed to file")
+        st.experimental_rerun()
 
     # Use global steps_data which already includes merged custom actions
     # NOT local load of just kroky.json
