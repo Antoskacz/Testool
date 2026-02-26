@@ -951,7 +951,8 @@ elif page == "🔧 Edit Actions & Steps":
     if st.button("💾 Commit All Changes to JSON", help="Writes the current list of actions to disk immediately"):
         save_and_update_steps(st.session_state.edit_steps_data)
         st.success("All actions pushed to file")
-        st.experimental_rerun()
+        # avoid experimental rerun bug; user can refresh manually if needed
+        # st.experimental_rerun()
 
     # show in-memory list for debugging
     count = len(st.session_state.edit_steps_data)
