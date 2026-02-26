@@ -7,49 +7,62 @@ from core import load_json, save_json, add_new_action, update_action, delete_act
 
 
 def main():
-    # start with a clean file
-    save_json(KROKY_PATH, {})
-    assert load_json(KROKY_PATH) == {}
+    # back up existing file so we don't clobber real data
+    import shutil, tempfile
+    backup = None
+    if KROKY_PATH.exists():
+        backup = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
+        shutil.copy2(KROKY_PATH, backup.name)
 
-    # add an action
-    assert add_new_action("Foo", "desc", [{"description": "a", "expected": "b"}])
-    data = load_json(KROKY_PATH)
-    assert "Foo" in data
-    assert data["Foo"]["description"] == "desc"
-    assert data["Foo"]["steps"][0]["description"] == "a"
+    try:
+        # start with a clean file
+        save_json(KROKY_PATH, {})
+        assert load_json(KROKY_PATH) == {}
 
-    # edit the action
-    assert update_action(
-        "Foo",
-        "desc2",
-        [{"description": "a2", "expected": "b2"}, {"description": "a3", "expected": "b3"}],
-    )
-    updated_data = load_json(KROKY_PATH)
-    assert updated_data["Foo"]["description"] == "desc2"
-    assert len(updated_data["Foo"]["steps"]) == 2
+        # add an action
+        assert add_new_action("Foo", "desc", [{"description": "a", "expected": "b"}])
+        data = load_json(KROKY_PATH)
+        assert "Foo" in data
+        assert data["Foo"]["description"] == "desc"
+        assert data["Foo"]["steps"][0]["description"] == "a"
 
-    # ensure scenarios referencing the action pick up the new steps
-    def update_scenarios(projects_data, steps_data, action_name):
-        updated = 0
-        for project_data in projects_data.values():
-            if isinstance(project_data, dict) and "scenarios" in project_data:
-                for scenario in project_data["scenarios"]:
-                    if scenario.get("akce") == action_name:
-                        if action_name in steps_data:
-                            action_data = steps_data[action_name]
-                            if isinstance(action_data, dict) and "steps" in action_data:
-                                scenario["kroky"] = action_data["steps"].copy()
-                                updated += 1
-                            elif isinstance(action_data, list):
-                                scenario["kroky"] = action_data.copy()
-                                updated += 1
-        return updated
+        # edit the action
+        assert update_action(
+            "Foo",
+            "desc2",
+            [{"description": "a2", "expected": "b2"}, {"description": "a3", "expected": "b3"}],
+        )
+        updated_data = load_json(KROKY_PATH)
+        assert updated_data["Foo"]["description"] == "desc2"
+        assert len(updated_data["Foo"]["steps"]) == 2
 
-    projects = {"p": {"scenarios": [{"akce": "Foo", "kroky": []}]}}
-    count = update_scenarios(projects, load_json(KROKY_PATH), "Foo")
-    assert count == 1 and len(projects["p"]["scenarios"][0]["kroky"]) == 2
+        # ensure scenarios referencing the action pick up the new steps
+        def update_scenarios(projects_data, steps_data, action_name):
+            updated = 0
+            for project_data in projects_data.values():
+                if isinstance(project_data, dict) and "scenarios" in project_data:
+                    for scenario in project_data["scenarios"]:
+                        if scenario.get("akce") == action_name:
+                            if action_name in steps_data:
+                                action_data = steps_data[action_name]
+                                if isinstance(action_data, dict) and "steps" in action_data:
+                                    scenario["kroky"] = action_data["steps"].copy()
+                                    updated += 1
+                                elif isinstance(action_data, list):
+                                    scenario["kroky"] = action_data.copy()
+                                    updated += 1
+            return updated
 
-    print("✅ kroky.json persistence utilities working correctly")
+        projects = {"p": {"scenarios": [{"akce": "Foo", "kroky": []}]}}
+        count = update_scenarios(projects, load_json(KROKY_PATH), "Foo")
+        assert count == 1 and len(projects["p"]["scenarios"][0]["kroky"]) == 2
+
+        print("✅ kroky.json persistence utilities working correctly")
+    finally:
+        # restore original file if we backed it up
+        if backup:
+            shutil.copy2(backup.name, KROKY_PATH)
+            print(f"🔄 restored original kroky.json from {backup.name}")
 
 
 if __name__ == "__main__":

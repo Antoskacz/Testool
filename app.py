@@ -49,12 +49,21 @@ def save_and_update_projects(data):
     return success
 
 def save_and_update_steps(data):
-    """Uloží kroky do souboru a aktualizuje session_state"""
+    """Uloží kroky do souboru a aktualizuje session_state.
+
+    To keep the JSON easy to browse and to ensure newly added actions
+    appear in a predictable place, we sort the dictionary by key before
+    writing. This mirrors how the UI lists actions (sorted) so the file
+    order matches the on‑screen order.
+    """
     base_dir = Path(__file__).resolve().parent
     kroky_path = base_dir / "data" / "kroky.json"
-    success = save_json(kroky_path, data)
+
+    # sort keys so file is alphabetical (python 3.7+ preserves order)
+    ordered = dict(sorted(data.items(), key=lambda kv: kv[0].lower()))
+    success = save_json(kroky_path, ordered)
     if success:
-        st.session_state.steps_data = copy.deepcopy(data)
+        st.session_state.steps_data = copy.deepcopy(ordered)
     return success
 	
     
