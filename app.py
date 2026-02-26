@@ -68,7 +68,7 @@ def save_and_update_steps(data):
     success = save_json(kroky_path, ordered)
     saved_to = "kroky.json"
     
-    # If primary fails, fallback to custom file
+    # If primary fails, still write to custom file
     if not success:
         st.warning(
             "⚠️ Could not write to kroky.json. "
@@ -76,17 +76,16 @@ def save_and_update_steps(data):
         )
         success = save_json(kroky_custom_path, ordered)
         saved_to = "kroky_custom.json"
+        # when primary fails we obviously need custom for merge info later
         if success:
             st.info(
                 "ℹ️ Next app restart will automatically merge "
                 "kroky_custom.json into kroky.json"
             )
     else:
-        # Also keep custom file in sync if it exists
-        if kroky_custom_path.exists():
-            save_json(kroky_custom_path, ordered)
-            saved_to = "both kroky.json and kroky_custom.json"
-    
+        # Primary succeeded – mirror to custom file as backup/log
+        save_json(kroky_custom_path, ordered)
+        saved_to = "both kroky.json and kroky_custom.json"    
     if success:
         st.session_state.steps_data = copy.deepcopy(ordered)
         # Add subtle debug info if in dev mode
