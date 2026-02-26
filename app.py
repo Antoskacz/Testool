@@ -972,9 +972,8 @@ elif page == "🔧 Edit Actions & Steps":
                             "description": action_desc.strip(),
                             "steps": st.session_state.new_steps.copy()
                         }
-                        save_json(KROKY_PATH, st.session_state.edit_steps_data)
-                        # 🔄 reload kroky.json into global steps_data
-                        st.session_state.steps_data = load_json(KROKY_PATH)
+                        # helper will save file and update session_state automatically
+                        save_and_update_steps(st.session_state.edit_steps_data)
                         st.success(f"✅ Action '{action_name}' added to kroky.json!")
                         st.session_state.new_action = False
                         st.session_state.new_steps = []
@@ -1034,7 +1033,8 @@ elif page == "🔧 Edit Actions & Steps":
                     if st.button("Yes, delete", key=f"confirm_del_{action}"):
                         # Remove action from kroky.json
                         del st.session_state.edit_steps_data[action]
-                        save_json(KROKY_PATH, st.session_state.edit_steps_data)
+                        # use helper to persist steps data
+                        save_and_update_steps(st.session_state.edit_steps_data)
                         
                         # Clear steps from all affected scenarios
                         for project_data in st.session_state.projects.values():
@@ -1044,8 +1044,6 @@ elif page == "🔧 Edit Actions & Steps":
                                         scenario["kroky"] = []
                         save_and_update_projects(st.session_state.projects)
                         
-                        # 🔄 reload kroky.json into global steps_data
-                        st.session_state.steps_data = load_json(KROKY_PATH)
                         st.success(f"✅ Action '{action}' deleted from kroky.json!")
                         if affected_count > 0:
                             st.info(f"📊 Cleared steps from {affected_count} test case(s)")
@@ -1134,9 +1132,8 @@ elif page == "🔧 Edit Actions & Steps":
                             "description": new_desc.strip(),
                             "steps": st.session_state[f"edit_steps_{action}"].copy()
                         }
-                        save_json(KROKY_PATH, st.session_state.edit_steps_data)
-                        # 🔄 reload kroky.json into global steps_data
-                        st.session_state.steps_data = load_json(KROKY_PATH)
+                        # helper updates file and session_state
+                        save_and_update_steps(st.session_state.edit_steps_data)
                         
                         # 🔄 Propagate changes to all scenarios using this action
                         updated = update_scenarios_with_action_steps(st.session_state.projects, st.session_state.steps_data, action)
