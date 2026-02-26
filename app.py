@@ -16,6 +16,20 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# custom CSS to visually separate form sections
+st.markdown("""
+<style>
+.section-add, .section-edit, .section-delete {
+  padding: 1rem;
+  border-radius: 5px;
+  margin-bottom: 1rem;
+}
+.section-add {background-color: #e6f7ff; border-left: 4px solid #1890ff;}
+.section-edit {background-color: #fffbe6; border-left: 4px solid #faad14;}
+.section-delete {background-color: #fff1f0; border-left: 4px solid #f5222d;}
+</style>
+""", unsafe_allow_html=True)
+
 # ---------- POMOCNÉ FUNKCE ----------
 def load_json(filepath):
     """Safe JSON loading"""
@@ -610,6 +624,7 @@ if page == "🏗️ Build Test Cases":
 
     
     # ---------- ROW 3: ADD NEW TEST CASE ----------
+    st.markdown('<div class="section-add">', unsafe_allow_html=True)
     st.subheader("➕ Add New Test Case")
     
     if not st.session_state.steps_data:
@@ -623,15 +638,21 @@ if page == "🏗️ Build Test Cases":
                               placeholder="e.g.: Activate DSL for B2C via SHOP channel...")
         action = st.selectbox("Action (from kroky.json)", options=action_list)
         
-        # Priority a Complexity
+        # Priority, Complexity, Segment, Kanal - 4 columns
         PRIORITY_MAP_VALUES = ["1-High", "2-Medium", "3-Low"]
         COMPLEXITY_MAP_VALUES = ["1-Giant", "2-Huge", "3-Big", "4-Medium", "5-Low"]
+        SEGMENT_OPTIONS = ["B2C", "B2B"]
+        KANAL_OPTIONS = ["SHOP", "IL"]
         
-        col_priority, col_complexity = st.columns(2)
+        col_priority, col_complexity, col_segment, col_kanal = st.columns(4)
         with col_priority:
             priority = st.selectbox("Priority", options=PRIORITY_MAP_VALUES, index=1)
         with col_complexity:
             complexity = st.selectbox("Complexity", options=COMPLEXITY_MAP_VALUES, index=3)
+        with col_segment:
+            segment = st.selectbox("Segment", options=SEGMENT_OPTIONS, index=0)
+        with col_kanal:
+            kanal = st.selectbox("Kanál", options=KANAL_OPTIONS, index=0)
         
         if st.form_submit_button("➕ Add Test Case"):
             if not sentence.strip():
@@ -643,21 +664,18 @@ if page == "🏗️ Build Test Cases":
                 order = project_data["next_id"]
                 
                 # Build test name
-                channel = extract_channel(sentence)
-                segment = extract_segment(sentence)
+                # Používáme vybrané hodnoty z dropdownů, ne extrahování z textu
                 technology = extract_technology(sentence)
 
                 # Sestavíme prefix a vyčistíme UNKNOWN části
-                prefix_parts = [f"{order:03d}", channel, segment, technology]
+                prefix_parts = [f"{order:03d}", kanal, segment, technology]
                 # Filtrujeme UNKNOWN a prázdné hodnoty
                 filtered_parts = [p for p in prefix_parts if p and p != "UNKNOWN"]
                 prefix = "_".join(filtered_parts)
 
-                # Ošetříme případ, že by po filtraci zůstalo jen číslo (např. ["009"])
-
                 test_name = f"{prefix}_{sentence.strip().capitalize()}"
 
-                # Ještě jednou vyčistíme (pro jistotu, pokud by sentence začínalo UNKNOWN apod.)
+                # Vyčistíme název
                 test_name = clean_tc_name(test_name)
                 
                 # Get steps for action
@@ -674,7 +692,7 @@ if page == "🏗️ Build Test Cases":
                     "test_name": test_name,
                     "akce": action,
                     "segment": segment,
-                    "kanal": channel,
+                    "kanal": kanal,
                     "priority": priority,
                     "complexity": complexity,
                     "veta": sentence.strip(),
@@ -689,6 +707,8 @@ if page == "🏗️ Build Test Cases":
 
 
     # ---------- ROW 4: EDIT EXISTING TEST CASE ----------
+    st.markdown('</div>', unsafe_allow_html=True)  # close add section
+    st.markdown('<div class="section-edit">', unsafe_allow_html=True)
     with st.expander("✏️ Edit Existing Test Case", expanded=False):
     
         if project_data["scenarios"]:
@@ -728,7 +748,11 @@ if page == "🏗️ Build Test Cases":
                         key="edit_action"
                     )
                     
-                    col_priority, col_complexity = st.columns(2)
+                    # Priority, Complexity, Segment, Kanal - 4 columns
+                    SEGMENT_OPTIONS = ["B2C", "B2B"]
+                    KANAL_OPTIONS = ["SHOP", "IL"]
+                    
+                    col_priority, col_complexity, col_segment, col_kanal = st.columns(4)
                     with col_priority:
                         priority = st.selectbox(
                             "Priority", 
@@ -743,6 +767,20 @@ if page == "🏗️ Build Test Cases":
                             index=COMPLEXITY_MAP_VALUES.index(testcase_to_edit["complexity"]) if testcase_to_edit["complexity"] in COMPLEXITY_MAP_VALUES else 3,
                             key="edit_complexity"
                         )
+                    with col_segment:
+                        segment = st.selectbox(
+                            "Segment",
+                            options=SEGMENT_OPTIONS,
+                            index=SEGMENT_OPTIONS.index(testcase_to_edit["segment"]) if testcase_to_edit["segment"] in SEGMENT_OPTIONS else 0,
+                            key="edit_segment"
+                        )
+                    with col_kanal:
+                        kanal = st.selectbox(
+                            "Kanál",
+                            options=KANAL_OPTIONS,
+                            index=KANAL_OPTIONS.index(testcase_to_edit["kanal"]) if testcase_to_edit["kanal"] in KANAL_OPTIONS else 0,
+                            key="edit_kanal"
+                        )
                     
                     if st.form_submit_button("💾 Save Changes"):
                         if not sentence.strip():
@@ -753,13 +791,11 @@ if page == "🏗️ Build Test Cases":
                             # Re-generate test name with updated values
                             order = testcase_to_edit["order_no"]
                             
-                            # Build test name - S NOVOU LOGIKOU BEZ UNKNOWN
-                            channel = extract_channel(sentence)
-                            segment = extract_segment(sentence)
+                            # Build test name - Používáme vybrané hodnoty z dropdownů
                             technology = extract_technology(sentence)
                             
                             # Sestavíme prefix a vyčistíme UNKNOWN části
-                            prefix_parts = [f"{order:03d}", channel, segment, technology]
+                            prefix_parts = [f"{order:03d}", kanal, segment, technology]
                             # Filtrujeme UNKNOWN a prázdné hodnoty
                             filtered_parts = [p for p in prefix_parts if p and p != "UNKNOWN"]
                             prefix = "_".join(filtered_parts)
@@ -788,7 +824,7 @@ if page == "🏗️ Build Test Cases":
                                 "test_name": new_test_name,
                                 "akce": action,
                                 "segment": segment,
-                                "kanal": channel,
+                                "kanal": kanal,
                                 "priority": priority,
                                 "complexity": complexity,
                                 "veta": sentence.strip(),
@@ -802,7 +838,9 @@ if page == "🏗️ Build Test Cases":
             st.info("No test cases available to edit. Add a test case first.")
 
 
+    st.markdown('</div>', unsafe_allow_html=True)  # close edit section
     # ---------- ROW 5: DELETE TEST CASE ----------
+    st.markdown('<div class="section-delete">', unsafe_allow_html=True)
     with st.expander("🗑️ Delete Test Case", expanded=False):
     
         if project_data["scenarios"]:
@@ -844,6 +882,7 @@ if page == "🏗️ Build Test Cases":
                 st.rerun()
         else:
             st.info("No test cases available to delete.")
+    st.markdown('</div>', unsafe_allow_html=True)  # close delete section
             
 
 # ---------- STRÁNKA 2: EDIT ACTIONS & STEPS ----------
