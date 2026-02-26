@@ -8,6 +8,7 @@ import copy
 import plotly.graph_objects as go  # zobrazeni grafu
 import plotly.express as px        # volitelny
 import re
+from datetime import datetime
 
 st.set_page_config(
     page_title="Testool",
@@ -64,6 +65,11 @@ def save_and_update_steps(data):
     # sort keys so file is alphabetical
     ordered = dict(sorted(data.items(), key=lambda kv: kv[0].lower()))
     
+    # debug: show where files are written
+    print(f"[DEBUG] base_dir={base_dir}")
+    print(f"[DEBUG] kroky_path={kroky_path}")
+    print(f"[DEBUG] kroky_custom_path={kroky_custom_path}")
+    
     # Try primary file first
     success = save_json(kroky_path, ordered)
     saved_to = "kroky.json"
@@ -92,7 +98,15 @@ def save_and_update_steps(data):
         st.toast(f"✅ Saved to {saved_to}", icon="💾")
     else:
         st.error("❌ Failed to save actions. Please contact admin.")
-    
+
+    # write a persistent debug record regardless of streamlit log visibility
+    try:
+        dbg_path = base_dir / "data" / "save_debug.log"
+        with open(dbg_path, "a", encoding="utf-8") as dbg:
+            dbg.write(f"{datetime.now().isoformat()} base_dir={base_dir} kroky={kroky_path} kroky_custom={kroky_custom_path} saved_to={saved_to} success={success}\n")
+    except Exception:
+        pass
+
     return success
 	
     
