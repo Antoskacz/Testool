@@ -938,6 +938,15 @@ elif page == "🔧 Edit Actions & Steps":
                 "These will be merged with the main file on startup."
             )
     
+    # Use global steps_data which already includes merged custom actions
+    # NOT local load of just kroky.json
+    # init session state ONLY ONCE
+    if "edit_steps_data" not in st.session_state:
+        st.session_state.edit_steps_data = st.session_state.steps_data.copy()
+
+    if "editing_action" not in st.session_state:
+        st.session_state.editing_action = None
+
     # manual commit button
     if st.button("💾 Commit All Changes to JSON", help="Writes the current list of actions to disk immediately"):
         save_and_update_steps(st.session_state.edit_steps_data)
@@ -949,15 +958,6 @@ elif page == "🔧 Edit Actions & Steps":
     st.write(f"**In‑memory actions (count {count})**")
     if st.checkbox("Show all action names", key="show_action_names"):
         st.text_area("Actions", value="\n".join(sorted(st.session_state.edit_steps_data.keys())), height=200)
-
-    # Use global steps_data which already includes merged custom actions
-    # NOT local load of just kroky.json
-    # init session state ONLY ONCE
-    if "edit_steps_data" not in st.session_state:
-        st.session_state.edit_steps_data = st.session_state.steps_data.copy()
-
-    if "editing_action" not in st.session_state:
-        st.session_state.editing_action = None
 
     if "new_steps" not in st.session_state:
         st.session_state.new_steps = []
