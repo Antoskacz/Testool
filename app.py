@@ -944,6 +944,12 @@ elif page == "🔧 Edit Actions & Steps":
         st.success("All actions pushed to file")
         st.experimental_rerun()
 
+    # show in-memory list for debugging
+    count = len(st.session_state.edit_steps_data)
+    st.write(f"**In‑memory actions (count {count})**")
+    if st.checkbox("Show all action names", key="show_action_names"):
+        st.text_area("Actions", value="\n".join(sorted(st.session_state.edit_steps_data.keys())), height=200)
+
     # Use global steps_data which already includes merged custom actions
     # NOT local load of just kroky.json
     # init session state ONLY ONCE
