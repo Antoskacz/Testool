@@ -10,12 +10,35 @@ import plotly.express as px        # volitelny
 import re
 from datetime import datetime
 
+# define base directory as the location of this script. This is
+# stable even when Streamlit copies the code to /tmp or the current
+# working directory changes during execution.
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+PROJECTS_PATH = DATA_DIR / "projects.json"
+KROKY_PATH = DATA_DIR / "kroky.json"
+KROKY_CUSTOM_PATH = DATA_DIR / "kroky_custom.json"  # fallback file for custom actions
+
+# ensure data directory exists as early as possible
+DATA_DIR.mkdir(exist_ok=True)
+
+
 st.set_page_config(
     page_title="Testool",
     page_icon="🧪",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Debug information to determine where the script is actually running.
+# Streamlit often copies the Python file to /tmp, which makes __file__ and
+# cwd point to a temporary location. We need to know the original workspace
+# path so that data files are stored persistently.
+import sys
+print(f"[INIT] cwd={Path.cwd()}")
+print(f"[INIT] __file__={__file__}")
+print(f"[INIT] sys.argv={sys.argv}")
+print(f"[INIT] argv[0] resolved={Path(sys.argv[0]).resolve()}")
 
 
 # ---------- POMOCNÉ FUNKCE ----------
@@ -42,9 +65,9 @@ def save_json(filepath, data):
 
 def save_and_update_projects(data):
     """Uloží projekty do souboru a aktualizuje session_state"""
-    # use working directory so that streamlit's temp copying doesn't confuse paths
-    base_dir = Path.cwd()
-    projects_path = base_dir / "data" / "projects.json"
+    # use fixed workspace path; not cwd, because Streamlit may run
+    # from a temp directory
+    projects_path = PROJECTS_PATH
     success = save_json(projects_path, data)
     if success:
         st.session_state.projects = copy.deepcopy(data)
@@ -57,16 +80,17 @@ def save_and_update_steps(data):
     falls back to kroky_custom.json. On startup, both files are loaded
     and merged so users never lose data.
     """
-    # use current working directory to avoid streamlit temp path issue
-    base_dir = Path.cwd()
-    kroky_path = base_dir / "data" / "kroky.json"
-    kroky_custom_path = base_dir / "data" / "kroky_custom.json"
+    # use fixed paths relative to script location; cwd may be /tmp when
+    # Streamlit copies the file for execution, so relying on __file__ keeps
+    # data inside the workspace where it survives restart.
+    kroky_path = KROKY_PATH
+    kroky_custom_path = KROKY_CUSTOM_PATH
 
     # sort keys so file is alphabetical
     ordered = dict(sorted(data.items(), key=lambda kv: kv[0].lower()))
     
     # debug: show where files are written
-    print(f"[DEBUG] base_dir={base_dir}")
+    print(f"[DEBUG] BASE_DIR={BASE_DIR}")
     print(f"[DEBUG] kroky_path={kroky_path}")
     print(f"[DEBUG] kroky_custom_path={kroky_custom_path}")
     
@@ -101,9 +125,9 @@ def save_and_update_steps(data):
 
     # write a persistent debug record regardless of streamlit log visibility
     try:
-        dbg_path = base_dir / "data" / "save_debug.log"
+        dbg_path = BASE_DIR / "data" / "save_debug.log"
         with open(dbg_path, "a", encoding="utf-8") as dbg:
-            dbg.write(f"{datetime.now().isoformat()} base_dir={base_dir} kroky={kroky_path} kroky_custom={kroky_custom_path} saved_to={saved_to} success={success}\n")
+            dbg.write(f"{datetime.now().isoformat()} BASE_DIR={BASE_DIR} kroky={kroky_path} kroky_custom={kroky_custom_path} saved_to={saved_to} success={success}\n")
     except Exception:
         pass
 
@@ -241,16 +265,24 @@ st.title("🧪 Testool")
 st.markdown("### Professional test case builder and manager")
 
 # ---------- SIDEBAR ----------
-# Cesty k souborům
-# prefer working directory as root location (streamlit copies script to /tmp)
-BASE_DIR = Path.cwd()
-DATA_DIR = BASE_DIR / "data"
-PROJECTS_PATH = DATA_DIR / "projects.json"
-KROKY_PATH = DATA_DIR / "kroky.json"
-KROKY_CUSTOM_PATH = DATA_DIR / "kroky_custom.json"  # fallback file for custom actions
+# paths (BASE_DIR, DATA_DIR, PROJECTS_PATH, KROKY_PATH, KROKY_CUSTOM_PATH)
+# are defined at the top of the module. We rely on those constants rather
+# than recalculating them here, ensuring the workspace location is always
 
-# Inicializace datových souborů až budou existovat
-DATA_DIR.mkdir(exist_ok=True)
+# debug information for troubleshooting path issues
+with st.sidebar.expander("🔍 Debug paths", expanded=False):
+    st.write("cwd", Path.cwd())
+    st.write("__file__", __file__)
+    import sys
+    st.write("sys.argv", sys.argv)
+    try:
+        st.write("argv[0] resolved", Path(sys.argv[0]).resolve())
+    except Exception as e:
+        st.write("argv resolve error", e)
+
+# used regardless of streamlit's working directory.
+
+# (DATA_DIR already created by module-level code.)
 
 # Načtení dat
 projects = load_json(PROJECTS_PATH)
