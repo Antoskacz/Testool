@@ -960,49 +960,32 @@ if page == "🏗️ Build Test Cases":
 # ---------- STRÁNKA 2: EDIT ACTIONS & STEPS ----------
 elif page == "🔧 Edit Actions & Steps":
     st.title("🔧 Edit Actions & Steps")
-    st.markdown("Manage actions and their steps. Every change is written to `kroky.json` and mirrored to `kroky_custom.json` (backup/fallback). You can merge/clear the custom file using the controls below.")
-    
-    # show last-modified times
-    import os, datetime
-    if KROKY_PATH.exists():
-        m = datetime.datetime.fromtimestamp(os.path.getmtime(KROKY_PATH))
-        st.caption(f"Primary file last modified: {m}")
-    if KROKY_CUSTOM_PATH.exists():
-        m = datetime.datetime.fromtimestamp(os.path.getmtime(KROKY_CUSTOM_PATH))
-        st.caption(f"Custom fallback file last modified: {m}")
-    
-    # Display status of custom file if it exists
-    if KROKY_CUSTOM_PATH.exists():
-        custom_data = load_json(KROKY_CUSTOM_PATH)
-        if custom_data:
-            st.info(
-                f"ℹ️ Found {len(custom_data)} custom action(s) in `kroky_custom.json`. "
-                "These will be merged with the main file on startup."
-            )
-    
-    # Use global steps_data which already includes merged custom actions
-    # NOT local load of just kroky.json
-    # Initialize edit_steps_data ONCE (first visit to this page)
-    # Then keep in-memory copy so new actions aren't lost on rerun
+    # first-time initialization of edit_steps_data (keep it after this)
     if "edit_steps_data" not in st.session_state:
         st.session_state.edit_steps_data = st.session_state.steps_data.copy()
-
     if "editing_action" not in st.session_state:
         st.session_state.editing_action = None
 
-    # manual commit button
-    if st.button("💾 Commit All Changes to JSON", help="Writes the current list of actions to disk immediately"):
-        save_and_update_steps(st.session_state.edit_steps_data)
-        st.success("All actions pushed to file")
-        # avoid experimental rerun bug; user can refresh manually if needed
-        # st.experimental_rerun()
-
-    # show in-memory list for debugging
-    count = len(st.session_state.edit_steps_data)
-    st.write(f"**In‑memory actions (count {count})**")
-    if st.checkbox("Show all action names", key="show_action_names"):
-        st.text_area("Actions", value="\n".join(sorted(st.session_state.edit_steps_data.keys())), height=200)
-
+    # layout top row: left shows counts+action list, right has small commit button
+    col_left, col_right = st.columns([3,1])
+    # left side: action counts
+    disk_count = len(load_json(KROKY_PATH))
+    mem_count = len(st.session_state.edit_steps_data)
+    with col_left:
+        st.write(f"**Actions on disk:** {disk_count}")
+        st.write(f"**Actions in memory:** {mem_count}")
+    with col_right:
+        # keep commit button available but unobtrusive
+        if st.button("💾 Commit to JSON", help="Save current in‑memory list to disk"):
+            save_and_update_steps(st.session_state.edit_steps_data)
+            st.success("All actions pushed to file")
+    # below: show list of actions in memory
+    st.markdown("---")
+    st.write("**In‑memory actions:**")
+    st.text_area("", value="\n".join(sorted(st.session_state.edit_steps_data.keys())), height=150)
+    
+    # the initialization and controls above already handle everything;
+    # drop the duplicated commit/count/debugging section to keep UI clean.
     if "new_steps" not in st.session_state:
         st.session_state.new_steps = []
 
