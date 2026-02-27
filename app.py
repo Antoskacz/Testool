@@ -90,9 +90,10 @@ def save_and_update_steps(data):
     ordered = dict(sorted(data.items(), key=lambda kv: kv[0].lower()))
     
     # debug: show where files are written
-    print(f"[DEBUG] BASE_DIR={BASE_DIR}")
-    print(f"[DEBUG] kroky_path={kroky_path}")
-    print(f"[DEBUG] kroky_custom_path={kroky_custom_path}")
+    print(f"[DEBUG] SAVE_AND_UPDATE: BASE_DIR={BASE_DIR}")
+    print(f"[DEBUG] SAVE_AND_UPDATE: kroky_path={kroky_path}")
+    print(f"[DEBUG] SAVE_AND_UPDATE: kroky_custom_path={kroky_custom_path}")
+    print(f"[DEBUG] SAVE_AND_UPDATE: Attempting to save {len(ordered)} actions to disk")
     
     # Try primary file first
     success = save_json(kroky_path, ordered)
@@ -100,6 +101,7 @@ def save_and_update_steps(data):
     
     # If primary fails, still write to custom file
     if not success:
+        print(f"[ERROR] SAVE_AND_UPDATE: Failed to save to kroky.json, trying custom...")
         st.warning(
             "⚠️ Could not write to kroky.json. "
             "Saving to kroky_custom.json instead. Your data is safe!"
@@ -108,11 +110,15 @@ def save_and_update_steps(data):
         saved_to = "kroky_custom.json"
         # when primary fails we obviously need custom for merge info later
         if success:
+            print(f"[SUCCESS] SAVE_AND_UPDATE: Successfully saved to kroky_custom.json")
             st.info(
                 "ℹ️ Next app restart will automatically merge "
                 "kroky_custom.json into kroky.json"
             )
+        else:
+            print(f"[CRITICAL ERROR] SAVE_AND_UPDATE: Failed to save to both files!")
     else:
+        print(f"[SUCCESS] SAVE_AND_UPDATE: Successfully saved {len(ordered)} actions to kroky.json")
         # Primary succeeded – mirror to custom file as backup/log
         save_json(kroky_custom_path, ordered)
         saved_to = "both kroky.json and kroky_custom.json"    
@@ -308,7 +314,7 @@ if 'selected_project' not in st.session_state:
 
 if 'steps_data' not in st.session_state:
     st.session_state.steps_data = copy.deepcopy(steps_data)
-        
+    print(f"[DEBUG] INIT: steps_data first initialization from disk")
 
 # ---------- SIDEBAR ----------
 with st.sidebar:
@@ -950,22 +956,56 @@ if page == "🏗️ Build Test Cases":
 # ---------- STRÁNKA 2: EDIT ACTIONS & STEPS ----------
 elif page == "🔧 Edit Actions & Steps":
     st.title("🔧 Edit Actions & Steps")
-    # first-time initialization of edit_steps_data (keep it after this)
+    
+    # Load current data from disk to ensure we always have the latest
+    disk_steps = load_json(KROKY_PATH)
+    custom_steps = load_json(KROKY_CUSTOM_PATH)
+    if custom_steps:
+        disk_steps.update(custom_steps)
+    
+    # Initialize edit_steps_data: combine disk data with any session state data
+    # This handles the case where session_state was reset on F5 refresh
     if "edit_steps_data" not in st.session_state:
-        st.session_state.edit_steps_data = st.session_state.steps_data.copy()
+        # First visit to this page (no prior session state)
+        st.session_state.edit_steps_data = copy.deepcopy(disk_steps)
+        print(f"[DEBUG] INIT edit_steps_data: Created from disk. Keys: {sorted(st.session_state.edit_steps_data.keys())[:3]}...")
+    else:
+        # Session state exists - merge disk data with session data
+        # Preserve any new actions that user added but not yet saved
+        print(f"[DEBUG] RESTORE edit_steps_data from session")
+        print(f"[DEBUG]   Session has ({len(st.session_state.edit_steps_data)}): {sorted(st.session_state.edit_steps_data.keys())[:3]}...")
+        print(f"[DEBUG]   Disk has ({len(disk_steps)}): {sorted(disk_steps.keys())[:3]}...")
+        # Keep any actions from session that are not on disk (new unsaved actions)
+        for action_name, action_data in st.session_state.edit_steps_data.items():
+            # Don't overwrite session data with disk data - keep the session version
+            # This preserves new actions user added
+            if action_name not in disk_steps:
+                print(f"[DEBUG]   Keeping unsaved action from session: {action_name}")
+    
     if "editing_action" not in st.session_state:
         st.session_state.editing_action = None
 
     # layout top row: left shows counts+action list, right has small commit button
     # main row: left panel action list, tiny separator, right panel commit + counts
     left, sep, right = st.columns([3, 0.05, 2])
+    
     # Calculate correct counts: disk = what's in kroky.json, non-committed = what's in memory but NOT on disk
     disk_data = load_json(KROKY_PATH)
-    disk_action_names = set(disk_data.keys())
-    mem_action_names = set(st.session_state.edit_steps_data.keys())
+    
+    # IMPORTANT: Convert to dict keys sets properly
+    disk_action_names = set(disk_data.keys()) if disk_data else set()
+    mem_action_names = set(st.session_state.edit_steps_data.keys()) if st.session_state.edit_steps_data else set()
+    
+    # Actions that are in memory but NOT on disk are non-committed
     non_committed = mem_action_names - disk_action_names
+    
     disk_count = len(disk_action_names)
     mem_count = len(non_committed)
+    
+    # DEBUG: Log what we see
+    print(f"[DEBUG] EDIT_ACTIONS_PAGE disk_data keys ({disk_count}): {sorted(disk_action_names)}")
+    print(f"[DEBUG] EDIT_ACTIONS_PAGE edit_steps_data keys: {sorted(mem_action_names)}")
+    print(f"[DEBUG] EDIT_ACTIONS_PAGE non_committed ({mem_count}): {non_committed}")
     
     with left:
         st.text_area("All actions:", value="\n".join(sorted(st.session_state.edit_steps_data.keys())), height=150, disabled=True)
@@ -1057,12 +1097,25 @@ elif page == "🔧 Edit Actions & Steps":
                         st.error("Add at least one step")
                     else:
                         # Save to kroky.json
-                        st.session_state.edit_steps_data[action_name.strip()] = {
+                        action_key = action_name.strip()
+                        st.session_state.edit_steps_data[action_key] = {
                             "description": action_desc.strip(),
                             "steps": st.session_state.new_steps.copy()
                         }
-                        # helper will save file and update session_state automatically
-                        save_and_update_steps(st.session_state.edit_steps_data)
+                        print(f"[DEBUG] SAVE_NEW_ACTION: Added '{action_key}' to edit_steps_data")
+                        print(f"[DEBUG] SAVE_NEW_ACTION: edit_steps_data keys before save: {list(st.session_state.edit_steps_data.keys())}")
+                        # Save to disk IMMEDIATELY
+                        success = save_and_update_steps(st.session_state.edit_steps_data)
+                        print(f"[DEBUG] SAVE_NEW_ACTION: After save_and_update_steps, success={success}")
+                        print(f"[DEBUG] SAVE_NEW_ACTION: edit_steps_data keys: {list(st.session_state.edit_steps_data.keys())}")
+                        
+                        # Verify it was saved to disk
+                        disk_check = load_json(KROKY_PATH)
+                        if action_key in disk_check:
+                            print(f"[DEBUG] SAVE_NEW_ACTION: ✓ Confirmed '{action_key}' is now IN kroky.json")
+                        else:
+                            print(f"[DEBUG] SAVE_NEW_ACTION: ✗ WARNING: '{action_key}' is NOT in kroky.json after save!")
+                        
                         st.success(f"✅ Action '{action_name}' added to kroky.json!")
                         st.session_state.new_action = False
                         st.session_state.new_steps = []
