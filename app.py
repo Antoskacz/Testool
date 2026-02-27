@@ -962,16 +962,15 @@ elif page == "🔧 Edit Actions & Steps":
     disk_count = len(load_json(KROKY_PATH))
     mem_count = len(st.session_state.edit_steps_data)
     with left:
-        st.write("**All actions:**")
-        st.text_area("", value="\n".join(sorted(st.session_state.edit_steps_data.keys())), height=200)
+        st.text_area("All actions:", value="\n".join(sorted(st.session_state.edit_steps_data.keys())), height=150, disabled=True)
     with sep:
         st.markdown("<div style='border-left:1px solid gray;height:100%'></div>", unsafe_allow_html=True)
     with right:
-        if st.button("💾 Commit", help="Save current in‑memory list to disk"):
+        st.write(f"**Actions in kroky.json:** {disk_count}")
+        st.write(f"**Non committed actions:** {mem_count}")
+        if st.button("💾 Commit", help="Save current in‑memory list to disk", use_container_width=True):
             save_and_update_steps(st.session_state.edit_steps_data)
             st.success("All actions pushed to file")
-        st.write(f"**Akce v souboru kroky.json (on disk):** {disk_count}")
-        st.write(f"**Akce v paměti (non committed):** {mem_count}")
     
     # the initialization and controls above already handle everything;
     # drop the duplicated commit/count/debugging section to keep UI clean.
@@ -984,18 +983,15 @@ elif page == "🔧 Edit Actions & Steps":
     if "delete_action" not in st.session_state:
         st.session_state.delete_action = None
 
+    st.markdown("---")
+    st.write("**➕ Add New Action**")
     
-    # ---------- ADD NEW ACTION ----------
-    st.subheader("➕ Add New Action")
-    
-    if st.button("➕ Add New Action", key="new_action_main", use_container_width=True):
+    if st.button("Add New Action", key="new_action_main", use_container_width=True):
         st.session_state.new_action = True
         st.session_state.editing_action = None
     
-    # NEW ACTION FORM
+    # NEW ACTION FORM - show only when button clicked
     if st.session_state.get("new_action", False):
-        st.subheader("➕ Add New Action")
-        
         with st.form("new_action_form"):
             action_name = st.text_input("Action Name*", placeholder="e.g.: DSL_Activation", key="new_action_name")
             action_desc = st.text_input("Action Description*", placeholder="e.g.: DSL service activation", key="new_action_desc")
