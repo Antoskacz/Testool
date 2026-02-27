@@ -269,16 +269,6 @@ st.markdown("### Professional test case builder and manager")
 # are defined at the top of the module. We rely on those constants rather
 # than recalculating them here, ensuring the workspace location is always
 
-# debug information for troubleshooting path issues
-with st.sidebar.expander("🔍 Debug paths", expanded=False):
-    st.write("cwd", Path.cwd())
-    st.write("__file__", __file__)
-    import sys
-    st.write("sys.argv", sys.argv)
-    try:
-        st.write("argv[0] resolved", Path(sys.argv[0]).resolve())
-    except Exception as e:
-        st.write("argv resolve error", e)
 
 # used regardless of streamlit's working directory.
 
@@ -967,22 +957,21 @@ elif page == "🔧 Edit Actions & Steps":
         st.session_state.editing_action = None
 
     # layout top row: left shows counts+action list, right has small commit button
-    col_left, col_right = st.columns([3,1])
-    # left side: action counts
+    # main row: left panel counts+commit, tiny separator, right panel action list
+    left, sep, right = st.columns([2, 0.05, 3])
     disk_count = len(load_json(KROKY_PATH))
     mem_count = len(st.session_state.edit_steps_data)
-    with col_left:
-        st.write(f"**Actions on disk:** {disk_count}")
-        st.write(f"**Actions in memory:** {mem_count}")
-    with col_right:
-        # keep commit button available but unobtrusive
-        if st.button("💾 Commit to JSON", help="Save current in‑memory list to disk"):
+    with left:
+        if st.button("💾 Commit", help="Save current in‑memory list to disk"):
             save_and_update_steps(st.session_state.edit_steps_data)
             st.success("All actions pushed to file")
-    # below: show list of actions in memory
-    st.markdown("---")
-    st.write("**In‑memory actions:**")
-    st.text_area("", value="\n".join(sorted(st.session_state.edit_steps_data.keys())), height=150)
+        st.write(f"**Akce v souboru kroky.json (on disk):** {disk_count}")
+        st.write(f"**Akce v paměti (non committed):** {mem_count}")
+    with sep:
+        st.markdown("<div style='border-left:1px solid gray;height:100%'></div>", unsafe_allow_html=True)
+    with right:
+        st.write("**All actions:**")
+        st.text_area("", value="\n".join(sorted(st.session_state.edit_steps_data.keys())), height=200)
     
     # the initialization and controls above already handle everything;
     # drop the duplicated commit/count/debugging section to keep UI clean.
