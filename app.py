@@ -1096,27 +1096,17 @@ elif page == "🔧 Edit Actions & Steps":
                     elif not st.session_state.new_steps:
                         st.error("Add at least one step")
                     else:
-                        # Save to kroky.json
+                        # Save to kroky.json IMMEDIATELY before page refresh
                         action_key = action_name.strip()
                         st.session_state.edit_steps_data[action_key] = {
                             "description": action_desc.strip(),
                             "steps": st.session_state.new_steps.copy()
                         }
-                        print(f"[DEBUG] SAVE_NEW_ACTION: Added '{action_key}' to edit_steps_data")
-                        print(f"[DEBUG] SAVE_NEW_ACTION: edit_steps_data keys before save: {list(st.session_state.edit_steps_data.keys())}")
-                        # Save to disk IMMEDIATELY
-                        success = save_and_update_steps(st.session_state.edit_steps_data)
-                        print(f"[DEBUG] SAVE_NEW_ACTION: After save_and_update_steps, success={success}")
-                        print(f"[DEBUG] SAVE_NEW_ACTION: edit_steps_data keys: {list(st.session_state.edit_steps_data.keys())}")
+                        # CRITICAL: Save to disk BEFORE st.rerun()
+                        # This ensures data persists even if session_state resets
+                        save_and_update_steps(st.session_state.edit_steps_data)
                         
-                        # Verify it was saved to disk
-                        disk_check = load_json(KROKY_PATH)
-                        if action_key in disk_check:
-                            print(f"[DEBUG] SAVE_NEW_ACTION: ✓ Confirmed '{action_key}' is now IN kroky.json")
-                        else:
-                            print(f"[DEBUG] SAVE_NEW_ACTION: ✗ WARNING: '{action_key}' is NOT in kroky.json after save!")
-                        
-                        st.success(f"✅ Action '{action_name}' added to kroky.json!")
+                        st.success(f"✅ Action '{action_name}' saved!")
                         st.session_state.new_action = False
                         st.session_state.new_steps = []
                         st.rerun()
