@@ -959,8 +959,14 @@ elif page == "🔧 Edit Actions & Steps":
     # layout top row: left shows counts+action list, right has small commit button
     # main row: left panel action list, tiny separator, right panel commit + counts
     left, sep, right = st.columns([3, 0.05, 2])
-    disk_count = len(load_json(KROKY_PATH))
-    mem_count = len(st.session_state.edit_steps_data)
+    # Calculate correct counts: disk = what's in kroky.json, non-committed = what's in memory but NOT on disk
+    disk_data = load_json(KROKY_PATH)
+    disk_action_names = set(disk_data.keys())
+    mem_action_names = set(st.session_state.edit_steps_data.keys())
+    non_committed = mem_action_names - disk_action_names
+    disk_count = len(disk_action_names)
+    mem_count = len(non_committed)
+    
     with left:
         st.text_area("All actions:", value="\n".join(sorted(st.session_state.edit_steps_data.keys())), height=150, disabled=True)
     with sep:
@@ -984,9 +990,8 @@ elif page == "🔧 Edit Actions & Steps":
         st.session_state.delete_action = None
 
     st.markdown("---")
-    st.write("**➕ Add New Action**")
     
-    if st.button("Add New Action", key="new_action_main", use_container_width=True):
+    if st.button("➕ **Add New Action**", key="new_action_main", use_container_width=True):
         st.session_state.new_action = True
         st.session_state.editing_action = None
     
@@ -1238,49 +1243,6 @@ elif page == "🔧 Edit Actions & Steps":
                     if f"edit_steps_{action}" in st.session_state:
                         del st.session_state[f"edit_steps_{action}"]
                     st.rerun()
-
-    # ---------- MANAGEMENT OF CUSTOM FILE ----------
-    st.markdown("---")
-    st.subheader("📁 File Management")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        st.write("**Primary File (kroky.json):**")
-        primary_count = len(load_json(KROKY_PATH))
-        st.metric("Actions", primary_count)
-    
-    with col2:
-        st.write("**Custom File (kroky_custom.json):**")
-        custom_count = len(load_json(KROKY_CUSTOM_PATH)) if KROKY_CUSTOM_PATH.exists() else 0
-        st.metric("Actions", custom_count)
-    
-    if custom_count > 0:
-        st.info(f"ℹ️ Found {custom_count} custom action(s). They are automatically merged with primary on startup.")
-        
-        col_merge, col_clear = st.columns(2)
-        with col_merge:
-            if st.button("🔄 Merge Custom → Primary", use_container_width=True):
-                # Load both files
-                primary = load_json(KROKY_PATH)
-                custom = load_json(KROKY_CUSTOM_PATH)
-                
-                # Merge custom into primary
-                primary.update(custom)
-                
-                # Save merged result back to primary
-                save_and_update_steps(primary)
-                
-                # Clear custom file
-                KROKY_CUSTOM_PATH.unlink()
-                
-                st.success("✅ Merged! Custom file deleted.")
-                st.rerun()
-        
-        with col_clear:
-            if st.button("🗑️ Clear Custom File", use_container_width=True):
-                KROKY_CUSTOM_PATH.unlink()
-                st.success("✅ Custom file deleted.")
-                st.rerun()
 
 # ---------- STRÁNKA 3: TEXT COMPARATOR ----------
 elif page == "📝 Text Comparator":
