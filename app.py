@@ -305,22 +305,18 @@ if not steps_data or steps_data == {}:
     steps_data = {}
     save_json(KROKY_PATH, steps_data)
 
-# Session state - vždy načteme čerstvá data ze souborů
-# To zajistí, že se neutrácejí změny mezi restarty aplikace
+# Session state initialization:
+# IMPORTANT: We initialize ONLY on first run (no 'in st.session_state'),
+# and then PRESERVE the in-memory copy across st.rerun() calls.
+# This allows temporary changes (new actions) to persist within the session
+# until the app is fully restarted.
 if 'projects' not in st.session_state:
-    st.session_state.projects = copy.deepcopy(projects)
-else:
-    # Při každém novém spuštění znovu načteme data ze souboru
-    # aby se neztratily žádné změny mezi restarty
     st.session_state.projects = copy.deepcopy(projects)
 
 if 'selected_project' not in st.session_state:
     st.session_state.selected_project = None
 
 if 'steps_data' not in st.session_state:
-    st.session_state.steps_data = copy.deepcopy(steps_data)
-else:
-    # Znovu načteme aktuální data ze souboru
     st.session_state.steps_data = copy.deepcopy(steps_data)
         
 
@@ -986,9 +982,10 @@ elif page == "🔧 Edit Actions & Steps":
     
     # Use global steps_data which already includes merged custom actions
     # NOT local load of just kroky.json
-    # ALWAYS sync edit_steps_data from current steps_data
-    # This ensures after st.rerun() we have latest file state
-    st.session_state.edit_steps_data = st.session_state.steps_data.copy()
+    # Initialize edit_steps_data ONCE (first visit to this page)
+    # Then keep in-memory copy so new actions aren't lost on rerun
+    if "edit_steps_data" not in st.session_state:
+        st.session_state.edit_steps_data = st.session_state.steps_data.copy()
 
     if "editing_action" not in st.session_state:
         st.session_state.editing_action = None
