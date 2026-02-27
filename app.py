@@ -957,21 +957,21 @@ elif page == "🔧 Edit Actions & Steps":
         st.session_state.editing_action = None
 
     # layout top row: left shows counts+action list, right has small commit button
-    # main row: left panel counts+commit, tiny separator, right panel action list
-    left, sep, right = st.columns([2, 0.05, 3])
+    # main row: left panel action list, tiny separator, right panel commit + counts
+    left, sep, right = st.columns([3, 0.05, 2])
     disk_count = len(load_json(KROKY_PATH))
     mem_count = len(st.session_state.edit_steps_data)
     with left:
+        st.write("**All actions:**")
+        st.text_area("", value="\n".join(sorted(st.session_state.edit_steps_data.keys())), height=200)
+    with sep:
+        st.markdown("<div style='border-left:1px solid gray;height:100%'></div>", unsafe_allow_html=True)
+    with right:
         if st.button("💾 Commit", help="Save current in‑memory list to disk"):
             save_and_update_steps(st.session_state.edit_steps_data)
             st.success("All actions pushed to file")
         st.write(f"**Akce v souboru kroky.json (on disk):** {disk_count}")
         st.write(f"**Akce v paměti (non committed):** {mem_count}")
-    with sep:
-        st.markdown("<div style='border-left:1px solid gray;height:100%'></div>", unsafe_allow_html=True)
-    with right:
-        st.write("**All actions:**")
-        st.text_area("", value="\n".join(sorted(st.session_state.edit_steps_data.keys())), height=200)
     
     # the initialization and controls above already handle everything;
     # drop the duplicated commit/count/debugging section to keep UI clean.
