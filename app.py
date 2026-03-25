@@ -443,7 +443,7 @@ st.markdown("""
         position: sticky;
         top: 0;
         z-index: 999;
-        background-color: #646f77;
+        background-color: ##262730;
         padding: 25px 0;
         margin: -50px -50px 20px -50px;
         text-align: center;
