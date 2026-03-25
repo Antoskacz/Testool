@@ -11,6 +11,10 @@
         "/^cd /workspaces/Testool && source \\.venv/bin/activate 2>/dev/null && streamlit run app\\.py --logger\\.level=error 2>&1 \\| head -30 &$/": {
             "approve": true,
             "matchCommandLine": true
+        },
+        "/^cd /workspaces/Testool && python -m py_compile app\\.py && echo '✅ Syntax OK'$/": {
+            "approve": true,
+            "matchCommandLine": true
         }
     }
 }

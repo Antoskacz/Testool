@@ -316,9 +316,9 @@ if 'steps_data' not in st.session_state:
     st.session_state.steps_data = copy.deepcopy(steps_data)
     print(f"[DEBUG] INIT: steps_data first initialization from disk")
 
-# Initialize selected tab (0 = Build, 1 = Edit, 2 = Text Comp)
+# Initialize selected tab
 if 'selected_tab' not in st.session_state:
-    st.session_state.selected_tab = 0
+    st.session_state.selected_tab = 'build'
 
 # ---------- SIDEBAR: LOGO + PROJECT MANAGEMENT ----------
 with st.sidebar:
@@ -427,31 +427,53 @@ with st.sidebar:
                 save_and_update_projects(st.session_state.projects)
                 st.success("Subject cleared.")
 
-# ---------- MAIN CONTENT: TABS NAVIGATION ----------
-tab1, tab2, tab3 = st.tabs([
-    "🏗️ Build Test Cases",
-    "🔧 Edit Actions & Steps",
-    "📝 Text Comparator"
-])
+# ---------- MAIN CONTENT: TOP NAV ----------
+nav1, nav2, nav3, nav4 = st.columns([2, 1, 1, 1])
+
+with nav1:
+    st.markdown("<h2 style='margin: 0; color: #00FFB3;'>🧪 Testool</h2>", unsafe_allow_html=True)
+
+with nav2:
+    if st.button("🏗️ Test Cases", use_container_width=True):
+        st.session_state.selected_tab = "build"
+
+with nav3:
+    if st.button("🔧 Actions & Steps", use_container_width=True):
+        st.session_state.selected_tab = "edit"
+
+with nav4:
+    if st.button("📝 Text Comparator", use_container_width=True):
+        st.session_state.selected_tab = "text"
+
+st.markdown("---")
+
+selected_tab = st.session_state.get("selected_tab", "build")
 
 # ---------- TAB 1: BUILD TEST CASES ----------
-with tab1:
+if selected_tab == "build":
     st.title("🏗️ Build Test Cases")
     
-    if st.session_state.selected_project is None:
-        st.info("Select or create a project in the sidebar.")
-        st.stop()
-    
     project_name = st.session_state.selected_project
-    project_data = st.session_state.projects[project_name]
+    if project_name is None:
+        st.warning("Select or create a project in the sidebar to work with test cases.")
+        project_data = {
+            "subject": "",
+            "scenarios": [],
+            "next_id": 1
+        }
+        project_exists = False
+    else:
+        project_data = st.session_state.projects[project_name]
+        project_exists = True
     
     # ---------- ROW 1: PROJECT OVERVIEW + ANALYSIS ----------
     col_overview, col_analysis = st.columns([1, 1.5])  # Pravá část (graf) větší
     
     with col_overview:
         st.subheader("📊 Project Overview")
-        subject_value = project_data.get('subject', r'UAT2\Antosova\\')
-        st.write(f"**Active Project:** {project_name}")
+        subject_value = project_data.get('subject', "")
+        display_project_name = project_name if project_name else "— no project selected —"
+        st.write(f"**Active Project:** {display_project_name}")
         st.write(f"**Subject:** {subject_value}")
         
         # Actions by Segment - přesunuto sem
@@ -700,6 +722,10 @@ with tab1:
     # ---------- ROW 3: ADD NEW TEST CASE ----------
     st.subheader("➕ Add New Test Case")
     
+    if not project_exists:
+        st.info("Create a project first to add test cases.")
+        st.stop()
+
     if not st.session_state.steps_data:
         st.error("❌ No actions found! Please add actions in 'Edit Actions & Steps' page first.")
         st.stop()
@@ -954,7 +980,7 @@ with tab1:
     # end delete expander
 
 # ---------- TAB 2: EDIT ACTIONS & STEPS ----------
-with tab2:
+if selected_tab == "edit":
     st.title("🔧 Edit Actions & Steps")
     
     # Load current data from disk to ensure we always have the latest
@@ -1288,7 +1314,7 @@ with tab2:
                     st.rerun()
 
 # ---------- TAB 3: TEXT COMPARATOR ----------
-with tab3:
+if selected_tab == "text":
     st.title("📝 Text Comparator")
     st.markdown("Compare two texts with highlighted differences")
     
