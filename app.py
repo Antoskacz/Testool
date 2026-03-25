@@ -550,7 +550,6 @@ with st.sidebar:
     if current_project:
         st.markdown("---")
 
-        st.markdown('<div class="tt-card">', unsafe_allow_html=True)
         st.subheader("🛠️ Project Settings")
 
         # Rename project
@@ -599,7 +598,6 @@ with st.sidebar:
 
         # Subject settings
         st.markdown("---")
-        st.markdown('<div class="tt-card">', unsafe_allow_html=True)
         st.subheader("📨 Subject Settings")
 
         subject_val = st.session_state.projects[current_project].get("subject", "")
@@ -745,7 +743,6 @@ if selected_tab == "build":
     col_overview, col_analysis = st.columns([1, 1.5])  # Pravá část (graf) větší
     
     with col_overview:
-        st.markdown('<div class="tt-card">', unsafe_allow_html=True)
         st.subheader("📊 Project Overview")
         subject_value = project_data.get('subject', "")
         display_project_name = project_name if project_name else "— no project selected —"
@@ -810,7 +807,6 @@ if selected_tab == "build":
     
     # ----------------------------GRAF---------------------------
     with col_analysis:
-        st.markdown('<div class="tt-card">', unsafe_allow_html=True)
         st.markdown("<h3 style='text-align: center;'>📈 Distribution Analysis</h3>", unsafe_allow_html=True)
         
         testcases = project_data.get("scenarios", [])
@@ -880,7 +876,6 @@ if selected_tab == "build":
     # ------------------------------------ EXPORT SECTION ------------------------------------
     st.markdown("---")
 
-    st.markdown('<div class="tt-card">', unsafe_allow_html=True)
     st.markdown("### 💾 Export Test Cases")
     st.markdown('<div class="tt-muted">Generate clean, renumbered and diacritics-free Excel export for the selected project.</div>', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
@@ -987,8 +982,6 @@ if selected_tab == "build":
         if not df.empty:
             df = df.sort_values(by="Order", ascending=True)
         
-
-        st.markdown('<div class="tt-card">', unsafe_allow_html=True)
         st.subheader("📋 Test Cases List")
         st.dataframe(
             df,
@@ -1313,7 +1306,7 @@ if selected_tab == "edit":
 
     # layout top row: left shows counts+action list, right has small commit button
     # main row: left panel action list, tiny separator, right panel commit + counts
-    st.markdown('<div class="tt-card">', unsafe_allow_html=True)
+
     left, sep, right = st.columns([3, 0.05, 2])
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1618,7 +1611,6 @@ if selected_tab == "edit":
 # ---------- TAB 3: TEXT COMPARATOR ----------
 if selected_tab == "text":
     # 📝 Text Comparator
-    st.markdown('<div class="tt-card">', unsafe_allow_html=True)
     st.markdown("### 📝 Text Comparator")
     st.markdown('<div class="tt-muted">Compare two texts and highlight character-level differences.</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
