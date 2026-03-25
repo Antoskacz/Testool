@@ -75,8 +75,8 @@
         "expected": "OT zpracovano bez chyb"
       },
       {
-        "description": "Proved kontrolu dokoncene objednavky v Siebel a COM a zkontroluj aktivni atribut v designoss",
-        "expected": "Objednavka je spravne dokoncena, atribut je aktivni: FWA/CFS 220_provider = 2; DSL/CFS 207_provider = 2; OPTIN/DNS profile = FIXCZNIC…"
+        "description": "Proved kontrolu dokoncene objednavky v Siebel a COM a zkontroluj aktivni atribut v SBL a COM (designoss).",
+        "expected": "Objednavka je spravne dokoncena, atribut je aktivni (SECURITY: FWA/CFS 220_provider = 2; DSL/CFS 207_provider = 2; OPTIN/DNS profile = FIXCZNIC…)."
       },
       {
         "description": "Proved kontrolu notifikaci SMS/Email",
@@ -255,7 +255,7 @@
     "description": "Dokup HW k fixní službě.",
     "steps": [
       {
-        "description": "NA konkretnim zakaznikovi jdi na pozadovanou sluzbu a klikni an objednat.",
+        "description": "Na konkretnim zakaznikovi jdi na pozadovanou sluzbu a klikni na objednat.",
         "expected": "Prokliknutí do košíku."
       },
       {
@@ -263,7 +263,11 @@
         "expected": "Požadovaný HW vložen do košíku, IMEI propsáno."
       },
       {
-        "description": "Objednávku dokonči a odešli do COM, kde zkontroluj průběh objednávky.",
+        "description": "Pokud u sluzby byl aktivni HW, tak zaloz objednavku na vraceni CPE, kde vlozis IMEI stareho zarizeni (lze vlozit do stejne objednavky nebo udelat extra objednavku na vraceni CPE), ale to by byla spis vymena HW.",
+        "expected": "Objednávka zalozena, vlozeno IMEI puvodniho HW a dokoncena."
+      },
+      {
+        "description": "Hlavni objednávku dokonči a odešli do COM, kde zkontroluj průběh objednávky.",
         "expected": "Objednávka odeslána a má kladný průběh."
       },
       {
@@ -687,6 +691,198 @@
         "expected": "Prokliknutí do košíku."
       },
       {
+        "description": "Zvol možnost změny tarifu - tarif s nizsi rychlosti (zkontroluj, ze se nabizi jen nizsi rychlosti nez byla puvodni) / tarif na zaklade overeni dostupnosti - a vyber novou rychlost pevného internetu.",
+        "expected": "Nový tarif vybrán."
+      },
+      {
+        "description": "Vyplň povinná a požadovaná pole a proklikej se až k odeslání objednávky.",
+        "expected": "Proklikání úspěšné až k odeslání objednávky."
+      },
+      {
+        "description": "Objednávku odešli do COM a zkontroluj správný rozpad tasků bez chyby.",
+        "expected": "Objednávka správně běží a sama se dokončí."
+      },
+      {
+        "description": "Zkontroluj nastavené změny v Siebel včetně dokončené objednávky.",
+        "expected": "V Siebel jsou změny propsané a objednávka dokončená."
+      },
+      {
+        "description": "Zkontroluj notifikace o provedené změně podle COM notifikací v service orders.",
+        "expected": "Notifikace jsou v pořádku, přišly všechny a ve správném znění."
+      }
+    ]
+  },
+  "Takeover hard - FIX": {
+    "description": "Prevod smlouvy fixni sluzby.",
+    "steps": [
+      {
+        "description": "Opis si udaje sluzby, kterou chceme prevadet [ID sluzby / telefonni cislo, cislo ucastnicke smlouvy, datum konce smlouvy (nemela by se prolongovat p?i prevodu)].",
+        "expected": "Udaje zapsany."
+      },
+      {
+        "description": "U noveho zakaznika jdi na sluzby a zaloz objednavku na prevod smlouvy z roletky.",
+        "expected": "Prokliknuti do kosiku."
+      },
+      {
+        "description": "Zadej udaje prevadene sluzby z prvniho kroku a potvrd instalacni adresu.",
+        "expected": "Udaje sly zadat, instalacni adresa potvrzena."
+      },
+      {
+        "description": "Zobrazeni kosiku.",
+        "expected": "Kosik obsahuje všechny produkty."
+      },
+      {
+        "description": "Klikni na odeslat a dokonci objednavku standardnim postupem. Vytiskni smlouvy, zkontroluj smlouvy a podepis pozadovanym zpusobem.",
+        "expected": "Smlouvy jdou vytisknout, udaje odpovidaji."
+      },
+      {
+        "description": "Objednavku odesli, v pripade penezni transakce ISS dokonci platbu.",
+        "expected": "Objednavka odeslana."
+      },
+      {
+        "description": "Zaloz OT na kontrolu sluzby na OSS PE se zadanymi udaji z COM.",
+        "expected": "OSS ok."
+      },
+      {
+        "description": "Proved kontrolu dokoncene objednavky v Siebel a COM.",
+        "expected": "Objednavka je spravne dokoncena."
+      },
+      {
+        "description": "Proved kontrolu notifikaci SMS,Email.",
+        "expected": "SMS, email odpovida sablone."
+      }
+    ]
+  },
+  "Relokace - FIX": {
+    "description": "Stehovani fixni sluzby na jinou adresu.",
+    "steps": [
+      {
+        "description": "U zakaznika jdi na sluzby a zaloz objednavku na stehovani z roletky.",
+        "expected": "Prokliknutí do košíku."
+      },
+      {
+        "description": "Over adresu na webu a zadej RUIAN nebo primo adresu, pokracovat.",
+        "expected": "Adresa je dostupna s pozadovanou technologii, prokliknuti na dalsi stranu uspesne."
+      },
+      {
+        "description": "Z dostupne nabidky vyber pozadovany tarif, dej pokracovat a na dalsi strane potvrd aktivacni balicek tehoz tarifu.",
+        "expected": "Vybran pozadovany tarif, prokliknuti na dalsi stranu."
+      },
+      {
+        "description": "Preskoc / vyber TV tarif dle pozadavku.",
+        "expected": "Zobrazeni dalsi strany."
+      },
+      {
+        "description": "Proklikej se standardnim postupem k odeslani objednavky.",
+        "expected": "Zobrazeni stranky s vyberem Security."
+      },
+      {
+        "description": "Vyber balicek Security dle pozadavku.",
+        "expected": "Balicek Security pridan /nepridan do kosiku."
+      },
+      {
+        "description": "Vyber pozadovany HW, dej pokracovat a na dalsi strane potvrd vybrany HW.",
+        "expected": "HW vybran a potvrzen."
+      },
+      {
+        "description": "Nech predzaskrtnuty Wi-fi Manager a pokracuj.",
+        "expected": "Wi-fi Manager screena se zobrazi a jde pokracovat do kosiku."
+      },
+      {
+        "description": "Zobrazeni kosiku, kontrola pridanych polozek.",
+        "expected": "Vsechny polozky souhlasi, kosik se otevrel spravne."
+      },
+      {
+        "description": "Klikni odeslat a proklikej se standardne k tisku dokumentu. Vytiskni smlouvy, zkontroluj smlouvy a podepis pozadovanym zpusobem.",
+        "expected": "Smlouvy jdou vytisknout, udaje odpovidaji, objednavka odeslana."
+      },
+      {
+        "description": "U DSL odesli email na dokonceni objednavky od CETIN a nasledne vyskladni v SAP.",
+        "expected": "Cetin ok."
+      },
+      {
+        "description": "Zaloz OT na kontrolu sluzby na OSS PE se zadanymi udaji z COM.",
+        "expected": "OSS ok."
+      },
+      {
+        "description": "Proved kontrolu dokoncene objednavky v Siebel a COM.",
+        "expected": "Objednavka dokoncena, sluzba aktivni."
+      },
+      {
+        "description": "Proved kontrolu notifikaci SMS,Email.",
+        "expected": "SMS, email odpovida sablone."
+      }
+    ]
+  },
+  "Zamena technologie - FIX": {
+    "description": "Zamena technologie fixni sluzby na jinou technologii.",
+    "steps": [
+      {
+        "description": "U zakaznika jdi na sluzby a zaloz objednavku na zamenu technologie z roletky fix.",
+        "expected": "Prokliknutí do košíku."
+      },
+      {
+        "description": "Over adresu na webu a zadej RUIAN nebo primo adresu, pokracovat.",
+        "expected": "Adresa je dostupna s pozadovanou technologii, prokliknuti na dalsi stranu uspesne."
+      },
+      {
+        "description": "Z dostupne nabidky vyber pozadovany tarif, dej pokracovat a na dalsi strane potvrd aktivacni balicek tehoz tarifu.",
+        "expected": "Vybran pozadovany tarif, prokliknuti na dalsi stranu."
+      },
+      {
+        "description": "Preskoc / vyber TV tarif dle pozadavku.",
+        "expected": "Zobrazeni dalsi stranky."
+      },
+      {
+        "description": "Proklikej se standardnim postupem k odeslani objednavky.",
+        "expected": "Zobrazeni stranky s vyberem Security."
+      },
+      {
+        "description": "Vyber balicek Security dle pozadavku.",
+        "expected": "Balicek Security pridan / nepridan do kosiku."
+      },
+      {
+        "description": "Vyber pozadovany HW, dej pokracovat a na dalsi strane potvrd vybrany HW.",
+        "expected": "HW vybran a potvrzen."
+      },
+      {
+        "description": "Nech predzaskrtnuty Wi-fi Manager a pokracuj.",
+        "expected": "Wi-fi Manager screena se zobrazi a jde pokracovat do kosiku."
+      },
+      {
+        "description": "Zobrazeni kosiku, kontrola pridanych polozek.",
+        "expected": "Vsechny polozky souhlasi, kosik se otevrel spravne."
+      },
+      {
+        "description": "Odesli objednavku do COM a zkontroluj kladny prubeh.",
+        "expected": "Objednavka odeslana a tasky se nezasekly."
+      },
+      {
+        "description": "Pokracuj standardni aktivaci nove technologie - u DSL odeslat mail na cetin a naskladneni v SAP.",
+        "expected": "Prerekvizity pro aktivaci fixni sluzby splneny."
+      },
+      {
+        "description": "Odesli OT na OSS ke kontrole a pripadne dokonceni objednavky.",
+        "expected": "OSS ok."
+      },
+      {
+        "description": "Proved kontrolu dokoncene objednavky v Siebel a COM.",
+        "expected": "Objednavka je spravne dokoncena."
+      },
+      {
+        "description": "Proved kontrolu notifikaci SMS/Email",
+        "expected": "SMS/Email odpovida sablone"
+      }
+    ]
+  },
+  "Prolongace - FIX": {
+    "description": "Prodlouzeni smlouvy fixni sluzby na 24 mesicu.",
+    "steps": [
+      {
+        "description": "Jdi na konkrétního zákazníka na detail služeb a přes roletky fix vyber změna tarifu.",
+        "expected": "Prokliknutí do košíku."
+      },
+      {
         "description": "Zvol možnost změny tarifu a vyber novou rychlost pevného internetu.",
         "expected": "Nový tarif vybrán."
       },
@@ -705,6 +901,39 @@
       {
         "description": "Zkontroluj notifikace o provedené změně podle COM notifikací v service orders.",
         "expected": "Notifikace jsou v pořádku, přišly všechny a ve správném znění."
+      }
+    ]
+  },
+  "Dokup BYOD - FIX": {
+    "description": "Dokup vlatniho zarizeni zakaznika k fixni sluzbe.",
+    "steps": [
+      {
+        "description": "Na konkretnim zakaznikovi jdi na pozadovanou sluzbu a klikni na objednat.",
+        "expected": "Prokliknutí do košíku."
+      },
+      {
+        "description": "V košíku vyhledej vlastni zarizeni zakaznika a vlož do košíku.",
+        "expected": "Požadovaný HW vložen do košíku."
+      },
+      {
+        "description": "Pokud u sluzby byl aktivni HW, tak zaloz objednavku na vraceni CPE, kde vlozis IMEI stareho zarizeni (lze vlozit do stejne objednavky nebo udelat extra objednavku na vraceni CPE), ale to by byla spis vymena HW.",
+        "expected": "Objednávka zalozena, vlozeno IMEI puvodniho HW a dokoncena."
+      },
+      {
+        "description": "Hlavni objednávku dokonči a odešli do COM, kde zkontroluj průběh objednávky.",
+        "expected": "Objednávka odeslána a má kladný průběh."
+      },
+      {
+        "description": "Odešli OT na OSS ke kontrole.",
+        "expected": "OSS ok."
+      },
+      {
+        "description": "Zkontroluj v Siebel propsání nového zařízení ke službě.",
+        "expected": "HW propsáno ke službě, objednávka dokončena."
+      },
+      {
+        "description": "Zkontroluj notifikace.",
+        "expected": "Notifikace ok."
       }
     ]
   }
