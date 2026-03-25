@@ -447,9 +447,7 @@ st.markdown("""
         padding: 24px 0;
         margin: -50px -50px 0 -50px;
         text-align: center;
-        border-bottom: 1px solid #273752;
         width: calc(100% + 100px);
-        box-shadow: 0 0 20px rgba(15, 33, 72, 0.5);
     }
     .header-logo {
         font-size: 54px;
