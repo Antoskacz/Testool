@@ -443,7 +443,7 @@ st.markdown("""
         position: sticky;
         top: 0;
         z-index: 999;
-        background-color: #0d1324;
+        background-color: #090033;
         padding: 24px 0;
         margin: -50px -50px 0 -50px;
         text-align: center;
@@ -452,7 +452,7 @@ st.markdown("""
         box-shadow: 0 0 20px rgba(15, 33, 72, 0.5);
     }
     .header-logo {
-        font-size: 36px;
+        font-size: 54px;
         font-weight: 800;
         color: #6ac9ff;
         margin-bottom: 14px;
@@ -486,13 +486,13 @@ st.markdown("""
     }
     .tab-btn:hover {
         color: #eff8ff;
-        border-color: #98bdff;
+        border-color: #00758C;
         background-color: #172342;
     }
     .tab-active {
         color: #ffffff;
-        border-color: #a7c8ff;
-        background-color: #1f3b64;
+        border-color: #00D5FF;
+        background-color: #110066;
     }
 </style>
 <div class="top-header">
@@ -584,6 +584,7 @@ if selected_tab == "build":
         project_data = st.session_state.projects[project_name]
         project_exists = True
     
+    
     # ---------- ROW 1: PROJECT OVERVIEW + ANALYSIS ----------
     col_overview, col_analysis = st.columns([1, 1.5])  # Pravá část (graf) větší
     
@@ -664,7 +665,7 @@ if selected_tab == "build":
                 labels=[f'B2C: {b2c_count}', f'B2B: {b2b_count}'],  # Hodnoty v labelu
                 values=[b2c_count, b2b_count],
                 hole=0.5,  # Větší díra uprostřed
-                marker_colors=["#1193C7E3", "#C91B75"],  # modra a tmavá magenta
+                marker_colors=["#0A65CEE2", "#BD146B"],  # modra a tmavá magenta
                 textinfo='label',  # Zobrazí pouze label s hodnotou
                 textposition='inside',  # Text uvnitř segmentů
                 textfont=dict(size=16, color='white'),
@@ -922,7 +923,7 @@ if selected_tab == "build":
                 st.success(f"✅ Test case added: {test_name}")
                 st.rerun()
 
-    # ---------- ROW 4: EDIT EXISTING TEST CASE ----------
+
     # ---------- ROW 4: EDIT EXISTING TEST CASE ----------
     # no wrapper, styling applied inside expander
     with st.expander("✏️ Edit Existing Test Case", expanded=False):
