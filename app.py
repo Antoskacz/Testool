@@ -427,8 +427,10 @@ with st.sidebar:
                 st.success("Subject cleared.")
 
 # ---------- MAIN CONTENT: STICKY TOP NAV ----------
-params = st.experimental_get_query_params()
-selected_tab = params.get('tab', ['build'])[0]
+if 'selected_tab' not in st.session_state:
+    st.session_state.selected_tab = 'build'
+
+selected_tab = st.session_state.selected_tab
 
 st.markdown('''
 <style>
@@ -455,6 +457,8 @@ st.markdown('''
     border-radius: 8px;
     font-weight: 600;
     white-space: nowrap;
+    background-color: transparent;
+    border: 0;
 }
 .top-nav-item:hover { background: #1e293b; color: #ffffff; }
 .top-nav-active { background: #2563eb; color: white !important; }
@@ -462,9 +466,9 @@ st.markdown('''
 <div class="top-nav-wrapper">
   <div class="top-nav-container">
     <span style="font-size:18px; font-weight:700; color:#22d3ee; margin-right:16px;">🧪 Testool</span>
-    <a class="top-nav-item {build_active}" href="?tab=build">Test Cases</a>
-    <a class="top-nav-item {edit_active}" href="?tab=edit">Actions & Steps</a>
-    <a class="top-nav-item {text_active}" href="?tab=text">Text Comparator</a>
+    <button class="top-nav-item {build_active}" onclick="window.location.href='#'" data-id="build">Test Cases</button>
+    <button class="top-nav-item {edit_active}" onclick="window.location.href='#'" data-id="edit">Actions & Steps</button>
+    <button class="top-nav-item {text_active}" onclick="window.location.href='#'" data-id="text">Text Comparator</button>
   </div>
 </div>
 '''.format(
@@ -474,6 +478,18 @@ st.markdown('''
 ), unsafe_allow_html=True)
 
 st.markdown("<div style='height: 15px;'></div>", unsafe_allow_html=True)
+
+# only works as visual; real change thru normal st.button below
+col1, col2, col3 = st.columns([1,1,1])
+with col1:
+    if st.button("Test Cases"):
+        st.session_state.selected_tab = 'build'
+with col2:
+    if st.button("Actions & Steps"):
+        st.session_state.selected_tab = 'edit'
+with col3:
+    if st.button("Text Comparator"):
+        st.session_state.selected_tab = 'text'
 
 # ---------- TAB 1: BUILD TEST CASES ----------
 if selected_tab == "build":
