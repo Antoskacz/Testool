@@ -55,8 +55,8 @@ st.markdown("""
 }
 
 .block-container {
-    max-width: 1500px !important;
-    padding-top: 4.8rem !important;
+    max-width: 1450px !important;
+    padding-top: 2.0rem !important;
     padding-bottom: 2rem !important;
 }
 
@@ -131,7 +131,7 @@ button[kind="secondary"] {
 
 .tt-header {
     text-align: center;
-    padding: 0.6rem 0 0.4rem 0;
+    padding: 2.2rem 0 0.8rem 0;
 }
 .tt-logo {
     font-size: 3rem;
@@ -513,7 +513,7 @@ if 'selected_tab' not in st.session_state:
 
 # ---------- SIDEBAR: LOGO + PROJECT MANAGEMENT ----------
 with st.sidebar:    
-    st.subheader("Project")
+    st.subheader("📁 Project")
 
     project_names = list(st.session_state.projects.keys())
     selected = st.selectbox(
@@ -549,7 +549,7 @@ with st.sidebar:
 
     if current_project:
         st.markdown("---")
-        st.subheader("Project Settings")
+        st.subheader("🛠️ Project Settings")
 
         # Rename project
         rename_val = st.text_input("Rename project", value=current_project)
@@ -594,7 +594,7 @@ with st.sidebar:
 
         # Subject settings
         st.markdown("---")
-        st.subheader("Subject Settings")
+        st.subheader("📨 Subject Settings")
 
         subject_val = st.session_state.projects[current_project].get("subject", "")
         subject_input = st.text_input("Subject", value=subject_val)
@@ -630,17 +630,17 @@ st.markdown("""
 col_space1, tab_col1, tab_col2, tab_col3, col_space2 = st.columns([1, 1, 1, 1, 1])
 
 with tab_col1:
-    if st.button("Test Cases", use_container_width=True, key="nav_build", type=("primary" if selected_tab == "build" else "secondary")):
+    if st.button("🏗️ Test Cases", use_container_width=True, key="nav_build", type=("primary" if selected_tab == "build" else "secondary")):
         st.session_state.selected_tab = "build"
         st.rerun()
 
 with tab_col2:
-    if st.button("Actions & Steps", use_container_width=True, key="nav_edit", type=("primary" if selected_tab == "edit" else "secondary")):
+    if st.button("🔧 Actions & Steps", use_container_width=True, key="nav_edit", type=("primary" if selected_tab == "edit" else "secondary")):
         st.session_state.selected_tab = "edit"
         st.rerun()
 
 with tab_col3:
-    if st.button("Text Comparator", use_container_width=True, key="nav_text", type=("primary" if selected_tab == "text" else "secondary")):
+    if st.button("📝 Text Comparator", use_container_width=True, key="nav_text", type=("primary" if selected_tab == "text" else "secondary")):
         st.session_state.selected_tab = "text"
         st.rerun()
 
@@ -661,16 +661,14 @@ if selected_tab == "build":
     testcase_count = len(testcases)
     b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
     b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
-    high_priority_count = sum(1 for tc in testcases if tc.get("priority") == "1-High")
 
     if not project_exists:
         st.markdown("<div class='tt-note'>Select or create a project in the sidebar to work with test cases.</div>", unsafe_allow_html=True)
 
     render_section_intro("Build Test Cases", "Build, manage and export assisted test cases for the selected project.")
-
     st.markdown("---")
 
-    col_overview, col_analysis = st.columns([1, 1.35])
+    col_overview, col_analysis = st.columns([1, 1.15])
 
     with col_overview:
         st.subheader("📊 Project Overview")
@@ -682,57 +680,92 @@ if selected_tab == "build":
         st.subheader("📋 Actions by Segment")
 
         if testcases:
-            segment_data = {"B2C": {}, "B2B": {}}
-            for tc in testcases:
-                segment = tc.get("segment", "UNKNOWN")
-                action = tc.get("akce", "UNKNOWN")
-                if segment in segment_data:
-                    segment_data[segment][action] = segment_data[segment].get(action, 0) + 1
+            nested_segment_data = analyze_scenarios(testcases)
+            segment_columns = st.columns(2)
+            segment_config = [
+                ("B2C", "👥", segment_columns[0]),
+                ("B2B", "🏢", segment_columns[1]),
+            ]
 
-            c1, c2 = st.columns(2)
-            with c1:
-                with st.expander(f"👥 B2C ({b2c_count})", expanded=True):
-                    if segment_data["B2C"]:
-                        for action, count in sorted(segment_data["B2C"].items(), key=lambda x: x[1], reverse=True):
-                            st.write(f"**{action}:** {count}")
-                    else:
-                        st.write("No test cases")
-            with c2:
-                with st.expander(f"🏢 B2B ({b2b_count})", expanded=True):
-                    if segment_data["B2B"]:
-                        for action, count in sorted(segment_data["B2B"].items(), key=lambda x: x[1], reverse=True):
-                            st.write(f"**{action}:** {count}")
-                    else:
-                        st.write("No test cases")
+            for segment_name, icon, target_col in segment_config:
+                with target_col:
+                    segment_total = sum(
+                        len(actions)
+                        for tech_map in nested_segment_data.get(segment_name, {}).values()
+                        for actions in tech_map.values()
+                    )
+                    with st.expander(f"{icon} {segment_name} ({segment_total})", expanded=True):
+                        segment_channels = nested_segment_data.get(segment_name, {})
+                        if not segment_channels:
+                            st.write("No test cases")
+                        else:
+                            for channel_name in ["SHOP", "IL"]:
+                                channel_data = segment_channels.get(channel_name, {})
+                                channel_total = sum(len(actions) for actions in channel_data.values())
+                                if channel_data:
+                                    st.markdown(f"**{channel_name} ({channel_total})**")
+                                    action_counts = {}
+                                    for actions in channel_data.values():
+                                        for action in actions:
+                                            action_counts[action] = action_counts.get(action, 0) + 1
+                                    for action, count in sorted(action_counts.items(), key=lambda x: (-x[1], x[0])):
+                                        st.write(f"- {action}: {count}")
+                                else:
+                                    st.markdown(f"**{channel_name} (0)**")
+                                    st.caption("No test cases")
+                                st.markdown("")
         else:
             st.info("No test cases yet")
 
     with col_analysis:
         st.markdown("<h3 style='text-align:center;'>📈 Distribution Analysis</h3>", unsafe_allow_html=True)
+        st.markdown("<div class='tt-muted' style='text-align:center; margin-top:-0.35rem; margin-bottom:0.8rem;'>Distribution by test complexity</div>", unsafe_allow_html=True)
         if testcase_count > 0:
-            fig_segment = go.Figure(data=[go.Pie(
-                labels=[f'B2C: {b2c_count}', f'B2B: {b2b_count}'],
-                values=[b2c_count, b2b_count],
+            complexity_order = ["1-Giant", "2-Huge", "3-Big", "4-Medium", "5-Low"]
+            complexity_counts = {label: 0 for label in complexity_order}
+            for tc in testcases:
+                value = tc.get("complexity", "UNKNOWN")
+                if value in complexity_counts:
+                    complexity_counts[value] += 1
+                else:
+                    complexity_counts[value] = complexity_counts.get(value, 0) + 1
+
+            filtered_items = [(label, count) for label, count in complexity_counts.items() if count > 0]
+            labels = [label.split('-', 1)[1] if '-' in label else label for label, _ in filtered_items]
+            values = [count for _, count in filtered_items]
+            colors = ["#ff4fbf", "#8b5cf6", "#35d6ff", "#22c55e", "#f59e0b"][:len(values)]
+
+            fig_complexity = go.Figure(data=[go.Pie(
+                labels=labels,
+                values=values,
                 hole=0.58,
-                marker_colors=["#35D6FF", "#FF1FAE"],
-                textinfo='label',
+                marker_colors=colors,
+                textinfo='label+value',
                 textposition='inside',
                 textfont=dict(size=14, color='white'),
-                hoverinfo='label+percent',
-                hovertemplate='<b>%{label}</b><br>Percentage: %{percent}<extra></extra>',
-                insidetextorientation='horizontal'
+                hovertemplate='<b>%{label}</b><br>Count: %{value}<br>Percentage: %{percent}<extra></extra>',
+                sort=False,
+                direction='clockwise'
             )])
-            fig_segment.update_layout(
-                showlegend=False,
-                height=360,
-                margin=dict(t=10, b=10, l=10, r=10),
+            fig_complexity.update_layout(
+                showlegend=True,
+                legend=dict(
+                    orientation='h',
+                    yanchor='bottom',
+                    y=-0.08,
+                    xanchor='center',
+                    x=0.5,
+                    font=dict(color='#dfe9ff', size=12)
+                ),
+                height=420,
+                margin=dict(t=10, b=60, l=10, r=10),
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)',
                 annotations=[dict(text=f"<b>Total</b><br>{testcase_count}", x=0.5, y=0.5, font_size=26, showarrow=False, font=dict(color='#dfe9ff'))]
             )
-            st.plotly_chart(fig_segment, use_container_width=True)
+            st.plotly_chart(fig_complexity, use_container_width=True)
         else:
-            st.empty()
+            render_empty_panel("No test cases yet", height=360)
     st.markdown("---")
     st.markdown("### 💾 Export Test Cases")
     st.write("Generate clean, renumbered & diacritics-free test cases Excel file.")
