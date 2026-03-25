@@ -5,9 +5,9 @@
     "scenarios": [
       {
         "order_no": 1,
-        "test_name": "001_SHOP_B2C_Test",
+        "test_name": "001_SHOP_B2B_Test",
         "akce": "Aktivace + VAS - FIX",
-        "segment": "B2C",
+        "segment": "B2B",
         "kanal": "SHOP",
         "priority": "2-Medium",
         "complexity": "4-Medium",

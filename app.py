@@ -443,7 +443,7 @@ st.markdown("""
         position: sticky;
         top: 0;
         z-index: 999;
-        background-color: #111827;
+        background-color: #646f77;
         padding: 25px 0;
         margin: -50px -50px 20px -50px;
         text-align: center;
@@ -451,7 +451,7 @@ st.markdown("""
         width: calc(100% + 100px);
     }
     .header-logo {
-        font-size: 36px;
+        font-size: 54px;
         font-weight: 800;
         color: #22d3ee;
         margin-bottom: 20px;
@@ -477,9 +477,9 @@ st.markdown("""
 # Tab buttons centered below logo
 col_space1, tab_col1, tab_col2, tab_col3, col_space2 = st.columns([1, 1, 1, 1, 1])
 
-build_color = "#2563eb" if selected_tab == "build" else "#334155"
-edit_color = "#2563eb" if selected_tab == "edit" else "#334155"
-text_color = "#2563eb" if selected_tab == "text" else "#334155"
+build_color = "#7895d4" if selected_tab == "build" else "#334155"
+edit_color = "#7895d4" if selected_tab == "edit" else "#334155"
+text_color = "#7895d4" if selected_tab == "text" else "#334155"
 
 with tab_col1:
     btn_style = f"""
