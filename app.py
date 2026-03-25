@@ -443,7 +443,7 @@ st.markdown("""
         position: sticky;
         top: 0;
         z-index: 999;
-        background-color: #090033;
+        background-color: #0E1117;
         padding: 24px 0;
         margin: -50px -50px 0 -50px;
         text-align: center;
@@ -584,7 +584,7 @@ if selected_tab == "build":
         project_data = st.session_state.projects[project_name]
         project_exists = True
     
-    
+
     # ---------- ROW 1: PROJECT OVERVIEW + ANALYSIS ----------
     col_overview, col_analysis = st.columns([1, 1.5])  # Pravá část (graf) větší
     
