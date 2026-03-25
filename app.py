@@ -327,9 +327,7 @@ if 'selected_tab' not in st.session_state:
     st.session_state.selected_tab = 'build'
 
 # ---------- SIDEBAR: LOGO + PROJECT MANAGEMENT ----------
-with st.sidebar:
-    st.markdown("---")
-    
+with st.sidebar:    
     st.subheader("📁 Project")
 
     project_names = list(st.session_state.projects.keys())
@@ -482,7 +480,7 @@ st.markdown("""
     }
 </style>
 <div class="top-header">
-    <div class="header-logo">🧪 Testool</div>
+    <div class="header-logo">Testool</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -554,7 +552,7 @@ with tab_col3:
 # Tab accent bar just below nav buttons
 st.markdown(
     """
-    <div style='height: 4px; background-color: #00194A; margin: 0; width: calc(100% + 100px); margin-left: -50px; margin-right: -50px;'></div>
+    <div style='height: 50px; background-color: #00194A; margin: 0; width: calc(100% + 100px); margin-left: -50px; margin-right: -50px;'></div>
     """,
     unsafe_allow_html=True
 )
