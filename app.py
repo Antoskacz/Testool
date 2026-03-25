@@ -1323,31 +1323,42 @@ elif page == "📝 Text Comparator":
     
     # Create buttons in a row
     col_buttons = st.columns([1, 1, 1, 4])
-    
+
+    def remove_diacritics_action():
+        st.session_state.text1_area = remove_diacritics(st.session_state.get('text1_area', ''))
+        st.session_state.text2_area = remove_diacritics(st.session_state.get('text2_area', ''))
+        st.session_state.comparator_message = '✅ Diacritics removed from both texts'
+
+    def reset_action():
+        st.session_state.text1_area = ''
+        st.session_state.text2_area = ''
+        st.session_state.comparator_message = '✅ Texts cleared'
+
     with col_buttons[0]:
         compare_btn = st.button("🔍 **Compare**", use_container_width=True, type="primary", help="Compare texts and highlight differences")
-    
+
     with col_buttons[1]:
-        diacritics_btn = st.button("❌ **Remove Diacritics**", use_container_width=True, help="Remove all accents, háčky and čárky from both texts")
-    
+        diacritics_btn = st.button(
+            "❌ **Remove Diacritics**", 
+            use_container_width=True,
+            help="Remove all accents, háčky and čárky from both texts",
+            on_click=remove_diacritics_action
+        )
+
     with col_buttons[2]:
-        reset_btn = st.button("🔄 **Reset**", use_container_width=True, help="Clear both text fields")
-    
-    # Button actions
-    if diacritics_btn:
-        if text1 or text2:
-            st.session_state.text1_area = remove_diacritics(text1)
-            st.session_state.text2_area = remove_diacritics(text2)
-            st.success("✅ Diacritics removed from both texts")
-            st.rerun()
-        else:
-            st.warning("Enter text in at least one field to remove diacritics")
-    
-    if reset_btn:
-        st.session_state.text1_area = ""
-        st.session_state.text2_area = ""
-        st.success("✅ Texts cleared")
-        st.rerun()
+        reset_btn = st.button(
+            "🔄 **Reset**", 
+            use_container_width=True,
+            help="Clear both text fields",
+            on_click=reset_action
+        )
+
+    if 'comparator_message' not in st.session_state:
+        st.session_state.comparator_message = ''
+
+    if st.session_state.comparator_message:
+        st.success(st.session_state.comparator_message)
+        st.session_state.comparator_message = ''
     
     if compare_btn:
         if text1.strip() and text2.strip():
