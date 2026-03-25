@@ -30,105 +30,92 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Hide sidebar collapse button - keep it always visible
-st.markdown("""
-<style>    
-    [data-testid="collapsedControl"] { display: none; }
-</style>
-""", unsafe_allow_html=True)
-
+# ---------- GLOBAL THEME ----------
 st.markdown("""
 <style>
 :root {
-    --bg: #0b1020;
-    --panel: rgba(21, 27, 48, 0.78);
-    --panel-2: rgba(17, 23, 41, 0.92);
-    --border: rgba(110, 140, 220, 0.22);
-    --text: #f4f7ff;
-    --muted: #a9b4d0;
-    --accent: #35d6ff;
-    --accent-2: #7c5cff;
+    --bg: #08111f;
+    --bg-2: #0b1730;
+    --panel: rgba(14, 24, 46, 0.88);
+    --panel-strong: rgba(17, 29, 54, 0.96);
+    --border: rgba(107, 152, 255, 0.22);
+    --text: #edf4ff;
+    --muted: #93a7c8;
+    --accent: #3ad7ff;
+    --accent-2: #6b8cff;
     --pink: #ff1fae;
-    --success: #29d391;
-}
-
-html, body, [class*="css"] {
-    font-family: Inter, Segoe UI, sans-serif;
 }
 
 .stApp {
     background:
-        radial-gradient(circle at top center, rgba(45, 120, 255, 0.12), transparent 30%),
-        radial-gradient(circle at right top, rgba(255, 0, 170, 0.10), transparent 24%),
-        linear-gradient(180deg, #070b16 0%, #0b1020 100%);
+        radial-gradient(circle at top center, rgba(56, 120, 255, 0.14), transparent 28%),
+        radial-gradient(circle at right top, rgba(255, 0, 170, 0.08), transparent 20%),
+        linear-gradient(180deg, var(--bg) 0%, #06101f 100%);
     color: var(--text);
 }
 
-/* hlavni obsah */
 .block-container {
+    max-width: 1450px !important;
     padding-top: 1.2rem !important;
     padding-bottom: 2rem !important;
-    max-width: 1500px !important;
 }
 
-/* sidebar */
-[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, rgba(24,28,43,0.98) 0%, rgba(21,24,40,0.98) 100%);
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, rgba(24,28,43,0.98) 0%, rgba(17,22,37,0.98) 100%);
     border-right: 1px solid rgba(255,255,255,0.06);
 }
-
-[data-testid="stSidebar"] .block-container {
+section[data-testid="stSidebar"] .block-container {
     padding-top: 1rem !important;
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
 }
 
-[data-testid="stSidebar"] h3 {
-    color: var(--text) !important;
-    font-size: 1rem !important;
-    margin-top: 0.4rem !important;
-    margin-bottom: 0.7rem !important;
+/* keep sidebar toggle visible */
+[data-testid="collapsedControl"] {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
-[data-testid="stSidebar"] hr {
-    border-color: rgba(255,255,255,0.06) !important;
+h1, h2, h3 {
+    letter-spacing: -0.02em;
 }
 
-/* inputs */
-.stTextInput > div > div,
-.stSelectbox > div > div,
-.stTextArea textarea {
+.stTextInput > div > div > input,
+.stTextArea textarea,
+.stSelectbox [data-baseweb="select"] > div,
+.stMultiSelect [data-baseweb="select"] > div {
     background: rgba(10, 15, 30, 0.85) !important;
-    color: var(--text) !important;
     border: 1px solid var(--border) !important;
+    color: var(--text) !important;
     border-radius: 12px !important;
 }
 
-/* buttony */
 .stButton > button,
-.stDownloadButton > button {
+.stDownloadButton > button,
+button[kind="secondary"] {
+    background: linear-gradient(180deg, rgba(25,36,66,0.95), rgba(17,26,49,0.95)) !important;
+    border: 1px solid rgba(112,156,255,0.36) !important;
+    color: #ebf3ff !important;
     border-radius: 12px !important;
-    border: 1px solid rgba(98, 139, 255, 0.30) !important;
-    background: linear-gradient(180deg, rgba(24, 32, 59, 0.95), rgba(18, 24, 45, 0.95)) !important;
-    color: #eef4ff !important;
-    font-weight: 600 !important;
     min-height: 44px !important;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.22);
+    font-weight: 700 !important;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.18);
 }
 
 .stButton > button:hover,
 .stDownloadButton > button:hover {
-    border-color: rgba(53, 214, 255, 0.55) !important;
-    box-shadow: 0 0 0 1px rgba(53,214,255,0.15), 0 12px 28px rgba(0,0,0,0.26);
+    border-color: rgba(58,215,255,0.55) !important;
 }
 
-/* primarni button */
 .stButton > button[kind="primary"] {
-    background: linear-gradient(90deg, #1b9fff, #7c5cff) !important;
+    background: linear-gradient(90deg, #188dff, #6b5cff) !important;
     border: none !important;
 }
 
-/* dataframe */
+[data-testid="stMetric"] {
+    background: transparent !important;
+    border: none !important;
+}
+
 [data-testid="stDataFrame"] {
     background: rgba(17, 23, 41, 0.78) !important;
     border: 1px solid var(--border) !important;
@@ -136,78 +123,81 @@ html, body, [class*="css"] {
     overflow: hidden !important;
 }
 
-/* expandery */
 .streamlit-expanderHeader {
     background: rgba(17, 23, 41, 0.72) !important;
     border: 1px solid var(--border) !important;
     border-radius: 12px !important;
 }
 
-/* metricy */
-[data-testid="stMetric"] {
-    background: rgba(17, 23, 41, 0.72);
-    border: 1px solid var(--border);
-    padding: 14px 16px;
-    border-radius: 16px;
+.tt-header {
+    text-align: center;
+    padding: 0.6rem 0 0.4rem 0;
 }
-
-/* card wrapper */
+.tt-logo {
+    font-size: 3rem;
+    font-weight: 800;
+    color: #3ad7ff;
+    margin: 0;
+}
+.tt-subtitle {
+    color: var(--muted);
+    margin-top: 0.2rem;
+    margin-bottom: 1.2rem;
+}
 .tt-card {
-    background: linear-gradient(180deg, rgba(20, 26, 47, 0.82), rgba(15, 20, 38, 0.88));
+    background: linear-gradient(180deg, rgba(20, 28, 50, 0.78), rgba(14, 20, 38, 0.9));
     border: 1px solid var(--border);
     border-radius: 18px;
     padding: 20px 22px;
-    box-shadow: 0 16px 40px rgba(0,0,0,0.18);
-    backdrop-filter: blur(10px);
+    box-shadow: 0 18px 45px rgba(0,0,0,0.16);
     margin-bottom: 18px;
 }
-
-.tt-card h3, .tt-card h4 {
-    margin-top: 0;
-    color: #f4f7ff;
+.tt-metric {
+    background: linear-gradient(180deg, rgba(16, 26, 48, 0.88), rgba(10, 18, 36, 0.96));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    min-height: 92px;
 }
-
-.tt-muted {
-    color: var(--muted);
-    font-size: 0.95rem;
+.tt-metric-label {
+    color: #dfe9ff;
+    font-size: 0.92rem;
+    font-weight: 700;
+    margin-bottom: 0.45rem;
 }
-
-.tt-section-gap {
-    height: 10px;
-}
-
-/* logo / top nav */
-.top-header {
-    position: sticky;
-    top: 0;
-    z-index: 999;
-    background: linear-gradient(180deg, rgba(11,16,32,0.98), rgba(11,16,32,0.82));
-    backdrop-filter: blur(10px);
-    padding: 12px 0 18px 0;
-    margin-bottom: 8px;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-}
-
-.header-logo {
-    font-size: 46px;
+.tt-metric-value {
+    color: #ffffff;
+    font-size: 2rem;
     font-weight: 800;
-    color: #35d6ff;
-    letter-spacing: -0.02em;
-    margin-bottom: 10px;
+    line-height: 1;
 }
-
-/* menší nadpisy */
-h2, h3 {
-    letter-spacing: -0.02em;
+.tt-empty {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height: 320px;
+    color: var(--muted);
+    background: linear-gradient(180deg, rgba(13, 20, 38, 0.72), rgba(10, 16, 30, 0.84));
+    border: 1px dashed rgba(111,153,255,0.24);
+    border-radius: 16px;
+    text-align:center;
+    padding: 1rem;
 }
-
-/* schovat default streamlit menu/footer pokud chceš čistší look */
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-header {visibility: hidden;}
+.tt-note {
+    background: linear-gradient(90deg, rgba(85,95,0,0.55), rgba(70,80,0,0.35));
+    border: 1px solid rgba(189, 200, 70, 0.18);
+    color: #f6f3c7;
+    padding: 0.9rem 1rem;
+    border-radius: 12px;
+    margin: 1rem 0 1.4rem 0;
+}
+.tt-muted { color: var(--muted); }
+hr {
+    border-color: rgba(255,255,255,0.08) !important;
+}
+#MainMenu, footer { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
-
 
 # Debug information to determine where the script is actually running.
 # Streamlit often copies the Python file to /tmp, which makes __file__ and
@@ -445,6 +435,29 @@ def update_scenarios_with_action_steps(projects_data: dict, steps_data: dict, ac
     
     return updated_count
 
+
+def render_metric_card(title: str, value: int):
+    st.markdown(
+        f"""<div class="tt-metric">
+            <div class="tt-metric-label">{title}</div>
+            <div class="tt-metric-value">{value}</div>
+        </div>""",
+        unsafe_allow_html=True,
+    )
+
+
+def render_empty_panel(message: str, height: int = 320):
+    st.markdown(
+        f"<div class='tt-empty' style='min-height:{height}px'>{message}</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def render_section_intro(title: str, subtitle: str):
+    st.markdown(f"### {title}")
+    st.markdown(f"<div class='tt-muted'>{subtitle}</div>", unsafe_allow_html=True)
+
+
 # ---------- HLAVNÍ APLIKACE ----------
 # Top nav handles title + tabs, žáden repeating headings zde
 
@@ -499,20 +512,7 @@ if 'selected_tab' not in st.session_state:
     st.session_state.selected_tab = 'build'
 
 # ---------- SIDEBAR: LOGO + PROJECT MANAGEMENT ----------
-with st.sidebar:  
-    st.markdown("""
-    <div style="
-        background: linear-gradient(180deg, rgba(20,26,47,0.82), rgba(15,20,38,0.88));
-        border: 1px solid rgba(110,140,220,0.22);
-        border-radius: 18px;
-        padding: 16px 16px 10px 16px;
-        margin-bottom: 16px;
-    ">
-        <div style="font-size: 1.25rem; font-weight: 700; color: #f4f7ff;">🧪 Testool</div>
-        <div style="font-size: 0.9rem; color: #a9b4d0;">Project workspace</div>
-    </div>
-    """, unsafe_allow_html=True)      
-
+with st.sidebar:    
     st.subheader("📁 Project")
 
     project_names = list(st.session_state.projects.keys())
@@ -549,7 +549,6 @@ with st.sidebar:
 
     if current_project:
         st.markdown("---")
-
         st.subheader("🛠️ Project Settings")
 
         # Rename project
@@ -593,9 +592,6 @@ with st.sidebar:
                 if st.button("Cancel", use_container_width=True):
                     st.session_state.project_to_delete = None
 
-        st.markdown('</div>', unsafe_allow_html=True)            
-
-
         # Subject settings
         st.markdown("---")
         st.subheader("📨 Subject Settings")
@@ -617,89 +613,36 @@ with st.sidebar:
                 save_and_update_projects(st.session_state.projects)
                 st.success("Subject cleared.")
 
-        st.markdown('</div>', unsafe_allow_html=True)        
-
 # ---------- MAIN CONTENT: STICKY TOP NAV ----------
 if 'selected_tab' not in st.session_state:
     st.session_state.selected_tab = 'build'
 
 selected_tab = st.session_state.selected_tab
 
-# Sticky top navigation bar - centered logo and tabs
-
+# Top navigation - centered logo without boxed background
 st.markdown("""
-<div class="top-header">
-    <div class="header-logo">🧪 Testool</div>
-    <div class="tt-muted">Professional test case builder and manager</div>
+<div class="tt-header">
+    <div class="tt-logo">🧪 Testool</div>
+    <div class="tt-subtitle">Professional test case builder and manager</div>
 </div>
 """, unsafe_allow_html=True)
 
-
-# Tab buttons centered below logo
 col_space1, tab_col1, tab_col2, tab_col3, col_space2 = st.columns([1, 1, 1, 1, 1])
 
-build_color = "#303f62" if selected_tab == "build" else "#111e35"
-edit_color = "#303f62" if selected_tab == "edit" else "#111e35"
-text_color = "#303f62" if selected_tab == "text" else "#111e35"
-
 with tab_col1:
-    btn_style = f"""
-    <style>
-        .build-btn {{
-            border: 1px solid #6da4ff;
-            background-color: {build_color};
-            color: #d8e7ff;
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-weight: 700;
-            box-shadow: 0 0 14px rgba(104, 155, 255, 0.4);
-        }}
-        .build-btn:active {{ transform: translateY(1px); }}
-    </style>
-    """
-    st.markdown(btn_style, unsafe_allow_html=True)
-    if st.button("🏗️ Test Cases", use_container_width=True, key="nav_build"):
+    if st.button("🏗️ Test Cases", use_container_width=True, key="nav_build", type=("primary" if selected_tab == "build" else "secondary")):
         st.session_state.selected_tab = "build"
         st.rerun()
 
 with tab_col2:
-    btn_style = f"""
-    <style>
-        .edit-btn {{
-            border: 1px solid #7db8ff;
-            background-color: {edit_color};
-            color: #d0d9ff;
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-weight: 700;
-        }}
-        .edit-btn:active {{ transform: translateY(1px); }}
-    </style>
-    """
-    st.markdown(btn_style, unsafe_allow_html=True)
-    if st.button("🔧 Actions & Steps", use_container_width=True, key="nav_edit"):
+    if st.button("🔧 Actions & Steps", use_container_width=True, key="nav_edit", type=("primary" if selected_tab == "edit" else "secondary")):
         st.session_state.selected_tab = "edit"
         st.rerun()
 
 with tab_col3:
-    btn_style = f"""
-    <style>
-        .text-btn {{
-            border: 1px solid #7db8ff;
-            background-color: {text_color};
-            color: #d8edff;
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-weight: 700;
-        }}
-        .text-btn:active {{ transform: translateY(1px); }}
-    </style>
-    """
-    st.markdown(btn_style, unsafe_allow_html=True)
-    if st.button("📝 Text Comparator", use_container_width=True, key="nav_text"):
+    if st.button("📝 Text Comparator", use_container_width=True, key="nav_text", type=("primary" if selected_tab == "text" else "secondary")):
         st.session_state.selected_tab = "text"
         st.rerun()
-
 
 # Content separator
 st.markdown("---")
@@ -708,217 +651,121 @@ st.markdown("---")
 if selected_tab == "build":
     project_name = st.session_state.selected_project
     if project_name is None:
-        st.warning("Select or create a project in the sidebar to work with test cases.")
-        project_data = {
-            "subject": "",
-            "scenarios": [],
-            "next_id": 1
-        }
+        project_data = {"subject": "", "scenarios": [], "next_id": 1}
         project_exists = False
     else:
         project_data = st.session_state.projects[project_name]
         project_exists = True
 
     testcases = project_data.get("scenarios", [])
-    total_count = len(testcases)
-    b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
+    testcase_count = len(testcases)
     b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
+    b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
     high_priority_count = sum(1 for tc in testcases if tc.get("priority") == "1-High")
 
-    st.markdown("### Build Test Cases")
-    st.markdown('<div class="tt-muted">Build, manage and export assisted test cases for the selected project.</div>', unsafe_allow_html=True)
-    st.markdown('<div class="tt-section-gap"></div>', unsafe_allow_html=True)
+    if not project_exists:
+        st.markdown("<div class='tt-note'>Select or create a project in the sidebar to work with test cases.</div>", unsafe_allow_html=True)
+
+    render_section_intro("Build Test Cases", "Build, manage and export assisted test cases for the selected project.")
 
     m1, m2, m3, m4 = st.columns(4)
     with m1:
-        st.metric("Total Test Cases", total_count)
+        render_metric_card("Total Test Cases", testcase_count)
     with m2:
-        st.metric("B2B", b2b_count)
+        render_metric_card("B2B", b2b_count)
     with m3:
-        st.metric("B2C", b2c_count)
+        render_metric_card("B2C", b2c_count)
     with m4:
-        st.metric("High Priority", high_priority_count)
+        render_metric_card("High Priority", high_priority_count)
 
-    # ---------- ROW 1: PROJECT OVERVIEW + ANALYSIS ----------
-    col_overview, col_analysis = st.columns([1, 1.5])  # Pravá část (graf) větší
-    
+    col_overview, col_analysis = st.columns([1, 1.35])
+
     with col_overview:
+        st.markdown('<div class="tt-card">', unsafe_allow_html=True)
         st.subheader("📊 Project Overview")
-        subject_value = project_data.get('subject', "")
         display_project_name = project_name if project_name else "— no project selected —"
         st.write(f"**Active Project:** {display_project_name}")
-        st.write(f"**Subject:** {subject_value}")
+        st.write(f"**Subject:** {project_data.get('subject', '')}")
 
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("---")
         st.subheader("📋 Actions by Segment")
-        
-        testcases = project_data.get("scenarios", [])
+
         if testcases:
-            # Statistiky pro expandery
-            b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
-            b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
-            
-            # Vytvořit strukturovaná data pro akce
             segment_data = {"B2C": {}, "B2B": {}}
             for tc in testcases:
                 segment = tc.get("segment", "UNKNOWN")
                 action = tc.get("akce", "UNKNOWN")
-                
-                if segment in ["B2C", "B2B"]:
-                    if action not in segment_data[segment]:
-                        segment_data[segment][action] = 0
-                    segment_data[segment][action] += 1
-            
-            # Dva expandery vedle sebe
-            col_b2c, col_b2b = st.columns(2)
-            
-            with col_b2c:
+                if segment in segment_data:
+                    segment_data[segment][action] = segment_data[segment].get(action, 0) + 1
+
+            c1, c2 = st.columns(2)
+            with c1:
                 with st.expander(f"👥 B2C ({b2c_count})", expanded=True):
                     if segment_data["B2C"]:
-                        # Seřadit akce podle počtu test cases (nejvíc první)
-                        sorted_actions = sorted(
-                            segment_data["B2C"].items(), 
-                            key=lambda x: x[1], 
-                            reverse=True
-                        )
-                        for action, count in sorted_actions:
+                        for action, count in sorted(segment_data["B2C"].items(), key=lambda x: x[1], reverse=True):
                             st.write(f"**{action}:** {count}")
                     else:
                         st.write("No test cases")
-            
-            with col_b2b:
+            with c2:
                 with st.expander(f"🏢 B2B ({b2b_count})", expanded=True):
                     if segment_data["B2B"]:
-                        # Seřadit akce podle počtu test cases (nejvíc první)
-                        sorted_actions = sorted(
-                            segment_data["B2B"].items(), 
-                            key=lambda x: x[1], 
-                            reverse=True
-                        )
-                        for action, count in sorted_actions:
+                        for action, count in sorted(segment_data["B2B"].items(), key=lambda x: x[1], reverse=True):
                             st.write(f"**{action}:** {count}")
                     else:
                         st.write("No test cases")
         else:
-            st.info("No test cases yet")
+            render_empty_panel("No test cases yet", height=120)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown('</div>', unsafe_allow_html=True)    
-
-    
-    # ----------------------------GRAF---------------------------
     with col_analysis:
-        st.markdown("<h3 style='text-align: center;'>📈 Distribution Analysis</h3>", unsafe_allow_html=True)
-        
-        testcases = project_data.get("scenarios", [])
-        
-        if testcases:
-            # Základní statistiky
-            testcase_count = len(testcases)
-            b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
-            b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
-            
-            # Vytvoři donut graf s hodnotami uvnitř
+        st.markdown('<div class="tt-card">', unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align:center;'>📈 Distribution Analysis</h3>", unsafe_allow_html=True)
+        if testcase_count > 0:
             fig_segment = go.Figure(data=[go.Pie(
-                labels=[f'B2C: {b2c_count}', f'B2B: {b2b_count}'],  # Hodnoty v labelu
+                labels=[f'B2C: {b2c_count}', f'B2B: {b2b_count}'],
                 values=[b2c_count, b2b_count],
-                hole=0.5,  # Větší díra uprostřed
-                marker_colors=["#35D6FF", "#FF1FAE"],  # modra a tmavá magenta
-                textinfo='label',  # Zobrazí pouze label s hodnotou
-                textposition='inside',  # Text uvnitř segmentů
+                hole=0.58,
+                marker_colors=["#35D6FF", "#FF1FAE"],
+                textinfo='label',
+                textposition='inside',
                 textfont=dict(size=14, color='white'),
                 hoverinfo='label+percent',
                 hovertemplate='<b>%{label}</b><br>Percentage: %{percent}<extra></extra>',
                 insidetextorientation='horizontal'
             )])
-            
             fig_segment.update_layout(
                 showlegend=False,
                 height=360,
                 margin=dict(t=10, b=10, l=10, r=10),
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                annotations=[
-                    dict(
-                        text=f"<b>Total</b><br>{testcase_count}",
-                        x=0.5, y=0.5,
-                        font_size=28,
-                        showarrow=False,
-                        font=dict(color="#dfe9ff", family="Inter")
-                    )
-                ]
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                annotations=[dict(text=f"<b>Total</b><br>{testcase_count}", x=0.5, y=0.5, font_size=26, showarrow=False, font=dict(color='#dfe9ff'))]
             )
-            
             st.plotly_chart(fig_segment, use_container_width=True)
-            
         else:
-            # Prázdný graf placeholder
-            fig_empty = go.Figure()
-            fig_empty.update_layout(
-                xaxis=dict(visible=False),
-                yaxis=dict(visible=False),
-                annotations=[
-                    dict(
-                        text="No test cases yet",
-                        x=0.5,
-                        y=0.5,
-                        showarrow=False,
-                        font=dict(size=16)
-                    )
-                ],
-                height=400,
-                margin=dict(t=20, b=20, l=20, r=20)
-            )
-            st.plotly_chart(fig_empty, use_container_width=True)
-
+            render_empty_panel("No data for chart yet", height=360)
         st.markdown('</div>', unsafe_allow_html=True)
 
-
-    # ------------------------------------ EXPORT SECTION ------------------------------------
-    st.markdown("---")
-
+    st.markdown('<div class="tt-card">', unsafe_allow_html=True)
     st.markdown("### 💾 Export Test Cases")
-    st.markdown('<div class="tt-muted">Generate clean, renumbered and diacritics-free Excel export for the selected project.</div>', unsafe_allow_html=True)
-    st.markdown("<br>", unsafe_allow_html=True)
-
     st.write("Generate clean, renumbered & diacritics-free test cases Excel file.")
-
-    col_export, col_future = st.columns([1, 2])
-
-    with col_export:
-        export_button = st.button(
-            "💾 Export Test Cases to Excel",
-            use_container_width=True
-        )
+    export_button = st.button("💾 Export Test Cases to Excel", use_container_width=False, disabled=(not project_exists or not testcases))
 
     if export_button:
-        # 1) Reindex test cases
         project_data = st.session_state.projects[project_name]
-
-        project_data["scenarios"] = sorted(
-            project_data["scenarios"],
-            key=lambda x: x.get("order_no", 0)
-        )
+        project_data["scenarios"] = sorted(project_data["scenarios"], key=lambda x: x.get("order_no", 0))
 
         for i, tc in enumerate(project_data["scenarios"], start=1):
             tc["order_no"] = i
-
             channel = tc["kanal"]
             segment = tc["segment"]
             technology = extract_technology(tc["veta"])
             sentence = tc["veta"].strip()
-
-            prefix = "_".join(
-                p for p in [f"{i:03d}", channel, segment, technology]
-                if p and p != "UNKNOWN"
-            )
-
-            tc["test_name"] = clean_tc_name(
-                f"{prefix}_{sentence.capitalize()}"
-            )
+            prefix = "_".join(p for p in [f"{i:03d}", channel, segment, technology] if p and p != "UNKNOWN")
+            tc["test_name"] = clean_tc_name(f"{prefix}_{sentence.capitalize()}")
 
         save_and_update_projects(st.session_state.projects)
 
-        # 2) Build export data
         rows = []
         for tc in project_data["scenarios"]:
             for i, step in enumerate(tc.get("kroky", []), start=1):
@@ -939,7 +786,6 @@ if selected_tab == "build":
                 })
 
         df = pd.DataFrame(rows)
-
         import io
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine="openpyxl") as writer:
@@ -947,9 +793,7 @@ if selected_tab == "build":
         output.seek(0)
 
         safe_name = project_name.replace(" ", "_").replace("/", "_").replace("\\", "_")
-
         st.success("Export successful. File is ready for download.")
-
         st.download_button(
             "⬇️ Download Excel file",
             data=output.getvalue(),
@@ -957,13 +801,10 @@ if selected_tab == "build":
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=False
         )
-
     st.markdown('</div>', unsafe_allow_html=True)
 
-
-# ---------- ROW 2: TEST CASES LIST ----------
+    st.markdown('<div class="tt-card">', unsafe_allow_html=True)
     st.subheader("📋 Test Cases List")
-    
     if project_data.get("scenarios"):
         df_data = []
         for tc in project_data["scenarios"]:
@@ -977,12 +818,11 @@ if selected_tab == "build":
                 "Complexity": tc.get("complexity"),
                 "Steps": len(tc.get("kroky", [])) if "kroky" in tc else 0
             })
-        
+
         df = pd.DataFrame(df_data)
         if not df.empty:
             df = df.sort_values(by="Order", ascending=True)
-        
-        st.subheader("📋 Test Cases List")
+
         st.dataframe(
             df,
             use_container_width=True,
@@ -998,39 +838,34 @@ if selected_tab == "build":
                 "Steps": st.column_config.NumberColumn("Steps", width="small")
             }
         )
-        st.markdown('</div>', unsafe_allow_html=True)
-
     else:
         st.info("No test cases yet. Add your first test case below.")
-    
-    st.markdown("---")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    
-    # ---------- ROW 3: ADD NEW TEST CASE ----------
+    st.markdown('<div class="tt-card">', unsafe_allow_html=True)
     st.subheader("➕ Add New Test Case")
-    st.markdown('<div class="tt-muted">Create a new test case from a requirement sentence and an existing action template.</div>', unsafe_allow_html=True)
-    
+
     if not project_exists:
         st.info("Create a project first to add test cases.")
+        st.markdown('</div>', unsafe_allow_html=True)
         st.stop()
 
     if not st.session_state.steps_data:
         st.error("❌ No actions found! Please add actions in 'Edit Actions & Steps' page first.")
+        st.markdown('</div>', unsafe_allow_html=True)
         st.stop()
-    
+
     action_list = sorted(list(st.session_state.steps_data.keys()))
-    
+
     with st.form("add_testcase_form"):
-        sentence = st.text_area("Requirement Sentence", height=100, 
-                              placeholder="e.g.: Activate DSL for B2C via SHOP channel...")
+        sentence = st.text_area("Requirement Sentence", height=100, placeholder="e.g.: Activate DSL for B2C via SHOP channel...")
         action = st.selectbox("Action (from kroky.json)", options=action_list)
-        
-        # Priority, Complexity, Segment, Kanal - 4 columns
+
         PRIORITY_MAP_VALUES = ["1-High", "2-Medium", "3-Low"]
         COMPLEXITY_MAP_VALUES = ["1-Giant", "2-Huge", "3-Big", "4-Medium", "5-Low"]
         SEGMENT_OPTIONS = ["B2C", "B2B"]
         KANAL_OPTIONS = ["SHOP", "IL"]
-        
+
         col_priority, col_complexity, col_segment, col_kanal = st.columns(4)
         with col_priority:
             priority = st.selectbox("Priority", options=PRIORITY_MAP_VALUES, index=1)
@@ -1040,32 +875,20 @@ if selected_tab == "build":
             segment = st.selectbox("Segment", options=SEGMENT_OPTIONS, index=0)
         with col_kanal:
             kanal = st.selectbox("Kanál", options=KANAL_OPTIONS, index=0)
-        
+
         if st.form_submit_button("➕ Add Test Case"):
             if not sentence.strip():
                 st.error("Requirement sentence cannot be empty.")
             elif not action:
                 st.error("Select an action.")
             else:
-                # Generování test case
                 order = project_data["next_id"]
-                
-                # Build test name
-                # Používáme vybrané hodnoty z dropdownů, ne extrahování z textu
                 technology = extract_technology(sentence)
-
-                # Sestavíme prefix a vyčistíme UNKNOWN části
                 prefix_parts = [f"{order:03d}", kanal, segment, technology]
-                # Filtrujeme UNKNOWN a prázdné hodnoty
                 filtered_parts = [p for p in prefix_parts if p and p != "UNKNOWN"]
                 prefix = "_".join(filtered_parts)
+                test_name = clean_tc_name(f"{prefix}_{sentence.strip().capitalize()}")
 
-                test_name = f"{prefix}_{sentence.strip().capitalize()}"
-
-                # Vyčistíme název
-                test_name = clean_tc_name(test_name)
-                
-                # Get steps for action
                 kroky_pro_akci = []
                 if action in st.session_state.steps_data:
                     action_data = st.session_state.steps_data[action]
@@ -1073,7 +896,7 @@ if selected_tab == "build":
                         kroky_pro_akci = copy.deepcopy(action_data["steps"])
                     elif isinstance(action_data, list):
                         kroky_pro_akci = copy.deepcopy(action_data)
-                
+
                 new_testcase = {
                     "order_no": order,
                     "test_name": test_name,
@@ -1085,7 +908,7 @@ if selected_tab == "build":
                     "veta": sentence.strip(),
                     "kroky": kroky_pro_akci
                 }
-                
+
                 project_data["next_id"] += 1
                 project_data["scenarios"].append(new_testcase)
                 save_and_update_projects(st.session_state.projects)
@@ -1093,111 +916,51 @@ if selected_tab == "build":
                 st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-
-    # ---------- ROW 4: EDIT EXISTING TEST CASE ----------
-    # no wrapper, styling applied inside expander
-    st.markdown("### Maintenance")
-    st.markdown('<div class="tt-muted">Optional actions for editing or deleting existing test cases.</div>', unsafe_allow_html=True)
     with st.expander("✏️ Edit Existing Test Case", expanded=False):
-    
         if project_data["scenarios"]:
             testcase_options = {f"{tc['order_no']:03d} - {tc['test_name']}": tc for tc in project_data["scenarios"]}
-            selected_testcase_key = st.selectbox(
-                "Select Test Case to Edit",
-                options=list(testcase_options.keys()),
-                index=0,
-                key="edit_testcase_select"
-            )
-            
+            selected_testcase_key = st.selectbox("Select Test Case to Edit", options=list(testcase_options.keys()), index=0, key="edit_testcase_select")
+
             if selected_testcase_key:
                 testcase_to_edit = testcase_options[selected_testcase_key]
-                # Initialize edit sentence only when testcase changes
-                if "edit_sentence_value" not in st.session_state or \
-                st.session_state.get("edit_sentence_tc") != testcase_to_edit["order_no"]:
+                if "edit_sentence_value" not in st.session_state or st.session_state.get("edit_sentence_tc") != testcase_to_edit["order_no"]:
                     st.session_state.edit_sentence_value = testcase_to_edit["veta"]
                     st.session_state.edit_sentence_tc = testcase_to_edit["order_no"]
 
-                
                 with st.form("edit_testcase_form"):
-                    # Zobrazíme aktuální hodnoty
                     st.write(f"**Currently editing:** {testcase_to_edit['test_name']}")
-                    
-                    sentence = st.text_area(
-                        "Requirement Sentence",
-                        value=st.session_state.edit_sentence_value,
-                        height=100,
-                        key=f"edit_sentence_{testcase_to_edit['order_no']}"
-                    )
+                    sentence = st.text_area("Requirement Sentence", value=st.session_state.edit_sentence_value, height=100, key=f"edit_sentence_{testcase_to_edit['order_no']}")
+                    action = st.selectbox("Action (from kroky.json)", options=action_list, index=action_list.index(testcase_to_edit["akce"]) if testcase_to_edit["akce"] in action_list else 0, key="edit_action")
 
-                    
-                    action = st.selectbox(
-                        "Action (from kroky.json)", 
-                        options=action_list,
-                        index=action_list.index(testcase_to_edit["akce"]) if testcase_to_edit["akce"] in action_list else 0,
-                        key="edit_action"
-                    )
-                    
-                    # Priority, Complexity, Segment, Kanal - 4 columns
                     SEGMENT_OPTIONS = ["B2C", "B2B"]
                     KANAL_OPTIONS = ["SHOP", "IL"]
-                    
+
                     col_priority, col_complexity, col_segment, col_kanal = st.columns(4)
                     with col_priority:
-                        priority = st.selectbox(
-                            "Priority", 
-                            options=PRIORITY_MAP_VALUES,
-                            index=PRIORITY_MAP_VALUES.index(testcase_to_edit["priority"]) if testcase_to_edit["priority"] in PRIORITY_MAP_VALUES else 1,
-                            key="edit_priority"
-                        )
+                        priority = st.selectbox("Priority", options=PRIORITY_MAP_VALUES, index=PRIORITY_MAP_VALUES.index(testcase_to_edit["priority"]) if testcase_to_edit["priority"] in PRIORITY_MAP_VALUES else 1, key="edit_priority")
                     with col_complexity:
-                        complexity = st.selectbox(
-                            "Complexity", 
-                            options=COMPLEXITY_MAP_VALUES,
-                            index=COMPLEXITY_MAP_VALUES.index(testcase_to_edit["complexity"]) if testcase_to_edit["complexity"] in COMPLEXITY_MAP_VALUES else 3,
-                            key="edit_complexity"
-                        )
+                        complexity = st.selectbox("Complexity", options=COMPLEXITY_MAP_VALUES, index=COMPLEXITY_MAP_VALUES.index(testcase_to_edit["complexity"]) if testcase_to_edit["complexity"] in COMPLEXITY_MAP_VALUES else 3, key="edit_complexity")
                     with col_segment:
-                        segment = st.selectbox(
-                            "Segment",
-                            options=SEGMENT_OPTIONS,
-                            index=SEGMENT_OPTIONS.index(testcase_to_edit["segment"]) if testcase_to_edit["segment"] in SEGMENT_OPTIONS else 0,
-                            key="edit_segment"
-                        )
+                        segment = st.selectbox("Segment", options=SEGMENT_OPTIONS, index=SEGMENT_OPTIONS.index(testcase_to_edit["segment"]) if testcase_to_edit["segment"] in SEGMENT_OPTIONS else 0, key="edit_segment")
                     with col_kanal:
-                        kanal = st.selectbox(
-                            "Kanál",
-                            options=KANAL_OPTIONS,
-                            index=KANAL_OPTIONS.index(testcase_to_edit["kanal"]) if testcase_to_edit["kanal"] in KANAL_OPTIONS else 0,
-                            key="edit_kanal"
-                        )
-                    
+                        kanal = st.selectbox("Kanál", options=KANAL_OPTIONS, index=KANAL_OPTIONS.index(testcase_to_edit["kanal"]) if testcase_to_edit["kanal"] in KANAL_OPTIONS else 0, key="edit_kanal")
+
                     if st.form_submit_button("💾 Save Changes"):
                         if not sentence.strip():
                             st.error("Requirement sentence cannot be empty.")
                         elif not action:
                             st.error("Select an action.")
                         else:
-                            # Re-generate test name with updated values
                             order = testcase_to_edit["order_no"]
-                            
-                            # Build test name - Používáme vybrané hodnoty z dropdownů
                             technology = extract_technology(sentence)
-                            
-                            # Sestavíme prefix a vyčistíme UNKNOWN části
                             prefix_parts = [f"{order:03d}", kanal, segment, technology]
-                            # Filtrujeme UNKNOWN a prázdné hodnoty
                             filtered_parts = [p for p in prefix_parts if p and p != "UNKNOWN"]
                             prefix = "_".join(filtered_parts)
-                            
-                            # Ošetříme případ duplicitních podtržítek v prefixu
                             while '__' in prefix:
                                 prefix = prefix.replace('__', '_')
                             prefix = prefix.strip('_')
-                            
-                            new_test_name = f"{prefix}_{sentence.strip().capitalize()}"
-                            new_test_name = clean_tc_name(new_test_name)
-                            
-                            # Get steps for the new action
+                            new_test_name = clean_tc_name(f"{prefix}_{sentence.strip().capitalize()}")
+
                             kroky_pro_akci = []
                             if action in st.session_state.steps_data:
                                 action_data = st.session_state.steps_data[action]
@@ -1207,8 +970,6 @@ if selected_tab == "build":
                                     kroky_pro_akci = copy.deepcopy(action_data)
 
                             st.session_state.edit_sentence_value = sentence.strip()
-
-                            # Update the test case
                             testcase_to_edit.update({
                                 "test_name": new_test_name,
                                 "akce": action,
@@ -1219,58 +980,36 @@ if selected_tab == "build":
                                 "veta": sentence.strip(),
                                 "kroky": kroky_pro_akci
                             })
-                            
+
                             save_and_update_projects(st.session_state.projects)
                             st.success(f"✅ Test case updated: {new_test_name}")
                             st.rerun()
         else:
             st.info("No test cases available to edit. Add a test case first.")
 
-    # ---------- ROW 5: DELETE TEST CASE ----------
-    st.markdown("### Maintenance")
-    st.markdown('<div class="tt-muted">Optional actions for editing or deleting existing test cases.</div>', unsafe_allow_html=True)
     with st.expander("🗑️ Delete Test Case", expanded=False):
-    
         if project_data["scenarios"]:
             delete_options = [f"{tc['order_no']:03d} - {tc['test_name']}" for tc in project_data["scenarios"]]
-            testcase_to_delete = st.selectbox(
-                "Select Test Case to Delete",
-                options=delete_options,
-                index=0,
-                key="delete_testcase_select"
-            )
-            
-            if st.button("⚠️ Delete Selected Test Case", type="secondary"):
-                # Najdeme index test case k smazání
-                index_to_delete = delete_options.index(testcase_to_delete)
-                
-                # Odstraníme
-                deleted_tc = project_data["scenarios"].pop(index_to_delete)
+            testcase_to_delete = st.selectbox("Select Test Case to Delete", options=delete_options, index=0, key="delete_testcase_select")
 
-                # Přečíslujeme všechny zbývající test case tak, aby šly za sebou od 1
+            if st.button("⚠️ Delete Selected Test Case", type="secondary"):
+                index_to_delete = delete_options.index(testcase_to_delete)
+                deleted_tc = project_data["scenarios"].pop(index_to_delete)
                 for idx, tc in enumerate(project_data["scenarios"], start=1):
                     tc["order_no"] = idx
-                    # Také aktualizujeme test_name aby odrážel nové pořadové číslo
-                    # Nahradíme původní 3-místné číslo na začátku (XXX_) novým
                     if tc["test_name"].startswith(f"{idx-1:03d}_"):
-                        # Pokud se číslo změnilo, aktualizuj ho
                         tc["test_name"] = f"{idx:03d}_" + tc["test_name"][4:]
                     elif "_" in tc["test_name"]:
-                        # Fallback: pokud format není očekávaný, zkus najít a nahradit 3-místné číslo
                         parts = tc["test_name"].split("_", 1)
                         if len(parts[0]) == 3 and parts[0].isdigit():
                             tc["test_name"] = f"{idx:03d}_" + parts[1]
 
-                # Aktualizujeme next_id tak, aby nový TC dostal další pořadové číslo
                 project_data["next_id"] = len(project_data["scenarios"]) + 1
-
-                # Uložíme
                 save_and_update_projects(st.session_state.projects)
                 st.success(f"🗑️ Test case deleted: {deleted_tc['test_name']}")
                 st.rerun()
         else:
             st.info("No test cases available to delete.")
-    # end delete expander
 
 # ---------- TAB 2: EDIT ACTIONS & STEPS ----------
 if selected_tab == "edit":
@@ -1306,10 +1045,8 @@ if selected_tab == "edit":
 
     # layout top row: left shows counts+action list, right has small commit button
     # main row: left panel action list, tiny separator, right panel commit + counts
-
     left, sep, right = st.columns([3, 0.05, 2])
-    st.markdown('</div>', unsafe_allow_html=True)
-
+    
     # Calculate correct counts: disk = what's in kroky.json, non-committed = what's in memory but NOT on disk
     disk_data = load_json(KROKY_PATH)
     
@@ -1611,9 +1348,7 @@ if selected_tab == "edit":
 # ---------- TAB 3: TEXT COMPARATOR ----------
 if selected_tab == "text":
     # 📝 Text Comparator
-    st.markdown("### 📝 Text Comparator")
-    st.markdown('<div class="tt-muted">Compare two texts and highlight character-level differences.</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("Compare two texts with highlighted differences")
     
     if 'text1_area' not in st.session_state:
         st.session_state.text1_area = ""
