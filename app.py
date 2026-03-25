@@ -443,19 +443,18 @@ st.markdown("""
         position: sticky;
         top: 0;
         z-index: 999;
-        background-color: #1a1f35;
-        padding: 20px 30px;
+        background-color: #111827;
+        padding: 25px 0;
         margin: -50px -50px 20px -50px;
-        padding-left: 65px;
-        padding-right: 50px;
         text-align: center;
-        border-bottom: 1px solid #334155;
+        border-bottom: 1px solid #1e293b;
+        width: calc(100% + 100px);
     }
     .header-logo {
-        font-size: 32px;
+        font-size: 36px;
         font-weight: 800;
         color: #22d3ee;
-        margin-bottom: 15px;
+        margin-bottom: 20px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -466,6 +465,7 @@ st.markdown("""
         justify-content: center;
         gap: 12px;
         flex-wrap: wrap;
+        padding: 0 30px;
     }
 </style>
 <div class="top-header">
@@ -475,7 +475,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Tab buttons centered below logo
-tab_col1, tab_col2, tab_col3, tab_col_space = st.columns([1, 1, 1, 2])
+col_space1, tab_col1, tab_col2, tab_col3, col_space2 = st.columns([1, 1, 1, 1, 1])
 
 build_color = "#2563eb" if selected_tab == "build" else "#334155"
 edit_color = "#2563eb" if selected_tab == "edit" else "#334155"
