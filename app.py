@@ -630,17 +630,17 @@ st.markdown("""
 col_space1, tab_col1, tab_col2, tab_col3, col_space2 = st.columns([1, 1, 1, 1, 1])
 
 with tab_col1:
-    if st.button("🏗️ Test Cases", use_container_width=True, key="nav_build", type=("primary" if selected_tab == "build" else "secondary")):
+    if st.button("Test Cases", use_container_width=True, key="nav_build", type=("primary" if selected_tab == "build" else "secondary")):
         st.session_state.selected_tab = "build"
         st.rerun()
 
 with tab_col2:
-    if st.button("🔧 Actions & Steps", use_container_width=True, key="nav_edit", type=("primary" if selected_tab == "edit" else "secondary")):
+    if st.button("Actions & Steps", use_container_width=True, key="nav_edit", type=("primary" if selected_tab == "edit" else "secondary")):
         st.session_state.selected_tab = "edit"
         st.rerun()
 
 with tab_col3:
-    if st.button("📝 Text Comparator", use_container_width=True, key="nav_text", type=("primary" if selected_tab == "text" else "secondary")):
+    if st.button("Text Comparator", use_container_width=True, key="nav_text", type=("primary" if selected_tab == "text" else "secondary")):
         st.session_state.selected_tab = "text"
         st.rerun()
 
