@@ -316,22 +316,16 @@ if 'steps_data' not in st.session_state:
     st.session_state.steps_data = copy.deepcopy(steps_data)
     print(f"[DEBUG] INIT: steps_data first initialization from disk")
 
-# ---------- SIDEBAR ----------
+# Initialize selected tab (0 = Build, 1 = Edit, 2 = Text Comp)
+if 'selected_tab' not in st.session_state:
+    st.session_state.selected_tab = 0
+
+# ---------- SIDEBAR: LOGO + PROJECT MANAGEMENT ----------
 with st.sidebar:
-    st.title("🧪 Testool")
+    st.markdown("## 🧪 **Testool**")
+    st.markdown("Professional test case builder")
     st.markdown("---")
-
-    # Navigation
-    page = st.radio(
-        "Navigation",
-        [
-            "🏗️ Build Test Cases",
-            "🔧 Edit Actions & Steps",
-            "📝 Text Comparator"
-        ]
-    )
-
-    st.markdown("---")
+    
     st.subheader("📁 Project")
 
     project_names = list(st.session_state.projects.keys())
@@ -432,9 +426,15 @@ with st.sidebar:
                 save_and_update_projects(st.session_state.projects)
                 st.success("Subject cleared.")
 
+# ---------- MAIN CONTENT: TABS NAVIGATION ----------
+tab1, tab2, tab3 = st.tabs([
+    "🏗️ Build Test Cases",
+    "🔧 Edit Actions & Steps",
+    "📝 Text Comparator"
+])
 
-    # ---------- STRÁNKA 1: BUILD TEST CASES ----------
-if page == "🏗️ Build Test Cases":
+# ---------- TAB 1: BUILD TEST CASES ----------
+with tab1:
     st.title("🏗️ Build Test Cases")
     
     if st.session_state.selected_project is None:
@@ -951,10 +951,9 @@ if page == "🏗️ Build Test Cases":
         else:
             st.info("No test cases available to delete.")
     # end delete expander
-            
 
-# ---------- STRÁNKA 2: EDIT ACTIONS & STEPS ----------
-elif page == "🔧 Edit Actions & Steps":
+# ---------- TAB 2: EDIT ACTIONS & STEPS ----------
+with tab2:
     st.title("🔧 Edit Actions & Steps")
     
     # Load current data from disk to ensure we always have the latest
@@ -1287,8 +1286,8 @@ elif page == "🔧 Edit Actions & Steps":
                         del st.session_state[f"edit_steps_{action}"]
                     st.rerun()
 
-# ---------- STRÁNKA 3: TEXT COMPARATOR ----------
-elif page == "📝 Text Comparator":
+# ---------- TAB 3: TEXT COMPARATOR ----------
+with tab3:
     st.title("📝 Text Comparator")
     st.markdown("Compare two texts with highlighted differences")
     
