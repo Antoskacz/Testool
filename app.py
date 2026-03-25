@@ -30,6 +30,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Hide sidebar collapse button - keep it always visible
+st.markdown("""
+<style>
+    [data-testid="collapsedControl"] { display: none; }
+</style>
+""", unsafe_allow_html=True)
+
 # Debug information to determine where the script is actually running.
 # Streamlit often copies the Python file to /tmp, which makes __file__ and
 # cwd point to a temporary location. We need to know the original workspace
@@ -432,69 +439,77 @@ if 'selected_tab' not in st.session_state:
 
 selected_tab = st.session_state.selected_tab
 
-build_active = 'top-nav-active' if selected_tab == 'build' else ''
-edit_active = 'top-nav-active' if selected_tab == 'edit' else ''
-text_active = 'top-nav-active' if selected_tab == 'text' else ''
-
-css = '''
+# Sticky top navigation bar
+st.markdown("""
 <style>
-.top-nav-wrapper {
-    position: sticky;
-    top: 0;
-    z-index: 999;
-    background-color: #0f172a;
-    border-bottom: 1px solid #334155;
-    padding: 10px 16px;
-}
-.top-nav-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    max-width: 100%;
-    gap: 8px;
-    overflow-x: auto;
-}
-.top-nav-item {
-    color: #94a3b8;
-    text-decoration: none;
-    padding: 8px 14px;
-    border-radius: 8px;
-    font-weight: 600;
-    white-space: nowrap;
-    background-color: transparent;
-    border: 0;
-}
-.top-nav-item:hover { background: #1e293b; color: #ffffff; }
-.top-nav-active { background: #2563eb; color: white !important; }
+    .nav-wrapper {
+        position: sticky;
+        top: 0;
+        z-index: 999;
+        background-color: #0f172a;
+        padding: 12px 15px;
+        border-bottom: 1px solid #334155;
+        margin: -50px -50px 10px -50px;
+        padding-left: 65px;
+        padding-right: 50px;
+    }
+    .nav-container {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+    .nav-logo {
+        font-size: 18px;
+        font-weight: 700;
+        color: #22d3ee;
+        margin-right: 20px;
+    }
+    .nav-item {
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-weight: 600;
+        color: #94a3b8;
+        background: transparent;
+        transition: all 0.2s;
+    }
+    .nav-item:hover {
+        background: #1e293b;
+        color: #ffffff;
+    }
+    .nav-active {
+        background: #2563eb;
+        color: white !important;
+    }
 </style>
-'''
-
-html = f'''
-<div class="top-nav-wrapper">
-  <div class="top-nav-container">
-    <span style="font-size:18px; font-weight:700; color:#22d3ee; margin-right:16px;">🧪 Testool</span>
-    <button class="top-nav-item {build_active}" onclick="window.location.href='#'" data-id="build">Test Cases</button>
-    <button class="top-nav-item {edit_active}" onclick="window.location.href='#'" data-id="edit">Actions & Steps</button>
-    <button class="top-nav-item {text_active}" onclick="window.location.href='#'" data-id="text">Text Comparator</button>
-  </div>
+<div class="nav-wrapper">
+    <div class="nav-container">
+        <span class="nav-logo">🧪 Testool</span>
+    </div>
 </div>
-'''
+""", unsafe_allow_html=True)
 
-st.markdown(css + html, unsafe_allow_html=True)
+# Top navigation buttons
+col_nav1, col_nav2, col_nav3, col_nav_spacer = st.columns([0.8, 1, 1, 2])
 
-st.markdown("<div style='height: 15px;'></div>", unsafe_allow_html=True)
+with col_nav1:
+    build_class = "nav-item nav-active" if selected_tab == "build" else "nav-item"
+    if st.button("🏗️ Test Cases", use_container_width=True, key="nav_build"):
+        st.session_state.selected_tab = "build"
+        st.rerun()
 
-# only works as visual; real change thru normal st.button below
-col1, col2, col3 = st.columns([1,1,1])
-with col1:
-    if st.button("Test Cases"):
-        st.session_state.selected_tab = 'build'
-with col2:
-    if st.button("Actions & Steps"):
-        st.session_state.selected_tab = 'edit'
-with col3:
-    if st.button("Text Comparator"):
-        st.session_state.selected_tab = 'text'
+with col_nav2:
+    edit_class = "nav-item nav-active" if selected_tab == "edit" else "nav-item"
+    if st.button("🔧 Actions & Steps", use_container_width=True, key="nav_edit"):
+        st.session_state.selected_tab = "edit"
+        st.rerun()
+
+with col_nav3:
+    text_class = "nav-item nav-active" if selected_tab == "text" else "nav-item"
+    if st.button("📝 Text Comparator", use_container_width=True, key="nav_text"):
+        st.session_state.selected_tab = "text"
+        st.rerun()
+
+st.markdown("---")
 
 # ---------- TAB 1: BUILD TEST CASES ----------
 if selected_tab == "build":
