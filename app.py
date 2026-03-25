@@ -558,7 +558,7 @@ with tab_col3:
             border-radius: 8px;
             font-weight: 700;
         }}
-        .text-btn:active { transform: translateY(1px); }
+        .text-btn:active {{ transform: translateY(1px); }}
     </style>
     """
     st.markdown(btn_style, unsafe_allow_html=True)
