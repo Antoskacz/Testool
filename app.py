@@ -17,7 +17,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 PROJECTS_PATH = DATA_DIR / "projects.json"
 KROKY_PATH = DATA_DIR / "kroky.json"
-KROKY_CUSTOM_PATH = DATA_DIR / "kroky_custom.json"  # fallback file for custom actions
+KROKY_CUSTOM_PATH = DATA_DIR / "kroky_custom.json"  # UI overrides over immutable kroky.json
 
 # ensure data directory exists as early as possible
 DATA_DIR.mkdir(exist_ok=True)
@@ -30,172 +30,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ---------- GLOBAL THEME ----------
+# Hide sidebar collapse button - keep it always visible
 st.markdown("""
 <style>
-:root {
-    --bg: #08111f;
-    --bg-2: #0b1730;
-    --panel: rgba(14, 24, 46, 0.88);
-    --panel-strong: rgba(17, 29, 54, 0.96);
-    --border: rgba(107, 152, 255, 0.22);
-    --text: #edf4ff;
-    --muted: #93a7c8;
-    --accent: #3ad7ff;
-    --accent-2: #6b8cff;
-    --pink: #ff1fae;
-}
-
-.stApp {
-    background:
-        radial-gradient(circle at top center, rgba(56, 120, 255, 0.14), transparent 28%),
-        radial-gradient(circle at right top, rgba(255, 0, 170, 0.08), transparent 20%),
-        linear-gradient(180deg, var(--bg) 0%, #06101f 100%);
-    color: var(--text);
-}
-
-.block-container {
-    max-width: 1450px !important;
-    padding-top: 2.0rem !important;
-    padding-bottom: 2rem !important;
-}
-
-section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, rgba(24,28,43,0.98) 0%, rgba(17,22,37,0.98) 100%);
-    border-right: 1px solid rgba(255,255,255,0.06);
-}
-section[data-testid="stSidebar"] .block-container {
-    padding-top: 1rem !important;
-}
-
-/* keep sidebar toggle visible */
-[data-testid="collapsedControl"] {
-    display: flex !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-}
-
-h1, h2, h3 {
-    letter-spacing: -0.02em;
-}
-
-.stTextInput > div > div > input,
-.stTextArea textarea,
-.stSelectbox [data-baseweb="select"] > div,
-.stMultiSelect [data-baseweb="select"] > div {
-    background: rgba(10, 15, 30, 0.85) !important;
-    border: 1px solid var(--border) !important;
-    color: var(--text) !important;
-    border-radius: 12px !important;
-}
-
-.stButton > button,
-.stDownloadButton > button,
-button[kind="secondary"] {
-    background: linear-gradient(180deg, rgba(25,36,66,0.95), rgba(17,26,49,0.95)) !important;
-    border: 1px solid rgba(112,156,255,0.36) !important;
-    color: #ebf3ff !important;
-    border-radius: 12px !important;
-    min-height: 44px !important;
-    font-weight: 700 !important;
-    box-shadow: 0 10px 24px rgba(0,0,0,0.18);
-}
-
-.stButton > button:hover,
-.stDownloadButton > button:hover {
-    border-color: rgba(58,215,255,0.55) !important;
-}
-
-.stButton > button[kind="primary"] {
-    background: linear-gradient(90deg, #188dff, #6b5cff) !important;
-    border: none !important;
-}
-
-[data-testid="stMetric"] {
-    background: transparent !important;
-    border: none !important;
-}
-
-[data-testid="stDataFrame"] {
-    background: rgba(17, 23, 41, 0.78) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 16px !important;
-    overflow: hidden !important;
-}
-
-.streamlit-expanderHeader {
-    background: rgba(17, 23, 41, 0.72) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 12px !important;
-}
-
-.tt-header {
-    text-align: center;
-    padding: 2.2rem 0 0.8rem 0;
-}
-.tt-logo {
-    font-size: 3rem;
-    font-weight: 800;
-    color: #3ad7ff;
-    margin: 0;
-}
-.tt-subtitle {
-    color: var(--muted);
-    margin-top: 0.2rem;
-    margin-bottom: 1.2rem;
-}
-.tt-card {
-    background: linear-gradient(180deg, rgba(20, 28, 50, 0.78), rgba(14, 20, 38, 0.9));
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    padding: 20px 22px;
-    box-shadow: 0 18px 45px rgba(0,0,0,0.16);
-    margin-bottom: 18px;
-}
-.tt-metric {
-    background: linear-gradient(180deg, rgba(16, 26, 48, 0.88), rgba(10, 18, 36, 0.96));
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 14px 16px;
-    min-height: 92px;
-}
-.tt-metric-label {
-    color: #dfe9ff;
-    font-size: 0.92rem;
-    font-weight: 700;
-    margin-bottom: 0.45rem;
-}
-.tt-metric-value {
-    color: #ffffff;
-    font-size: 2rem;
-    font-weight: 800;
-    line-height: 1;
-}
-.tt-empty {
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    min-height: 320px;
-    color: var(--muted);
-    background: linear-gradient(180deg, rgba(13, 20, 38, 0.72), rgba(10, 16, 30, 0.84));
-    border: 1px dashed rgba(111,153,255,0.24);
-    border-radius: 16px;
-    text-align:center;
-    padding: 1rem;
-}
-.tt-note {
-    background: linear-gradient(90deg, rgba(85,95,0,0.55), rgba(70,80,0,0.35));
-    border: 1px solid rgba(189, 200, 70, 0.18);
-    color: #f6f3c7;
-    padding: 0.9rem 1rem;
-    border-radius: 12px;
-    margin: 1rem 0 1.4rem 0;
-}
-.tt-muted { color: var(--muted); }
-hr {
-    border-color: rgba(255,255,255,0.08) !important;
-}
-#MainMenu, footer { visibility: hidden; }
+    [data-testid="collapsedControl"] { display: none; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -242,73 +80,212 @@ def save_and_update_projects(data):
         st.session_state.projects = copy.deepcopy(data)
     return success
 
-def save_and_update_steps(data):
-    """Uloží kroky do souboru a aktualizuje session_state.
 
-    Tries to save to kroky.json first (original file). If that fails,
-    falls back to kroky_custom.json. On startup, both files are loaded
-    and merged so users never lose data.
+def normalize_action_content(action_data):
+    """Normalize action payload to {'description': str, 'steps': list[dict]}."""
+    if isinstance(action_data, dict):
+        steps = action_data.get("steps", [])
+        description = action_data.get("description", "")
+    elif isinstance(action_data, list):
+        steps = action_data
+        description = ""
+    else:
+        steps = []
+        description = ""
+
+    normalized_steps = []
+    if isinstance(steps, list):
+        for step in steps:
+            if isinstance(step, dict):
+                normalized_steps.append({
+                    "description": str(step.get("description", "")).strip(),
+                    "expected": str(step.get("expected", "")).strip()
+                })
+            else:
+                normalized_steps.append({
+                    "description": str(step).strip(),
+                    "expected": ""
+                })
+
+    return {
+        "description": str(description).strip(),
+        "steps": normalized_steps
+    }
+
+
+def normalize_steps_map(data):
+    """Normalize whole action dictionary and keep keys sorted."""
+    normalized = {}
+    if not isinstance(data, dict):
+        return normalized
+
+    for action_name, action_data in data.items():
+        action_key = str(action_name).strip()
+        if not action_key:
+            continue
+        normalized[action_key] = normalize_action_content(action_data)
+
+    return dict(sorted(normalized.items(), key=lambda kv: kv[0].lower()))
+
+
+def validate_steps_payload(data):
+    """Validate all actions before saving overrides."""
+    if not isinstance(data, dict):
+        return False, "Actions payload must be a dictionary."
+
+    for action_name, action_data in data.items():
+        if not str(action_name).strip():
+            return False, "Action name cannot be empty."
+
+        normalized = normalize_action_content(action_data)
+        if not normalized["description"]:
+            return False, f"Action '{action_name}' must have a description."
+        if not normalized["steps"]:
+            return False, f"Action '{action_name}' must have at least one step."
+
+        for idx, step in enumerate(normalized["steps"], start=1):
+            if not step.get("description", "").strip():
+                return False, f"Action '{action_name}' has empty description in step {idx}."
+            if not step.get("expected", "").strip():
+                return False, f"Action '{action_name}' has empty expected result in step {idx}."
+
+    return True, ""
+
+
+def load_custom_overrides():
     """
-    # use fixed paths relative to script location; cwd may be /tmp when
-    # Streamlit copies the file for execution, so relying on __file__ keeps
-    # data inside the workspace where it survives restart.
-    kroky_path = KROKY_PATH
-    kroky_custom_path = KROKY_CUSTOM_PATH
+    Load custom overrides. Supports both the new format with _status and
+    older plain mirror files for backwards compatibility.
+    """
+    raw = load_json(KROKY_CUSTOM_PATH)
+    if not isinstance(raw, dict):
+        return {}
 
-    # sort keys so file is alphabetical
-    ordered = dict(sorted(data.items(), key=lambda kv: kv[0].lower()))
-    
-    # debug: show where files are written
-    print(f"[DEBUG] SAVE_AND_UPDATE: BASE_DIR={BASE_DIR}")
-    print(f"[DEBUG] SAVE_AND_UPDATE: kroky_path={kroky_path}")
-    print(f"[DEBUG] SAVE_AND_UPDATE: kroky_custom_path={kroky_custom_path}")
-    print(f"[DEBUG] SAVE_AND_UPDATE: Attempting to save {len(ordered)} actions to disk")
-    
-    # Try primary file first
-    success = save_json(kroky_path, ordered)
-    saved_to = "kroky.json"
-    
-    # If primary fails, still write to custom file
-    if not success:
-        print(f"[ERROR] SAVE_AND_UPDATE: Failed to save to kroky.json, trying custom...")
-        st.warning(
-            "⚠️ Could not write to kroky.json. "
-            "Saving to kroky_custom.json instead. Your data is safe!"
-        )
-        success = save_json(kroky_custom_path, ordered)
-        saved_to = "kroky_custom.json"
-        # when primary fails we obviously need custom for merge info later
-        if success:
-            print(f"[SUCCESS] SAVE_AND_UPDATE: Successfully saved to kroky_custom.json")
-            st.info(
-                "ℹ️ Next app restart will automatically merge "
-                "kroky_custom.json into kroky.json"
-            )
+    overrides = {}
+    for action_name, payload in raw.items():
+        action_key = str(action_name).strip()
+        if not action_key:
+            continue
+
+        if isinstance(payload, dict) and payload.get("_status") in {"added", "modified", "deleted"}:
+            status = payload.get("_status")
+            if status == "deleted":
+                overrides[action_key] = {"_status": "deleted"}
+            else:
+                action_payload = {
+                    "description": payload.get("description", ""),
+                    "steps": payload.get("steps", [])
+                }
+                overrides[action_key] = {
+                    "_status": status,
+                    **normalize_action_content(action_payload)
+                }
         else:
-            print(f"[CRITICAL ERROR] SAVE_AND_UPDATE: Failed to save to both files!")
-    else:
-        print(f"[SUCCESS] SAVE_AND_UPDATE: Successfully saved {len(ordered)} actions to kroky.json")
-        # Primary succeeded – mirror to custom file as backup/log
-        save_json(kroky_custom_path, ordered)
-        saved_to = "both kroky.json and kroky_custom.json"    
-    if success:
-        st.session_state.steps_data = copy.deepcopy(ordered)
-        # Add subtle debug info if in dev mode
-        st.toast(f"✅ Saved to {saved_to}", icon="💾")
-    else:
-        st.error("❌ Failed to save actions. Please contact admin.")
+            # Legacy format = treat as override payload
+            overrides[action_key] = {
+                "_status": "modified",
+                **normalize_action_content(payload)
+            }
 
-    # write a persistent debug record regardless of streamlit log visibility
+    return dict(sorted(overrides.items(), key=lambda kv: kv[0].lower()))
+
+
+def merge_steps(base_steps, custom_overrides):
+    """Create effective steps map from immutable base + custom overrides."""
+    effective = normalize_steps_map(base_steps)
+
+    if not isinstance(custom_overrides, dict):
+        return effective
+
+    for action_name, override in custom_overrides.items():
+        if not isinstance(override, dict):
+            continue
+
+        status = override.get("_status")
+        if status == "deleted":
+            effective.pop(action_name, None)
+            continue
+
+        if status in {"added", "modified"}:
+            effective[action_name] = normalize_action_content(override)
+
+    return dict(sorted(effective.items(), key=lambda kv: kv[0].lower()))
+
+
+def load_effective_steps():
+    """Return steps visible in the app: kroky.json + overrides from kroky_custom.json."""
+    return merge_steps(load_json(KROKY_PATH), load_custom_overrides())
+
+
+def build_custom_overrides(effective_steps):
+    """Build override file contents by diffing immutable base against effective steps."""
+    base_steps = normalize_steps_map(load_json(KROKY_PATH))
+    effective_steps = normalize_steps_map(effective_steps)
+
+    overrides = {}
+
+    # added / modified
+    for action_name, action_data in effective_steps.items():
+        if action_name not in base_steps:
+            overrides[action_name] = {
+                "_status": "added",
+                **normalize_action_content(action_data)
+            }
+        elif normalize_action_content(base_steps[action_name]) != normalize_action_content(action_data):
+            overrides[action_name] = {
+                "_status": "modified",
+                **normalize_action_content(action_data)
+            }
+
+    # deleted
+    for action_name in base_steps.keys():
+        if action_name not in effective_steps:
+            overrides[action_name] = {"_status": "deleted"}
+
+    return dict(sorted(overrides.items(), key=lambda kv: kv[0].lower()))
+
+
+def save_and_update_steps(data):
+    """
+    Save ONLY custom overrides to kroky_custom.json.
+    kroky.json remains immutable from inside the app.
+    """
+    normalized_effective = normalize_steps_map(data)
+    valid, error_message = validate_steps_payload(normalized_effective)
+    if not valid:
+        st.error(f"❌ {error_message}")
+        return False
+
+    overrides = build_custom_overrides(normalized_effective)
+
+    print(f"[DEBUG] SAVE_AND_UPDATE_OVERRIDES: BASE_DIR={BASE_DIR}")
+    print(f"[DEBUG] SAVE_AND_UPDATE_OVERRIDES: kroky_path={KROKY_PATH}")
+    print(f"[DEBUG] SAVE_AND_UPDATE_OVERRIDES: kroky_custom_path={KROKY_CUSTOM_PATH}")
+    print(f"[DEBUG] SAVE_AND_UPDATE_OVERRIDES: saving {len(overrides)} override records")
+
+    success = save_json(KROKY_CUSTOM_PATH, overrides)
+    saved_to = "kroky_custom.json"
+
+    if success:
+        effective = load_effective_steps()
+        st.session_state.steps_data = copy.deepcopy(effective)
+        st.session_state.edit_steps_data = copy.deepcopy(effective)
+        st.toast("✅ Saved UI overrides to kroky_custom.json", icon="💾")
+    else:
+        st.error("❌ Failed to save action overrides. Please contact admin.")
+
     try:
         dbg_path = BASE_DIR / "data" / "save_debug.log"
         with open(dbg_path, "a", encoding="utf-8") as dbg:
-            dbg.write(f"{datetime.now().isoformat()} BASE_DIR={BASE_DIR} kroky={kroky_path} kroky_custom={kroky_custom_path} saved_to={saved_to} success={success}\n")
+            dbg.write(
+                f"{datetime.now().isoformat()} BASE_DIR={BASE_DIR} "
+                f"kroky={KROKY_PATH} kroky_custom={KROKY_CUSTOM_PATH} "
+                f"saved_to={saved_to} success={success} override_count={len(overrides)}\\n"
+            )
     except Exception:
         pass
 
     return success
-	
-    
 def clean_tc_name(name: str) -> str:
     """
     Odstraní části 'UNKNOWN' z názvu ticketu a opraví duplicitní podtržítka.
@@ -413,7 +390,7 @@ def remove_diacritics(text):
 
 def update_scenarios_with_action_steps(projects_data: dict, steps_data: dict, action_name: str):
     """
-    Update all scenarios that use a specific action with the latest steps from kroky.json
+    Update all scenarios that use a specific action with the latest effective steps
     Propagates changes to all test cases that use this action
     """
     updated_count = 0
@@ -423,7 +400,7 @@ def update_scenarios_with_action_steps(projects_data: dict, steps_data: dict, ac
         
         for scenario in project_data.get("scenarios", []):
             if scenario.get("akce") == action_name:
-                # Get updated steps from kroky.json
+                # Get updated steps from effective actions
                 if action_name in steps_data:
                     action_data = steps_data[action_name]
                     if isinstance(action_data, dict) and "steps" in action_data:
@@ -434,29 +411,6 @@ def update_scenarios_with_action_steps(projects_data: dict, steps_data: dict, ac
                         updated_count += 1
     
     return updated_count
-
-
-def render_metric_card(title: str, value: int):
-    st.markdown(
-        f"""<div class="tt-metric">
-            <div class="tt-metric-label">{title}</div>
-            <div class="tt-metric-value">{value}</div>
-        </div>""",
-        unsafe_allow_html=True,
-    )
-
-
-def render_empty_panel(message: str, height: int = 320):
-    st.markdown(
-        f"<div class='tt-empty' style='min-height:{height}px'>{message}</div>",
-        unsafe_allow_html=True,
-    )
-
-
-def render_section_intro(title: str, subtitle: str):
-    st.markdown(f"### {title}")
-    st.markdown(f"<div class='tt-muted'>{subtitle}</div>", unsafe_allow_html=True)
-
 
 # ---------- HLAVNÍ APLIKACE ----------
 # Top nav handles title + tabs, žáden repeating headings zde
@@ -473,14 +427,7 @@ def render_section_intro(title: str, subtitle: str):
 
 # Načtení dat
 projects = load_json(PROJECTS_PATH)
-steps_data = load_json(KROKY_PATH)
-
-# Load custom actions (fallback file) and merge them with primary
-custom_steps = load_json(KROKY_CUSTOM_PATH)
-if custom_steps:
-    # Merge custom actions into primary
-    steps_data.update(custom_steps)
-    # optionally log that we found custom actions
+steps_data = load_effective_steps()
 
 
 # Zajistíme, aby se prázdné soubory inicializovaly s minimem dat
@@ -488,9 +435,10 @@ if not projects or projects == {}:
     projects = {}
     save_json(PROJECTS_PATH, projects)
 
-if not steps_data or steps_data == {}:
-    steps_data = {}
-    save_json(KROKY_PATH, steps_data)
+if not load_json(KROKY_PATH):
+    save_json(KROKY_PATH, {})
+if not load_json(KROKY_CUSTOM_PATH):
+    save_json(KROKY_CUSTOM_PATH, {})
 
 # Session state initialization:
 # IMPORTANT: We initialize ONLY on first run (no 'in st.session_state'),
@@ -619,30 +567,121 @@ if 'selected_tab' not in st.session_state:
 
 selected_tab = st.session_state.selected_tab
 
-# Top navigation - centered logo without boxed background
+# Sticky top navigation bar - centered logo and tabs
 st.markdown("""
-<div class="tt-header">
-    <div class="tt-logo">🧪 Testool</div>
-    <div class="tt-subtitle">Professional test case builder and manager</div>
+<style>
+    .top-header {
+        position: sticky;
+        top: 0;
+        z-index: 999;
+        background-color: #0E1117;
+        padding: 24px 0;
+        margin: -50px -50px 0 -50px;
+        text-align: center;
+        width: calc(100% + 100px);
+    }
+    .header-logo {
+        font-size: 54px;
+        font-weight: 800;
+        color: #6ac9ff;
+        margin-bottom: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+    .tab-btn {
+        min-width: 170px;
+        color: #c5d7f0;
+        border: 1px solid #6496f0;
+        background-color: #101c34;
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 700;
+        transition: all .2s ease;
+    }
+    .tab-btn:hover {
+        color: #eff8ff;
+        border-color: #00758C;
+        background-color: #172342;
+    }
+    .tab-active {
+        color: #ffffff;
+        border-color: #00D5FF;
+        background-color: #110066;
+    }
+</style>
+<div class="top-header">
+    <div class="header-logo">Testool</div>
 </div>
 """, unsafe_allow_html=True)
 
+# Tab buttons centered below logo
 col_space1, tab_col1, tab_col2, tab_col3, col_space2 = st.columns([1, 1, 1, 1, 1])
 
+build_color = "#303f62" if selected_tab == "build" else "#111e35"
+edit_color = "#303f62" if selected_tab == "edit" else "#111e35"
+text_color = "#303f62" if selected_tab == "text" else "#111e35"
+
 with tab_col1:
-    if st.button("Test Cases", use_container_width=True, key="nav_build", type=("primary" if selected_tab == "build" else "secondary")):
+    btn_style = f"""
+    <style>
+        .build-btn {{
+            border: 1px solid #6da4ff;
+            background-color: {build_color};
+            color: #d8e7ff;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: 700;
+            box-shadow: 0 0 14px rgba(104, 155, 255, 0.4);
+        }}
+        .build-btn:active {{ transform: translateY(1px); }}
+    </style>
+    """
+    st.markdown(btn_style, unsafe_allow_html=True)
+    if st.button("🏗️ Test Cases", use_container_width=True, key="nav_build"):
         st.session_state.selected_tab = "build"
         st.rerun()
 
 with tab_col2:
-    if st.button("Actions & Steps", use_container_width=True, key="nav_edit", type=("primary" if selected_tab == "edit" else "secondary")):
+    btn_style = f"""
+    <style>
+        .edit-btn {{
+            border: 1px solid #7db8ff;
+            background-color: {edit_color};
+            color: #d0d9ff;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: 700;
+        }}
+        .edit-btn:active {{ transform: translateY(1px); }}
+    </style>
+    """
+    st.markdown(btn_style, unsafe_allow_html=True)
+    if st.button("🔧 Actions & Steps", use_container_width=True, key="nav_edit"):
         st.session_state.selected_tab = "edit"
         st.rerun()
 
 with tab_col3:
-    if st.button("Text Comparator", use_container_width=True, key="nav_text", type=("primary" if selected_tab == "text" else "secondary")):
+    btn_style = f"""
+    <style>
+        .text-btn {{
+            border: 1px solid #7db8ff;
+            background-color: {text_color};
+            color: #d8edff;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: 700;
+        }}
+        .text-btn:active {{ transform: translateY(1px); }}
+    </style>
+    """
+    st.markdown(btn_style, unsafe_allow_html=True)
+    if st.button("📝 Text Comparator", use_container_width=True, key="nav_text"):
         st.session_state.selected_tab = "text"
         st.rerun()
+
 
 # Content separator
 st.markdown("---")
@@ -651,141 +690,187 @@ st.markdown("---")
 if selected_tab == "build":
     project_name = st.session_state.selected_project
     if project_name is None:
-        project_data = {"subject": "", "scenarios": [], "next_id": 1}
+        st.warning("Select or create a project in the sidebar to work with test cases.")
+        project_data = {
+            "subject": "",
+            "scenarios": [],
+            "next_id": 1
+        }
         project_exists = False
     else:
         project_data = st.session_state.projects[project_name]
         project_exists = True
+    
 
-    testcases = project_data.get("scenarios", [])
-    testcase_count = len(testcases)
-    b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
-    b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
-
-    if not project_exists:
-        st.markdown("<div class='tt-note'>Select or create a project in the sidebar to work with test cases.</div>", unsafe_allow_html=True)
-
-    render_section_intro("Build Test Cases", "Build, manage and export assisted test cases for the selected project.")
-    st.markdown("---")
-
-    col_overview, col_analysis = st.columns([1, 1.15])
-
+    # ---------- ROW 1: PROJECT OVERVIEW + ANALYSIS ----------
+    col_overview, col_analysis = st.columns([1, 1.5])  # Pravá část (graf) větší
+    
     with col_overview:
         st.subheader("📊 Project Overview")
+        subject_value = project_data.get('subject', "")
         display_project_name = project_name if project_name else "— no project selected —"
         st.write(f"**Active Project:** {display_project_name}")
-        st.write(f"**Subject:** {project_data.get('subject', '')}")
-
+        st.write(f"**Subject:** {subject_value}")
+        
+        # Actions by Segment - přesunuto sem
         st.markdown("---")
         st.subheader("📋 Actions by Segment")
-
+        
+        testcases = project_data.get("scenarios", [])
         if testcases:
-            nested_segment_data = analyze_scenarios(testcases)
-            segment_columns = st.columns(2)
-            segment_config = [
-                ("B2C", "👥", segment_columns[0]),
-                ("B2B", "🏢", segment_columns[1]),
-            ]
-
-            for segment_name, icon, target_col in segment_config:
-                with target_col:
-                    segment_total = sum(
-                        len(actions)
-                        for tech_map in nested_segment_data.get(segment_name, {}).values()
-                        for actions in tech_map.values()
-                    )
-                    with st.expander(f"{icon} {segment_name} ({segment_total})", expanded=True):
-                        segment_channels = nested_segment_data.get(segment_name, {})
-                        if not segment_channels:
-                            st.write("No test cases")
-                        else:
-                            for channel_name in ["SHOP", "IL"]:
-                                channel_data = segment_channels.get(channel_name, {})
-                                channel_total = sum(len(actions) for actions in channel_data.values())
-                                if channel_data:
-                                    st.markdown(f"**{channel_name} ({channel_total})**")
-                                    action_counts = {}
-                                    for actions in channel_data.values():
-                                        for action in actions:
-                                            action_counts[action] = action_counts.get(action, 0) + 1
-                                    for action, count in sorted(action_counts.items(), key=lambda x: (-x[1], x[0])):
-                                        st.write(f"- {action}: {count}")
-                                else:
-                                    st.markdown(f"**{channel_name} (0)**")
-                                    st.caption("No test cases")
-                                st.markdown("")
+            # Statistiky pro expandery
+            b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
+            b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
+            
+            # Vytvořit strukturovaná data pro akce
+            segment_data = {"B2C": {}, "B2B": {}}
+            for tc in testcases:
+                segment = tc.get("segment", "UNKNOWN")
+                action = tc.get("akce", "UNKNOWN")
+                
+                if segment in ["B2C", "B2B"]:
+                    if action not in segment_data[segment]:
+                        segment_data[segment][action] = 0
+                    segment_data[segment][action] += 1
+            
+            # Dva expandery vedle sebe
+            col_b2c, col_b2b = st.columns(2)
+            
+            with col_b2c:
+                with st.expander(f"👥 B2C ({b2c_count})", expanded=True):
+                    if segment_data["B2C"]:
+                        # Seřadit akce podle počtu test cases (nejvíc první)
+                        sorted_actions = sorted(
+                            segment_data["B2C"].items(), 
+                            key=lambda x: x[1], 
+                            reverse=True
+                        )
+                        for action, count in sorted_actions:
+                            st.write(f"**{action}:** {count}")
+                    else:
+                        st.write("No test cases")
+            
+            with col_b2b:
+                with st.expander(f"🏢 B2B ({b2b_count})", expanded=True):
+                    if segment_data["B2B"]:
+                        # Seřadit akce podle počtu test cases (nejvíc první)
+                        sorted_actions = sorted(
+                            segment_data["B2B"].items(), 
+                            key=lambda x: x[1], 
+                            reverse=True
+                        )
+                        for action, count in sorted_actions:
+                            st.write(f"**{action}:** {count}")
+                    else:
+                        st.write("No test cases")
         else:
             st.info("No test cases yet")
-
+    
+    # ----------------------------GRAF---------------------------
     with col_analysis:
-        st.markdown("<h3 style='text-align:center;'>📈 Distribution Analysis</h3>", unsafe_allow_html=True)
-        st.markdown("<div class='tt-muted' style='text-align:center; margin-top:-0.35rem; margin-bottom:0.8rem;'>Distribution by test complexity</div>", unsafe_allow_html=True)
-        if testcase_count > 0:
-            complexity_order = ["1-Giant", "2-Huge", "3-Big", "4-Medium", "5-Low"]
-            complexity_counts = {label: 0 for label in complexity_order}
-            for tc in testcases:
-                value = tc.get("complexity", "UNKNOWN")
-                if value in complexity_counts:
-                    complexity_counts[value] += 1
-                else:
-                    complexity_counts[value] = complexity_counts.get(value, 0) + 1
-
-            filtered_items = [(label, count) for label, count in complexity_counts.items() if count > 0]
-            labels = [label.split('-', 1)[1] if '-' in label else label for label, _ in filtered_items]
-            values = [count for _, count in filtered_items]
-            colors = ["#ff4fbf", "#8b5cf6", "#35d6ff", "#22c55e", "#f59e0b"][:len(values)]
-
-            fig_complexity = go.Figure(data=[go.Pie(
-                labels=labels,
-                values=values,
-                hole=0.58,
-                marker_colors=colors,
-                textinfo='label+value',
-                textposition='inside',
-                textfont=dict(size=14, color='white'),
-                hovertemplate='<b>%{label}</b><br>Count: %{value}<br>Percentage: %{percent}<extra></extra>',
-                sort=False,
-                direction='clockwise'
+        st.markdown("<h3 style='text-align: center;'>📈 Distribution Analysis</h3>", unsafe_allow_html=True)
+        testcases = project_data.get("scenarios", [])
+        
+        if testcases:
+            # Základní statistiky
+            testcase_count = len(testcases)
+            b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
+            b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
+            
+            # Vytvoři donut graf s hodnotami uvnitř
+            fig_segment = go.Figure(data=[go.Pie(
+                labels=[f'B2C: {b2c_count}', f'B2B: {b2b_count}'],  # Hodnoty v labelu
+                values=[b2c_count, b2b_count],
+                hole=0.5,  # Větší díra uprostřed
+                marker_colors=["#0A65CEE2", "#BD146B"],  # modra a tmavá magenta
+                textinfo='label',  # Zobrazí pouze label s hodnotou
+                textposition='inside',  # Text uvnitř segmentů
+                textfont=dict(size=16, color='white'),
+                hoverinfo='label+percent',
+                hovertemplate='<b>%{label}</b><br>Percentage: %{percent}<extra></extra>',
+                insidetextorientation='horizontal'
             )])
-            fig_complexity.update_layout(
-                showlegend=True,
-                legend=dict(
-                    orientation='h',
-                    yanchor='bottom',
-                    y=-0.08,
-                    xanchor='center',
-                    x=0.5,
-                    font=dict(color='#dfe9ff', size=12)
-                ),
-                height=420,
-                margin=dict(t=10, b=60, l=10, r=10),
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                annotations=[dict(text=f"<b>Total</b><br>{testcase_count}", x=0.5, y=0.5, font_size=26, showarrow=False, font=dict(color='#dfe9ff'))]
+            
+            fig_segment.update_layout(
+                showlegend=False,  # Bez legendy
+                height=400,
+                margin=dict(t=20, b=20, l=20, r=20),
+                annotations=[
+                    dict(
+                        text=f"Total<br>{testcase_count}",
+                        x=0.5, y=0.5,
+                        font_size=24,
+                        showarrow=False,
+                        font=dict(color='#333333', family="Arial Black")
+                    )
+                ]
             )
-            st.plotly_chart(fig_complexity, use_container_width=True)
+            
+            st.plotly_chart(fig_segment, use_container_width=True)
+            
         else:
-            render_empty_panel("No test cases yet", height=360)
+            # Prázdný graf placeholder
+            fig_empty = go.Figure()
+            fig_empty.update_layout(
+                xaxis=dict(visible=False),
+                yaxis=dict(visible=False),
+                annotations=[
+                    dict(
+                        text="No test cases yet",
+                        x=0.5,
+                        y=0.5,
+                        showarrow=False,
+                        font=dict(size=16)
+                    )
+                ],
+                height=400,
+                margin=dict(t=20, b=20, l=20, r=20)
+            )
+            st.plotly_chart(fig_empty, use_container_width=True)
+
+
+    # ------------------------------------ EXPORT SECTION ------------------------------------
     st.markdown("---")
     st.markdown("### 💾 Export Test Cases")
     st.write("Generate clean, renumbered & diacritics-free test cases Excel file.")
-    export_button = st.button("💾 Export Test Cases to Excel", use_container_width=False, disabled=(not project_exists or not testcases))
+
+    col_export, col_future = st.columns([1, 2])
+
+    with col_export:
+        export_button = st.button(
+            "💾 Export Test Cases to Excel",
+            use_container_width=True
+        )
 
     if export_button:
+        # 1) Reindex test cases
         project_data = st.session_state.projects[project_name]
-        project_data["scenarios"] = sorted(project_data["scenarios"], key=lambda x: x.get("order_no", 0))
+
+        project_data["scenarios"] = sorted(
+            project_data["scenarios"],
+            key=lambda x: x.get("order_no", 0)
+        )
 
         for i, tc in enumerate(project_data["scenarios"], start=1):
             tc["order_no"] = i
+
             channel = tc["kanal"]
             segment = tc["segment"]
             technology = extract_technology(tc["veta"])
             sentence = tc["veta"].strip()
-            prefix = "_".join(p for p in [f"{i:03d}", channel, segment, technology] if p and p != "UNKNOWN")
-            tc["test_name"] = clean_tc_name(f"{prefix}_{sentence.capitalize()}")
+
+            prefix = "_".join(
+                p for p in [f"{i:03d}", channel, segment, technology]
+                if p and p != "UNKNOWN"
+            )
+
+            tc["test_name"] = clean_tc_name(
+                f"{prefix}_{sentence.capitalize()}"
+            )
 
         save_and_update_projects(st.session_state.projects)
 
+        # 2) Build export data
         rows = []
         for tc in project_data["scenarios"]:
             for i, step in enumerate(tc.get("kroky", []), start=1):
@@ -806,6 +891,7 @@ if selected_tab == "build":
                 })
 
         df = pd.DataFrame(rows)
+
         import io
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine="openpyxl") as writer:
@@ -813,7 +899,9 @@ if selected_tab == "build":
         output.seek(0)
 
         safe_name = project_name.replace(" ", "_").replace("/", "_").replace("\\", "_")
+
         st.success("Export successful. File is ready for download.")
+
         st.download_button(
             "⬇️ Download Excel file",
             data=output.getvalue(),
@@ -821,8 +909,13 @@ if selected_tab == "build":
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=False
         )
+
     st.markdown("---")
+
+
+# ---------- ROW 2: TEST CASES LIST ----------
     st.subheader("📋 Test Cases List")
+    
     if project_data.get("scenarios"):
         df_data = []
         for tc in project_data["scenarios"]:
@@ -836,11 +929,11 @@ if selected_tab == "build":
                 "Complexity": tc.get("complexity"),
                 "Steps": len(tc.get("kroky", [])) if "kroky" in tc else 0
             })
-
+        
         df = pd.DataFrame(df_data)
         if not df.empty:
             df = df.sort_values(by="Order", ascending=True)
-
+        
         st.dataframe(
             df,
             use_container_width=True,
@@ -858,9 +951,13 @@ if selected_tab == "build":
         )
     else:
         st.info("No test cases yet. Add your first test case below.")
+    
     st.markdown("---")
-    st.subheader("➕ Add New Test Case")
 
+    
+    # ---------- ROW 3: ADD NEW TEST CASE ----------
+    st.subheader("➕ Add New Test Case")
+    
     if not project_exists:
         st.info("Create a project first to add test cases.")
         st.stop()
@@ -868,18 +965,20 @@ if selected_tab == "build":
     if not st.session_state.steps_data:
         st.error("❌ No actions found! Please add actions in 'Edit Actions & Steps' page first.")
         st.stop()
-
+    
     action_list = sorted(list(st.session_state.steps_data.keys()))
-
+    
     with st.form("add_testcase_form"):
-        sentence = st.text_area("Requirement Sentence", height=100, placeholder="e.g.: Activate DSL for B2C via SHOP channel...")
-        action = st.selectbox("Action (from kroky.json)", options=action_list)
-
+        sentence = st.text_area("Requirement Sentence", height=100, 
+                              placeholder="e.g.: Activate DSL for B2C via SHOP channel...")
+        action = st.selectbox("Action (from effective action list)", options=action_list)
+        
+        # Priority, Complexity, Segment, Kanal - 4 columns
         PRIORITY_MAP_VALUES = ["1-High", "2-Medium", "3-Low"]
         COMPLEXITY_MAP_VALUES = ["1-Giant", "2-Huge", "3-Big", "4-Medium", "5-Low"]
         SEGMENT_OPTIONS = ["B2C", "B2B"]
         KANAL_OPTIONS = ["SHOP", "IL"]
-
+        
         col_priority, col_complexity, col_segment, col_kanal = st.columns(4)
         with col_priority:
             priority = st.selectbox("Priority", options=PRIORITY_MAP_VALUES, index=1)
@@ -889,20 +988,32 @@ if selected_tab == "build":
             segment = st.selectbox("Segment", options=SEGMENT_OPTIONS, index=0)
         with col_kanal:
             kanal = st.selectbox("Kanál", options=KANAL_OPTIONS, index=0)
-
+        
         if st.form_submit_button("➕ Add Test Case"):
             if not sentence.strip():
                 st.error("Requirement sentence cannot be empty.")
             elif not action:
                 st.error("Select an action.")
             else:
+                # Generování test case
                 order = project_data["next_id"]
+                
+                # Build test name
+                # Používáme vybrané hodnoty z dropdownů, ne extrahování z textu
                 technology = extract_technology(sentence)
+
+                # Sestavíme prefix a vyčistíme UNKNOWN části
                 prefix_parts = [f"{order:03d}", kanal, segment, technology]
+                # Filtrujeme UNKNOWN a prázdné hodnoty
                 filtered_parts = [p for p in prefix_parts if p and p != "UNKNOWN"]
                 prefix = "_".join(filtered_parts)
-                test_name = clean_tc_name(f"{prefix}_{sentence.strip().capitalize()}")
 
+                test_name = f"{prefix}_{sentence.strip().capitalize()}"
+
+                # Vyčistíme název
+                test_name = clean_tc_name(test_name)
+                
+                # Get steps for action
                 kroky_pro_akci = []
                 if action in st.session_state.steps_data:
                     action_data = st.session_state.steps_data[action]
@@ -910,7 +1021,7 @@ if selected_tab == "build":
                         kroky_pro_akci = copy.deepcopy(action_data["steps"])
                     elif isinstance(action_data, list):
                         kroky_pro_akci = copy.deepcopy(action_data)
-
+                
                 new_testcase = {
                     "order_no": order,
                     "test_name": test_name,
@@ -922,59 +1033,116 @@ if selected_tab == "build":
                     "veta": sentence.strip(),
                     "kroky": kroky_pro_akci
                 }
-
+                
                 project_data["next_id"] += 1
                 project_data["scenarios"].append(new_testcase)
                 save_and_update_projects(st.session_state.projects)
                 st.success(f"✅ Test case added: {test_name}")
                 st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
+
+    # ---------- ROW 4: EDIT EXISTING TEST CASE ----------
+    # no wrapper, styling applied inside expander
     with st.expander("✏️ Edit Existing Test Case", expanded=False):
+    
         if project_data["scenarios"]:
             testcase_options = {f"{tc['order_no']:03d} - {tc['test_name']}": tc for tc in project_data["scenarios"]}
-            selected_testcase_key = st.selectbox("Select Test Case to Edit", options=list(testcase_options.keys()), index=0, key="edit_testcase_select")
-
+            selected_testcase_key = st.selectbox(
+                "Select Test Case to Edit",
+                options=list(testcase_options.keys()),
+                index=0,
+                key="edit_testcase_select"
+            )
+            
             if selected_testcase_key:
                 testcase_to_edit = testcase_options[selected_testcase_key]
-                if "edit_sentence_value" not in st.session_state or st.session_state.get("edit_sentence_tc") != testcase_to_edit["order_no"]:
+                # Initialize edit sentence only when testcase changes
+                if "edit_sentence_value" not in st.session_state or \
+                st.session_state.get("edit_sentence_tc") != testcase_to_edit["order_no"]:
                     st.session_state.edit_sentence_value = testcase_to_edit["veta"]
                     st.session_state.edit_sentence_tc = testcase_to_edit["order_no"]
 
+                
                 with st.form("edit_testcase_form"):
+                    # Zobrazíme aktuální hodnoty
                     st.write(f"**Currently editing:** {testcase_to_edit['test_name']}")
-                    sentence = st.text_area("Requirement Sentence", value=st.session_state.edit_sentence_value, height=100, key=f"edit_sentence_{testcase_to_edit['order_no']}")
-                    action = st.selectbox("Action (from kroky.json)", options=action_list, index=action_list.index(testcase_to_edit["akce"]) if testcase_to_edit["akce"] in action_list else 0, key="edit_action")
+                    
+                    sentence = st.text_area(
+                        "Requirement Sentence",
+                        value=st.session_state.edit_sentence_value,
+                        height=100,
+                        key=f"edit_sentence_{testcase_to_edit['order_no']}"
+                    )
 
+                    
+                    action = st.selectbox(
+                        "Action (from effective action list)", 
+                        options=action_list,
+                        index=action_list.index(testcase_to_edit["akce"]) if testcase_to_edit["akce"] in action_list else 0,
+                        key="edit_action"
+                    )
+                    
+                    # Priority, Complexity, Segment, Kanal - 4 columns
                     SEGMENT_OPTIONS = ["B2C", "B2B"]
                     KANAL_OPTIONS = ["SHOP", "IL"]
-
+                    
                     col_priority, col_complexity, col_segment, col_kanal = st.columns(4)
                     with col_priority:
-                        priority = st.selectbox("Priority", options=PRIORITY_MAP_VALUES, index=PRIORITY_MAP_VALUES.index(testcase_to_edit["priority"]) if testcase_to_edit["priority"] in PRIORITY_MAP_VALUES else 1, key="edit_priority")
+                        priority = st.selectbox(
+                            "Priority", 
+                            options=PRIORITY_MAP_VALUES,
+                            index=PRIORITY_MAP_VALUES.index(testcase_to_edit["priority"]) if testcase_to_edit["priority"] in PRIORITY_MAP_VALUES else 1,
+                            key="edit_priority"
+                        )
                     with col_complexity:
-                        complexity = st.selectbox("Complexity", options=COMPLEXITY_MAP_VALUES, index=COMPLEXITY_MAP_VALUES.index(testcase_to_edit["complexity"]) if testcase_to_edit["complexity"] in COMPLEXITY_MAP_VALUES else 3, key="edit_complexity")
+                        complexity = st.selectbox(
+                            "Complexity", 
+                            options=COMPLEXITY_MAP_VALUES,
+                            index=COMPLEXITY_MAP_VALUES.index(testcase_to_edit["complexity"]) if testcase_to_edit["complexity"] in COMPLEXITY_MAP_VALUES else 3,
+                            key="edit_complexity"
+                        )
                     with col_segment:
-                        segment = st.selectbox("Segment", options=SEGMENT_OPTIONS, index=SEGMENT_OPTIONS.index(testcase_to_edit["segment"]) if testcase_to_edit["segment"] in SEGMENT_OPTIONS else 0, key="edit_segment")
+                        segment = st.selectbox(
+                            "Segment",
+                            options=SEGMENT_OPTIONS,
+                            index=SEGMENT_OPTIONS.index(testcase_to_edit["segment"]) if testcase_to_edit["segment"] in SEGMENT_OPTIONS else 0,
+                            key="edit_segment"
+                        )
                     with col_kanal:
-                        kanal = st.selectbox("Kanál", options=KANAL_OPTIONS, index=KANAL_OPTIONS.index(testcase_to_edit["kanal"]) if testcase_to_edit["kanal"] in KANAL_OPTIONS else 0, key="edit_kanal")
-
+                        kanal = st.selectbox(
+                            "Kanál",
+                            options=KANAL_OPTIONS,
+                            index=KANAL_OPTIONS.index(testcase_to_edit["kanal"]) if testcase_to_edit["kanal"] in KANAL_OPTIONS else 0,
+                            key="edit_kanal"
+                        )
+                    
                     if st.form_submit_button("💾 Save Changes"):
                         if not sentence.strip():
                             st.error("Requirement sentence cannot be empty.")
                         elif not action:
                             st.error("Select an action.")
                         else:
+                            # Re-generate test name with updated values
                             order = testcase_to_edit["order_no"]
+                            
+                            # Build test name - Používáme vybrané hodnoty z dropdownů
                             technology = extract_technology(sentence)
+                            
+                            # Sestavíme prefix a vyčistíme UNKNOWN části
                             prefix_parts = [f"{order:03d}", kanal, segment, technology]
+                            # Filtrujeme UNKNOWN a prázdné hodnoty
                             filtered_parts = [p for p in prefix_parts if p and p != "UNKNOWN"]
                             prefix = "_".join(filtered_parts)
+                            
+                            # Ošetříme případ duplicitních podtržítek v prefixu
                             while '__' in prefix:
                                 prefix = prefix.replace('__', '_')
                             prefix = prefix.strip('_')
-                            new_test_name = clean_tc_name(f"{prefix}_{sentence.strip().capitalize()}")
-
+                            
+                            new_test_name = f"{prefix}_{sentence.strip().capitalize()}"
+                            new_test_name = clean_tc_name(new_test_name)
+                            
+                            # Get steps for the new action
                             kroky_pro_akci = []
                             if action in st.session_state.steps_data:
                                 action_data = st.session_state.steps_data[action]
@@ -984,6 +1152,8 @@ if selected_tab == "build":
                                     kroky_pro_akci = copy.deepcopy(action_data)
 
                             st.session_state.edit_sentence_value = sentence.strip()
+
+                            # Update the test case
                             testcase_to_edit.update({
                                 "test_name": new_test_name,
                                 "akce": action,
@@ -994,46 +1164,63 @@ if selected_tab == "build":
                                 "veta": sentence.strip(),
                                 "kroky": kroky_pro_akci
                             })
-
+                            
                             save_and_update_projects(st.session_state.projects)
                             st.success(f"✅ Test case updated: {new_test_name}")
                             st.rerun()
         else:
             st.info("No test cases available to edit. Add a test case first.")
 
+    # ---------- ROW 5: DELETE TEST CASE ----------
     with st.expander("🗑️ Delete Test Case", expanded=False):
+    
         if project_data["scenarios"]:
             delete_options = [f"{tc['order_no']:03d} - {tc['test_name']}" for tc in project_data["scenarios"]]
-            testcase_to_delete = st.selectbox("Select Test Case to Delete", options=delete_options, index=0, key="delete_testcase_select")
-
+            testcase_to_delete = st.selectbox(
+                "Select Test Case to Delete",
+                options=delete_options,
+                index=0,
+                key="delete_testcase_select"
+            )
+            
             if st.button("⚠️ Delete Selected Test Case", type="secondary"):
+                # Najdeme index test case k smazání
                 index_to_delete = delete_options.index(testcase_to_delete)
+                
+                # Odstraníme
                 deleted_tc = project_data["scenarios"].pop(index_to_delete)
+
+                # Přečíslujeme všechny zbývající test case tak, aby šly za sebou od 1
                 for idx, tc in enumerate(project_data["scenarios"], start=1):
                     tc["order_no"] = idx
+                    # Také aktualizujeme test_name aby odrážel nové pořadové číslo
+                    # Nahradíme původní 3-místné číslo na začátku (XXX_) novým
                     if tc["test_name"].startswith(f"{idx-1:03d}_"):
+                        # Pokud se číslo změnilo, aktualizuj ho
                         tc["test_name"] = f"{idx:03d}_" + tc["test_name"][4:]
                     elif "_" in tc["test_name"]:
+                        # Fallback: pokud format není očekávaný, zkus najít a nahradit 3-místné číslo
                         parts = tc["test_name"].split("_", 1)
                         if len(parts[0]) == 3 and parts[0].isdigit():
                             tc["test_name"] = f"{idx:03d}_" + parts[1]
 
+                # Aktualizujeme next_id tak, aby nový TC dostal další pořadové číslo
                 project_data["next_id"] = len(project_data["scenarios"]) + 1
+
+                # Uložíme
                 save_and_update_projects(st.session_state.projects)
                 st.success(f"🗑️ Test case deleted: {deleted_tc['test_name']}")
                 st.rerun()
         else:
             st.info("No test cases available to delete.")
+    # end delete expander
 
 # ---------- TAB 2: EDIT ACTIONS & STEPS ----------
 if selected_tab == "edit":
     # 🔧 Edit Actions & Steps
     
-    # Load current data from disk to ensure we always have the latest
-    disk_steps = load_json(KROKY_PATH)
-    custom_steps = load_json(KROKY_CUSTOM_PATH)
-    if custom_steps:
-        disk_steps.update(custom_steps)
+    # Load current effective data from disk to ensure we always have the latest
+    disk_steps = load_effective_steps()
     
     # Initialize edit_steps_data: combine disk data with any session state data
     # This handles the case where session_state was reset on F5 refresh
@@ -1084,11 +1271,12 @@ if selected_tab == "edit":
     with sep:
         st.markdown("<div style='border-left:1px solid gray;height:100%'></div>", unsafe_allow_html=True)
     with right:
-        st.write(f"**Actions in kroky.json:** {disk_count}")
-        st.write(f"**Non committed actions:** {mem_count}")
-        if st.button("💾 Commit", help="Save current in‑memory list to disk", use_container_width=True):
+        st.write(f"**Base actions in kroky.json:** {base_count}")
+        st.write(f"**UI overrides in kroky_custom.json:** {override_count}")
+        st.write(f"**Effective actions in app:** {effective_count}")
+        if st.button("💾 Save UI overrides", help="Save current app changes only to kroky_custom.json", use_container_width=True):
             save_and_update_steps(st.session_state.edit_steps_data)
-            st.success("All actions pushed to file")
+            st.success("UI overrides saved to kroky_custom.json")
     
     # the initialization and controls above already handle everything;
     # drop the duplicated commit/count/debugging section to keep UI clean.
@@ -1168,7 +1356,7 @@ if selected_tab == "edit":
                     elif not st.session_state.new_steps:
                         st.error("Add at least one step")
                     else:
-                        # Save to kroky.json IMMEDIATELY before page refresh
+                        # Save UI override before page refresh
                         action_key = action_name.strip()
                         st.session_state.edit_steps_data[action_key] = {
                             "description": action_desc.strip(),
@@ -1178,7 +1366,7 @@ if selected_tab == "edit":
                         # This ensures data persists even if session_state resets
                         save_and_update_steps(st.session_state.edit_steps_data)
                         
-                        st.success(f"✅ Action '{action_name}' saved!")
+                        st.success(f"✅ Action '{action_name}' saved to UI overrides!")
                         st.session_state.new_action = False
                         st.session_state.new_steps = []
                         st.rerun()
@@ -1235,7 +1423,7 @@ if selected_tab == "edit":
                 col_confirm, col_cancel = st.columns(2)
                 with col_confirm:
                     if st.button("Yes, delete", key=f"confirm_del_{action}"):
-                        # Remove action from kroky.json
+                        # Remove action from effective app actions
                         del st.session_state.edit_steps_data[action]
                         # use helper to persist steps data
                         save_and_update_steps(st.session_state.edit_steps_data)
@@ -1248,7 +1436,7 @@ if selected_tab == "edit":
                                         scenario["kroky"] = []
                         save_and_update_projects(st.session_state.projects)
                         
-                        st.success(f"✅ Action '{action}' deleted from kroky.json!")
+                        st.success(f"✅ Action '{action}' deleted in UI overrides!")
                         if affected_count > 0:
                             st.info(f"📊 Cleared steps from {affected_count} test case(s)")
                         st.session_state.delete_action = None
@@ -1343,7 +1531,7 @@ if selected_tab == "edit":
                         updated = update_scenarios_with_action_steps(st.session_state.projects, st.session_state.steps_data, action)
                         save_and_update_projects(st.session_state.projects)
                         
-                        st.success(f"✅ Action '{action}' updated in kroky.json!")
+                        st.success(f"✅ Action '{action}' updated in UI overrides!")
                         if updated > 0:
                             st.info(f"📊 Updated {updated} test case(s) with new steps")
                         
