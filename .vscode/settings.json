@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^cd /workspaces/Testool && python -m py_compile app\\.py && echo 'OK'$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

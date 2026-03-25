@@ -1365,30 +1365,43 @@ elif page == "📝 Text Comparator":
             st.markdown("---")
             st.subheader("🔍 Character-by-Character Differences")
             
-            def highlight_differences(text1, text2):
-                result = ""
-                i, j = 0, 0
-                
-                while i < len(text1) and j < len(text2):
-                    if text1[i] == text2[j]:
-                        result += text1[i]
-                        i += 1
-                        j += 1
+            def format_segment(text: str, start: int, end: int, highlight: bool):
+                segment = text[start:end]
+                if not segment:
+                    return ""
+                if not highlight:
+                    return segment
+
+                displayed = ''.join('␣' if ch == ' ' else ch for ch in segment)
+                return f'<span style="background-color: #ff4444; color: white; font-weight: bold; padding: 1px 3px; border-radius: 3px;">{displayed}</span>'
+
+            def highlight_differences(text1: str, text2: str, side: str) -> str:
+                sm = difflib.SequenceMatcher(None, text1, text2)
+                html = ''
+
+                for tag, i1, i2, j1, j2 in sm.get_opcodes():
+                    if side == 'left':
+                        if tag == 'equal':
+                            html += format_segment(text1, i1, i2, False)
+                        elif tag in ('replace', 'delete'):
+                            html += format_segment(text1, i1, i2, True)
+                        elif tag == 'insert':
+                            # text1 has no chars for the inserted block from text2
+                            # we still keep the alignment meaning by showing nothing here
+                            pass
                     else:
-                        char_display = text1[i] if text1[i] != ' ' else '␣'
-                        result += f'<span style="background-color: #ff4444; color: white; font-weight: bold; padding: 1px 3px; border-radius: 3px;">{char_display}</span>'
-                        i += 1
-                        j += 1
-                
-                while i < len(text1):
-                    char_display = text1[i] if text1[i] != ' ' else '␣'
-                    result += f'<span style="background-color: #ff4444; color: white; font-weight: bold; padding: 1px 3px; border-radius: 3px;">{char_display}</span>'
-                    i += 1
-                
-                return result
-            
-            highlighted1 = highlight_differences(text1, text2)
-            highlighted2 = highlight_differences(text2, text1)
+                        if tag == 'equal':
+                            html += format_segment(text2, j1, j2, False)
+                        elif tag in ('replace', 'insert'):
+                            html += format_segment(text2, j1, j2, True)
+                        elif tag == 'delete':
+                            # text2 has no chars for the deleted block from text1
+                            pass
+
+                return html
+
+            highlighted1 = highlight_differences(text1, text2, 'left')
+            highlighted2 = highlight_differences(text1, text2, 'right')
             
             col_diff1, col_diff2 = st.columns(2)
             
@@ -1422,17 +1435,10 @@ elif page == "📝 Text Comparator":
                     unsafe_allow_html=True
                 )
             
-            matches = 0
-            total = min(len(text1), len(text2))
-            
-            for i in range(total):
-                if text1[i] == text2[i]:
-                    matches += 1
-            
-            if total > 0:
-                similarity = (matches / total) * 100
-            else:
-                similarity = 0
+            sm = difflib.SequenceMatcher(None, text1, text2)
+            matches = sum(block.size for block in sm.get_matching_blocks())
+            total = max(len(text1), len(text2)) if max(len(text1), len(text2)) > 0 else 1
+            similarity = sm.ratio() * 100
             
             st.markdown("---")
             st.subheader("📈 Similarity Analysis")
