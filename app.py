@@ -443,19 +443,21 @@ st.markdown("""
         position: sticky;
         top: 0;
         z-index: 999;
-        background-color: ##262730;
-        padding: 25px 0;
-        margin: -50px -50px 20px -50px;
+        background-color: #0b1024;
+        padding: 28px 0;
+        margin: -50px -50px 0 -50px;
         text-align: center;
-        border-bottom: 1px solid #1e293b;
+        border-bottom: 1px solid #26344f;
         width: calc(100% + 100px);
+        box-shadow: 0 0 40px rgba(32, 68, 170, 0.45);
     }
     .header-logo {
-        font-size: 54px;
-        font-weight: 800;
-        color: #22d3ee;
-        margin-bottom: 20px;
-        display: flex;
+        font-size: 44px;
+        font-weight: 900;
+        color: #75e8ff;
+        text-shadow: 0 0 10px rgba(117, 232, 255, 0.8), 0 0 20px rgba(149, 86, 255, 0.6);
+        margin-bottom: 16px;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 10px;
@@ -463,9 +465,39 @@ st.markdown("""
     .header-tabs {
         display: flex;
         justify-content: center;
-        gap: 12px;
+        gap: 15px;
         flex-wrap: wrap;
-        padding: 0 30px;
+        background: linear-gradient(120deg, rgba(13, 22, 42, 0.8), rgba(13, 22, 42, 0.95));
+        border-radius: 12px;
+        border: 1px solid rgba(107, 155, 255, 0.55);
+        padding: 10px;
+        margin: 0 auto;
+        max-width: 880px;
+        box-shadow: inset 0 0 12px rgba(93, 117, 246, 0.45);
+    }
+    .tab-btn {
+        min-width: 170px;
+        color: #b4ccf3;
+        border: 1px solid rgba(142, 168, 255, 0.75);
+        background: rgba(12, 20, 44, 0.55);
+        padding: 11px 16px;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 700;
+        transition: all .2s ease;
+        text-shadow: 0 0 8px rgba(11, 33, 84, 0.6);
+    }
+    .tab-btn:hover {
+        color: #f1f8ff;
+        border-color: #9dc1ff;
+        box-shadow: 0 0 16px rgba(118, 198, 255, 0.75), 0 0 18px rgba(161, 92, 255, 0.6);
+        transform: translateY(-1px);
+    }
+    .tab-active {
+        color: #fefeff;
+        border-color: #93d4ff;
+        background: linear-gradient(120deg, rgba(37, 113, 234, 0.95), rgba(161, 87, 255, 0.85));
+        box-shadow: 0 0 24px rgba(88, 183, 245, 0.95), 0 0 24px rgba(183, 95, 255, 0.85);
     }
 </style>
 <div class="top-header">
@@ -477,21 +509,23 @@ st.markdown("""
 # Tab buttons centered below logo
 col_space1, tab_col1, tab_col2, tab_col3, col_space2 = st.columns([1, 1, 1, 1, 1])
 
-build_color = "#7895d4" if selected_tab == "build" else "#334155"
-edit_color = "#7895d4" if selected_tab == "edit" else "#334155"
-text_color = "#7895d4" if selected_tab == "text" else "#334155"
+build_color = "#303f62" if selected_tab == "build" else "#111e35"
+edit_color = "#303f62" if selected_tab == "edit" else "#111e35"
+text_color = "#303f62" if selected_tab == "text" else "#111e35"
 
 with tab_col1:
     btn_style = f"""
     <style>
         .build-btn {{
+            border: 1px solid #6da4ff;
             background-color: {build_color};
-            color: white;
+            color: #d8e7ff;
             padding: 10px 16px;
-            border-radius: 6px;
-            border: none;
-            font-weight: 600;
+            border-radius: 8px;
+            font-weight: 700;
+            box-shadow: 0 0 14px rgba(104, 155, 255, 0.4);
         }}
+        .build-btn:active {{ transform: translateY(1px); }}
     </style>
     """
     st.markdown(btn_style, unsafe_allow_html=True)
@@ -503,13 +537,15 @@ with tab_col2:
     btn_style = f"""
     <style>
         .edit-btn {{
+            border: 1px solid #8d7cfa;
             background-color: {edit_color};
-            color: white;
+            color: #d0d9ff;
             padding: 10px 16px;
-            border-radius: 6px;
-            border: none;
-            font-weight: 600;
+            border-radius: 8px;
+            font-weight: 700;
+            box-shadow: 0 0 14px rgba(152, 116, 255, 0.45);
         }}
+        .edit-btn:active {{ transform: translateY(1px); }}
     </style>
     """
     st.markdown(btn_style, unsafe_allow_html=True)
@@ -521,18 +557,21 @@ with tab_col3:
     btn_style = f"""
     <style>
         .text-btn {{
+            border: 1px solid #66c2ff;
             background-color: {text_color};
-            color: white;
+            color: #d8edff;
             padding: 10px 16px;
-            border-radius: 6px;
-            border: none;
-            font-weight: 600;
+            border-radius: 8px;
+            font-weight: 700;
+            box-shadow: 0 0 14px rgba(102, 194, 255, 0.5);
         }}
+        .text-btn:active {{ transform: translateY(1px); }}
     </style>
     """
     st.markdown(btn_style, unsafe_allow_html=True)
     if st.button("📝 Text Comparator", use_container_width=True, key="nav_text"):
         st.session_state.selected_tab = "text"
+        st.rerun()
         st.rerun()
 
 # Content separator
