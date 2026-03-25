@@ -1292,10 +1292,10 @@ elif page == "📝 Text Comparator":
     st.title("📝 Text Comparator")
     st.markdown("Compare two texts with highlighted differences")
     
-    if 'text1_input' not in st.session_state:
-        st.session_state.text1_input = ""
-    if 'text2_input' not in st.session_state:
-        st.session_state.text2_input = ""
+    if 'text1_area' not in st.session_state:
+        st.session_state.text1_area = ""
+    if 'text2_area' not in st.session_state:
+        st.session_state.text2_area = ""
     
     col1, col2 = st.columns(2)
     
@@ -1305,7 +1305,7 @@ elif page == "📝 Text Comparator":
             "Enter first text:", 
             height=300, 
             key="text1_area",
-            value=st.session_state.text1_input,
+            value=st.session_state.text1_area,
             help="Enter or paste your first text here"
         )
     
@@ -1315,7 +1315,7 @@ elif page == "📝 Text Comparator":
             "Enter second text:", 
             height=300, 
             key="text2_area",
-            value=st.session_state.text2_input,
+            value=st.session_state.text2_area,
             help="Enter or paste your second text here"
         )
     
@@ -1336,16 +1336,16 @@ elif page == "📝 Text Comparator":
     # Button actions
     if diacritics_btn:
         if text1 or text2:
-            st.session_state.text1_input = remove_diacritics(text1)
-            st.session_state.text2_input = remove_diacritics(text2)
+            st.session_state.text1_area = remove_diacritics(text1)
+            st.session_state.text2_area = remove_diacritics(text2)
             st.success("✅ Diacritics removed from both texts")
             st.rerun()
         else:
             st.warning("Enter text in at least one field to remove diacritics")
     
     if reset_btn:
-        st.session_state.text1_input = ""
-        st.session_state.text2_input = ""
+        st.session_state.text1_area = ""
+        st.session_state.text2_area = ""
         st.success("✅ Texts cleared")
         st.rerun()
     
