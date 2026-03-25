@@ -55,8 +55,8 @@ st.markdown("""
 }
 
 .block-container {
-    max-width: 1450px !important;
-    padding-top: 1.2rem !important;
+    max-width: 1500px !important;
+    padding-top: 4.8rem !important;
     padding-bottom: 2rem !important;
 }
 
@@ -513,7 +513,7 @@ if 'selected_tab' not in st.session_state:
 
 # ---------- SIDEBAR: LOGO + PROJECT MANAGEMENT ----------
 with st.sidebar:    
-    st.subheader("📁 Project")
+    st.subheader("Project")
 
     project_names = list(st.session_state.projects.keys())
     selected = st.selectbox(
@@ -549,7 +549,7 @@ with st.sidebar:
 
     if current_project:
         st.markdown("---")
-        st.subheader("🛠️ Project Settings")
+        st.subheader("Project Settings")
 
         # Rename project
         rename_val = st.text_input("Rename project", value=current_project)
@@ -594,7 +594,7 @@ with st.sidebar:
 
         # Subject settings
         st.markdown("---")
-        st.subheader("📨 Subject Settings")
+        st.subheader("Subject Settings")
 
         subject_val = st.session_state.projects[current_project].get("subject", "")
         subject_input = st.text_input("Subject", value=subject_val)

@@ -1,6 +1,6 @@
 {
   "CCCTR-1111 - test": {
-    "next_id": 3,
+    "next_id": 6,
     "subject": "UAT2\\Antosova\\\\",
     "scenarios": [
       {
@@ -131,6 +131,114 @@
           },
           {
             "description": "[CNH] Zkontroluj notifikace.",
+            "expected": "Notifikace ok."
+          }
+        ]
+      },
+      {
+        "order_no": 3,
+        "test_name": "003_SHOP_B2C_1",
+        "akce": "Dokup HW - FIX",
+        "segment": "B2C",
+        "kanal": "SHOP",
+        "priority": "2-Medium",
+        "complexity": "4-Medium",
+        "veta": "1",
+        "kroky": [
+          {
+            "description": "NA konkretnim zakaznikovi jdi na pozadovanou sluzbu a klikni an objednat.",
+            "expected": "Prokliknutí do košíku."
+          },
+          {
+            "description": "V košíku vyhledej požadovaný HW, vlož IMEI a vlož zařízení do košíku.",
+            "expected": "Požadovaný HW vložen do košíku, IMEI propsáno."
+          },
+          {
+            "description": "Objednávku dokonči a odešli do COM, kde zkontroluj průběh objednávky.",
+            "expected": "Objednávka odeslána a má kladný průběh."
+          },
+          {
+            "description": "Odešli OT na OSS ke kontrole.",
+            "expected": "OSS ok."
+          },
+          {
+            "description": "Zkontroluj v Siebel propsání nového zařízení ke službě včetně IMEI.",
+            "expected": "HW i s IMEI propsáno ke službě, objednávka dokončena."
+          },
+          {
+            "description": "Zkontroluj notifikace.",
+            "expected": "Notifikace ok."
+          }
+        ]
+      },
+      {
+        "order_no": 4,
+        "test_name": "004_SHOP_B2B_12",
+        "akce": "Dokup HW - FIX",
+        "segment": "B2B",
+        "kanal": "SHOP",
+        "priority": "2-Medium",
+        "complexity": "4-Medium",
+        "veta": "12",
+        "kroky": [
+          {
+            "description": "NA konkretnim zakaznikovi jdi na pozadovanou sluzbu a klikni an objednat.",
+            "expected": "Prokliknutí do košíku."
+          },
+          {
+            "description": "V košíku vyhledej požadovaný HW, vlož IMEI a vlož zařízení do košíku.",
+            "expected": "Požadovaný HW vložen do košíku, IMEI propsáno."
+          },
+          {
+            "description": "Objednávku dokonči a odešli do COM, kde zkontroluj průběh objednávky.",
+            "expected": "Objednávka odeslána a má kladný průběh."
+          },
+          {
+            "description": "Odešli OT na OSS ke kontrole.",
+            "expected": "OSS ok."
+          },
+          {
+            "description": "Zkontroluj v Siebel propsání nového zařízení ke službě včetně IMEI.",
+            "expected": "HW i s IMEI propsáno ke službě, objednávka dokončena."
+          },
+          {
+            "description": "Zkontroluj notifikace.",
+            "expected": "Notifikace ok."
+          }
+        ]
+      },
+      {
+        "order_no": 5,
+        "test_name": "005_IL_B2B_123",
+        "akce": "Dokup HW - FIX",
+        "segment": "B2B",
+        "kanal": "IL",
+        "priority": "2-Medium",
+        "complexity": "4-Medium",
+        "veta": "123",
+        "kroky": [
+          {
+            "description": "NA konkretnim zakaznikovi jdi na pozadovanou sluzbu a klikni an objednat.",
+            "expected": "Prokliknutí do košíku."
+          },
+          {
+            "description": "V košíku vyhledej požadovaný HW, vlož IMEI a vlož zařízení do košíku.",
+            "expected": "Požadovaný HW vložen do košíku, IMEI propsáno."
+          },
+          {
+            "description": "Objednávku dokonči a odešli do COM, kde zkontroluj průběh objednávky.",
+            "expected": "Objednávka odeslána a má kladný průběh."
+          },
+          {
+            "description": "Odešli OT na OSS ke kontrole.",
+            "expected": "OSS ok."
+          },
+          {
+            "description": "Zkontroluj v Siebel propsání nového zařízení ke službě včetně IMEI.",
+            "expected": "HW i s IMEI propsáno ke službě, objednávka dokončena."
+          },
+          {
+            "description": "Zkontroluj notifikace.",
             "expected": "Notifikace ok."
           }
         ]
