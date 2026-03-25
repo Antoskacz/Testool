@@ -549,13 +549,6 @@ with tab_col3:
         st.session_state.selected_tab = "text"
         st.rerun()
 
-# Tab accent bar just below nav buttons
-st.markdown(
-    """
-    <div style='height: 50px; background-color: #00194A; margin: 0; width: calc(100% + 100px); margin-left: -50px; margin-right: -50px;'></div>
-    """,
-    unsafe_allow_html=True
-)
 
 # Content separator
 st.markdown("---")
