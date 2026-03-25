@@ -668,20 +668,11 @@ if selected_tab == "build":
 
     render_section_intro("Build Test Cases", "Build, manage and export assisted test cases for the selected project.")
 
-    m1, m2, m3, m4 = st.columns(4)
-    with m1:
-        render_metric_card("Total Test Cases", testcase_count)
-    with m2:
-        render_metric_card("B2B", b2b_count)
-    with m3:
-        render_metric_card("B2C", b2c_count)
-    with m4:
-        render_metric_card("High Priority", high_priority_count)
+    st.markdown("---")
 
     col_overview, col_analysis = st.columns([1, 1.35])
 
     with col_overview:
-        st.markdown('<div class="tt-card">', unsafe_allow_html=True)
         st.subheader("📊 Project Overview")
         display_project_name = project_name if project_name else "— no project selected —"
         st.write(f"**Active Project:** {display_project_name}")
@@ -714,11 +705,9 @@ if selected_tab == "build":
                     else:
                         st.write("No test cases")
         else:
-            render_empty_panel("No test cases yet", height=120)
-        st.markdown("---")
+            st.info("No test cases yet")
 
     with col_analysis:
-        st.markdown('<div class="tt-card">', unsafe_allow_html=True)
         st.markdown("<h3 style='text-align:center;'>📈 Distribution Analysis</h3>", unsafe_allow_html=True)
         if testcase_count > 0:
             fig_segment = go.Figure(data=[go.Pie(
@@ -743,10 +732,8 @@ if selected_tab == "build":
             )
             st.plotly_chart(fig_segment, use_container_width=True)
         else:
-            render_empty_panel("No data for chart yet", height=360)
-        st.markdown("---")
-
-    st.markdown('<div class="tt-card">', unsafe_allow_html=True)
+            st.empty()
+    st.markdown("---")
     st.markdown("### 💾 Export Test Cases")
     st.write("Generate clean, renumbered & diacritics-free test cases Excel file.")
     export_button = st.button("💾 Export Test Cases to Excel", use_container_width=False, disabled=(not project_exists or not testcases))
@@ -802,8 +789,6 @@ if selected_tab == "build":
             use_container_width=False
         )
     st.markdown("---")
-
-    st.markdown('<div class="tt-card">', unsafe_allow_html=True)
     st.subheader("📋 Test Cases List")
     if project_data.get("scenarios"):
         df_data = []
@@ -841,18 +826,14 @@ if selected_tab == "build":
     else:
         st.info("No test cases yet. Add your first test case below.")
     st.markdown("---")
-
-    st.markdown('<div class="tt-card">', unsafe_allow_html=True)
     st.subheader("➕ Add New Test Case")
 
     if not project_exists:
         st.info("Create a project first to add test cases.")
-        st.markdown("---")
         st.stop()
 
     if not st.session_state.steps_data:
         st.error("❌ No actions found! Please add actions in 'Edit Actions & Steps' page first.")
-        st.markdown("---")
         st.stop()
 
     action_list = sorted(list(st.session_state.steps_data.keys()))
@@ -914,7 +895,7 @@ if selected_tab == "build":
                 save_and_update_projects(st.session_state.projects)
                 st.success(f"✅ Test case added: {test_name}")
                 st.rerun()
-    st.markdown("---")
+    st.markdown('</div>', unsafe_allow_html=True)
 
     with st.expander("✏️ Edit Existing Test Case", expanded=False):
         if project_data["scenarios"]:
