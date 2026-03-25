@@ -461,18 +461,6 @@ st.markdown("""
         justify-content: center;
         gap: 10px;
     }
-    .header-tabs {
-        display: flex;
-        justify-content: center;
-        gap: 15px;
-        flex-wrap: wrap;
-        background-color: #131d35;
-        border-radius: 10px;
-        border: 1px solid #2d4b7f;
-        padding: 10px;
-        margin: 0 auto;
-        max-width: 880px;
-    }
     .tab-btn {
         min-width: 170px;
         color: #c5d7f0;
@@ -497,7 +485,6 @@ st.markdown("""
 </style>
 <div class="top-header">
     <div class="header-logo">🧪 Testool</div>
-    <div class="header-tabs" id="tabs-container"></div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -565,6 +552,14 @@ with tab_col3:
     if st.button("📝 Text Comparator", use_container_width=True, key="nav_text"):
         st.session_state.selected_tab = "text"
         st.rerun()
+
+# Tab accent bar just below nav buttons
+st.markdown(
+    """
+    <div style='height: 4px; background-color: #00194A; margin: 0; width: calc(100% + 100px); margin-left: -50px; margin-right: -50px;'></div>
+    """,
+    unsafe_allow_html=True
+)
 
 # Content separator
 st.markdown("---")
