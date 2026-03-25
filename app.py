@@ -328,9 +328,6 @@ if 'selected_tab' not in st.session_state:
 
 # ---------- SIDEBAR: LOGO + PROJECT MANAGEMENT ----------
 with st.sidebar:
-    # Bigger, bolder logo
-    st.markdown("<h1 style='text-align: center; margin-bottom: -10px;'>🧪</h1>", unsafe_allow_html=True)
-    st.markdown("<h2 style='text-align: center; margin-top: -5px;'>Testool</h2>", unsafe_allow_html=True)
     st.markdown("---")
     
     st.subheader("📁 Project")
@@ -439,76 +436,106 @@ if 'selected_tab' not in st.session_state:
 
 selected_tab = st.session_state.selected_tab
 
-# Sticky top navigation bar
+# Sticky top navigation bar - centered logo and tabs
 st.markdown("""
 <style>
-    .nav-wrapper {
+    .top-header {
         position: sticky;
         top: 0;
         z-index: 999;
-        background-color: #0f172a;
-        padding: 12px 15px;
-        border-bottom: 1px solid #334155;
-        margin: -50px -50px 10px -50px;
+        background-color: #1a1f35;
+        padding: 20px 30px;
+        margin: -50px -50px 20px -50px;
         padding-left: 65px;
         padding-right: 50px;
+        text-align: center;
+        border-bottom: 1px solid #334155;
     }
-    .nav-container {
-        display: flex;
-        gap: 15px;
-        align-items: center;
-    }
-    .nav-logo {
-        font-size: 18px;
-        font-weight: 700;
+    .header-logo {
+        font-size: 32px;
+        font-weight: 800;
         color: #22d3ee;
-        margin-right: 20px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
     }
-    .nav-item {
-        padding: 8px 14px;
-        border-radius: 6px;
-        font-weight: 600;
-        color: #94a3b8;
-        background: transparent;
-        transition: all 0.2s;
-    }
-    .nav-item:hover {
-        background: #1e293b;
-        color: #ffffff;
-    }
-    .nav-active {
-        background: #2563eb;
-        color: white !important;
+    .header-tabs {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        flex-wrap: wrap;
     }
 </style>
-<div class="nav-wrapper">
-    <div class="nav-container">
-        <span class="nav-logo">🧪 Testool</span>
-    </div>
+<div class="top-header">
+    <div class="header-logo">🧪 Testool</div>
+    <div class="header-tabs" id="tabs-container"></div>
 </div>
 """, unsafe_allow_html=True)
 
-# Top navigation buttons
-col_nav1, col_nav2, col_nav3, col_nav_spacer = st.columns([0.8, 1, 1, 2])
+# Tab buttons centered below logo
+tab_col1, tab_col2, tab_col3, tab_col_space = st.columns([1, 1, 1, 2])
 
-with col_nav1:
-    build_class = "nav-item nav-active" if selected_tab == "build" else "nav-item"
+build_color = "#2563eb" if selected_tab == "build" else "#334155"
+edit_color = "#2563eb" if selected_tab == "edit" else "#334155"
+text_color = "#2563eb" if selected_tab == "text" else "#334155"
+
+with tab_col1:
+    btn_style = f"""
+    <style>
+        .build-btn {{
+            background-color: {build_color};
+            color: white;
+            padding: 10px 16px;
+            border-radius: 6px;
+            border: none;
+            font-weight: 600;
+        }}
+    </style>
+    """
+    st.markdown(btn_style, unsafe_allow_html=True)
     if st.button("🏗️ Test Cases", use_container_width=True, key="nav_build"):
         st.session_state.selected_tab = "build"
         st.rerun()
 
-with col_nav2:
-    edit_class = "nav-item nav-active" if selected_tab == "edit" else "nav-item"
+with tab_col2:
+    btn_style = f"""
+    <style>
+        .edit-btn {{
+            background-color: {edit_color};
+            color: white;
+            padding: 10px 16px;
+            border-radius: 6px;
+            border: none;
+            font-weight: 600;
+        }}
+    </style>
+    """
+    st.markdown(btn_style, unsafe_allow_html=True)
     if st.button("🔧 Actions & Steps", use_container_width=True, key="nav_edit"):
         st.session_state.selected_tab = "edit"
         st.rerun()
 
-with col_nav3:
-    text_class = "nav-item nav-active" if selected_tab == "text" else "nav-item"
+with tab_col3:
+    btn_style = f"""
+    <style>
+        .text-btn {{
+            background-color: {text_color};
+            color: white;
+            padding: 10px 16px;
+            border-radius: 6px;
+            border: none;
+            font-weight: 600;
+        }}
+    </style>
+    """
+    st.markdown(btn_style, unsafe_allow_html=True)
     if st.button("📝 Text Comparator", use_container_width=True, key="nav_text"):
         st.session_state.selected_tab = "text"
         st.rerun()
 
+# Content separator
 st.markdown("---")
 
 # ---------- TAB 1: BUILD TEST CASES ----------
