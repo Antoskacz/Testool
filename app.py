@@ -1014,8 +1014,6 @@ if selected_tab == "build":
 
     
     # ---------- ROW 3: ADD NEW TEST CASE ----------
-    st.markdown('<div class="tt-card">', unsafe_allow_html=True)
-
     st.subheader("➕ Add New Test Case")
     st.markdown('<div class="tt-muted">Create a new test case from a requirement sentence and an existing action template.</div>', unsafe_allow_html=True)
     
