@@ -267,8 +267,7 @@ def update_scenarios_with_action_steps(projects_data: dict, steps_data: dict, ac
     return updated_count
 
 # ---------- HLAVNÍ APLIKACE ----------
-st.title("🧪 Testool")
-st.markdown("### Professional test case builder and manager")
+# Top nav handles title + tabs, žáden repeating headings zde
 
 # ---------- SIDEBAR ----------
 # paths (BASE_DIR, DATA_DIR, PROJECTS_PATH, KROKY_PATH, KROKY_CUSTOM_PATH)
@@ -427,32 +426,57 @@ with st.sidebar:
                 save_and_update_projects(st.session_state.projects)
                 st.success("Subject cleared.")
 
-# ---------- MAIN CONTENT: TOP NAV ----------
-nav1, nav2, nav3, nav4 = st.columns([2, 1, 1, 1])
+# ---------- MAIN CONTENT: STICKY TOP NAV ----------
+params = st.experimental_get_query_params()
+selected_tab = params.get('tab', ['build'])[0]
 
-with nav1:
-    st.markdown("<h2 style='margin: 0; color: #00FFB3;'>🧪 Testool</h2>", unsafe_allow_html=True)
+st.markdown('''
+<style>
+.top-nav-wrapper {
+    position: sticky;
+    top: 0;
+    z-index: 999;
+    background-color: #0f172a;
+    border-bottom: 1px solid #334155;
+    padding: 10px 16px;
+}
+.top-nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 100%;
+    gap: 8px;
+    overflow-x: auto;
+}
+.top-nav-item {
+    color: #94a3b8;
+    text-decoration: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.top-nav-item:hover { background: #1e293b; color: #ffffff; }
+.top-nav-active { background: #2563eb; color: white !important; }
+</style>
+<div class="top-nav-wrapper">
+  <div class="top-nav-container">
+    <span style="font-size:18px; font-weight:700; color:#22d3ee; margin-right:16px;">🧪 Testool</span>
+    <a class="top-nav-item {build_active}" href="?tab=build">Test Cases</a>
+    <a class="top-nav-item {edit_active}" href="?tab=edit">Actions & Steps</a>
+    <a class="top-nav-item {text_active}" href="?tab=text">Text Comparator</a>
+  </div>
+</div>
+'''.format(
+    build_active='top-nav-active' if selected_tab == 'build' else '',
+    edit_active='top-nav-active' if selected_tab == 'edit' else '',
+    text_active='top-nav-active' if selected_tab == 'text' else ''
+), unsafe_allow_html=True)
 
-with nav2:
-    if st.button("🏗️ Test Cases", use_container_width=True):
-        st.session_state.selected_tab = "build"
-
-with nav3:
-    if st.button("🔧 Actions & Steps", use_container_width=True):
-        st.session_state.selected_tab = "edit"
-
-with nav4:
-    if st.button("📝 Text Comparator", use_container_width=True):
-        st.session_state.selected_tab = "text"
-
-st.markdown("---")
-
-selected_tab = st.session_state.get("selected_tab", "build")
+st.markdown("<div style='height: 15px;'></div>", unsafe_allow_html=True)
 
 # ---------- TAB 1: BUILD TEST CASES ----------
 if selected_tab == "build":
-    st.title("🏗️ Build Test Cases")
-    
     project_name = st.session_state.selected_project
     if project_name is None:
         st.warning("Select or create a project in the sidebar to work with test cases.")
@@ -981,7 +1005,7 @@ if selected_tab == "build":
 
 # ---------- TAB 2: EDIT ACTIONS & STEPS ----------
 if selected_tab == "edit":
-    st.title("🔧 Edit Actions & Steps")
+    # 🔧 Edit Actions & Steps
     
     # Load current data from disk to ensure we always have the latest
     disk_steps = load_json(KROKY_PATH)
@@ -1315,7 +1339,7 @@ if selected_tab == "edit":
 
 # ---------- TAB 3: TEXT COMPARATOR ----------
 if selected_tab == "text":
-    st.title("📝 Text Comparator")
+    # 📝 Text Comparator
     st.markdown("Compare two texts with highlighted differences")
     
     if 'text1_area' not in st.session_state:
