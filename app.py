@@ -715,7 +715,7 @@ if selected_tab == "build":
                         st.write("No test cases")
         else:
             render_empty_panel("No test cases yet", height=120)
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("---")
 
     with col_analysis:
         st.markdown('<div class="tt-card">', unsafe_allow_html=True)
@@ -744,7 +744,7 @@ if selected_tab == "build":
             st.plotly_chart(fig_segment, use_container_width=True)
         else:
             render_empty_panel("No data for chart yet", height=360)
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("---")
 
     st.markdown('<div class="tt-card">', unsafe_allow_html=True)
     st.markdown("### 💾 Export Test Cases")
@@ -801,7 +801,7 @@ if selected_tab == "build":
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=False
         )
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("---")
 
     st.markdown('<div class="tt-card">', unsafe_allow_html=True)
     st.subheader("📋 Test Cases List")
@@ -840,19 +840,19 @@ if selected_tab == "build":
         )
     else:
         st.info("No test cases yet. Add your first test case below.")
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("---")
 
     st.markdown('<div class="tt-card">', unsafe_allow_html=True)
     st.subheader("➕ Add New Test Case")
 
     if not project_exists:
         st.info("Create a project first to add test cases.")
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("---")
         st.stop()
 
     if not st.session_state.steps_data:
         st.error("❌ No actions found! Please add actions in 'Edit Actions & Steps' page first.")
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("---")
         st.stop()
 
     action_list = sorted(list(st.session_state.steps_data.keys()))
@@ -914,7 +914,7 @@ if selected_tab == "build":
                 save_and_update_projects(st.session_state.projects)
                 st.success(f"✅ Test case added: {test_name}")
                 st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("---")
 
     with st.expander("✏️ Edit Existing Test Case", expanded=False):
         if project_data["scenarios"]:
