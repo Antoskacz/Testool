@@ -322,8 +322,9 @@ if 'selected_tab' not in st.session_state:
 
 # ---------- SIDEBAR: LOGO + PROJECT MANAGEMENT ----------
 with st.sidebar:
-    st.markdown("## 🧪 **Testool**")
-    st.markdown("Professional test case builder")
+    # Bigger, bolder logo
+    st.markdown("<h1 style='text-align: center; margin-bottom: -10px;'>🧪</h1>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; margin-top: -5px;'>Testool</h2>", unsafe_allow_html=True)
     st.markdown("---")
     
     st.subheader("📁 Project")
