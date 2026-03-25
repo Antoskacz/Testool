@@ -531,15 +531,15 @@ with tab_col1:
 with tab_col2:
     btn_style = f"""
     <style>
-        .edit-btn {
+        .edit-btn {{
             border: 1px solid #7db8ff;
             background-color: {edit_color};
             color: #d0d9ff;
             padding: 10px 16px;
             border-radius: 8px;
             font-weight: 700;
-        }
-        .edit-btn:active { transform: translateY(1px); }
+        }}
+        .edit-btn:active {{ transform: translateY(1px); }}
     </style>
     """
     st.markdown(btn_style, unsafe_allow_html=True)
@@ -550,14 +550,14 @@ with tab_col2:
 with tab_col3:
     btn_style = f"""
     <style>
-        .text-btn {
+        .text-btn {{
             border: 1px solid #7db8ff;
             background-color: {text_color};
             color: #d8edff;
             padding: 10px 16px;
             border-radius: 8px;
             font-weight: 700;
-        }
+        }}
         .text-btn:active { transform: translateY(1px); }
     </style>
     """
