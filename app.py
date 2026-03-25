@@ -432,7 +432,11 @@ if 'selected_tab' not in st.session_state:
 
 selected_tab = st.session_state.selected_tab
 
-st.markdown('''
+build_active = 'top-nav-active' if selected_tab == 'build' else ''
+edit_active = 'top-nav-active' if selected_tab == 'edit' else ''
+text_active = 'top-nav-active' if selected_tab == 'text' else ''
+
+css = '''
 <style>
 .top-nav-wrapper {
     position: sticky;
@@ -463,6 +467,9 @@ st.markdown('''
 .top-nav-item:hover { background: #1e293b; color: #ffffff; }
 .top-nav-active { background: #2563eb; color: white !important; }
 </style>
+'''
+
+html = f'''
 <div class="top-nav-wrapper">
   <div class="top-nav-container">
     <span style="font-size:18px; font-weight:700; color:#22d3ee; margin-right:16px;">🧪 Testool</span>
@@ -471,11 +478,9 @@ st.markdown('''
     <button class="top-nav-item {text_active}" onclick="window.location.href='#'" data-id="text">Text Comparator</button>
   </div>
 </div>
-'''.format(
-    build_active='top-nav-active' if selected_tab == 'build' else '',
-    edit_active='top-nav-active' if selected_tab == 'edit' else '',
-    text_active='top-nav-active' if selected_tab == 'text' else ''
-), unsafe_allow_html=True)
+'''
+
+st.markdown(css + html, unsafe_allow_html=True)
 
 st.markdown("<div style='height: 15px;'></div>", unsafe_allow_html=True)
 
