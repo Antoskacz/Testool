@@ -32,10 +32,182 @@ st.set_page_config(
 
 # Hide sidebar collapse button - keep it always visible
 st.markdown("""
-<style>
+<style>    
     [data-testid="collapsedControl"] { display: none; }
 </style>
 """, unsafe_allow_html=True)
+
+st.markdown("""
+<style>
+:root {
+    --bg: #0b1020;
+    --panel: rgba(21, 27, 48, 0.78);
+    --panel-2: rgba(17, 23, 41, 0.92);
+    --border: rgba(110, 140, 220, 0.22);
+    --text: #f4f7ff;
+    --muted: #a9b4d0;
+    --accent: #35d6ff;
+    --accent-2: #7c5cff;
+    --pink: #ff1fae;
+    --success: #29d391;
+}
+
+html, body, [class*="css"] {
+    font-family: Inter, Segoe UI, sans-serif;
+}
+
+.stApp {
+    background:
+        radial-gradient(circle at top center, rgba(45, 120, 255, 0.12), transparent 30%),
+        radial-gradient(circle at right top, rgba(255, 0, 170, 0.10), transparent 24%),
+        linear-gradient(180deg, #070b16 0%, #0b1020 100%);
+    color: var(--text);
+}
+
+/* hlavni obsah */
+.block-container {
+    padding-top: 1.2rem !important;
+    padding-bottom: 2rem !important;
+    max-width: 1500px !important;
+}
+
+/* sidebar */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, rgba(24,28,43,0.98) 0%, rgba(21,24,40,0.98) 100%);
+    border-right: 1px solid rgba(255,255,255,0.06);
+}
+
+[data-testid="stSidebar"] .block-container {
+    padding-top: 1rem !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+}
+
+[data-testid="stSidebar"] h3 {
+    color: var(--text) !important;
+    font-size: 1rem !important;
+    margin-top: 0.4rem !important;
+    margin-bottom: 0.7rem !important;
+}
+
+[data-testid="stSidebar"] hr {
+    border-color: rgba(255,255,255,0.06) !important;
+}
+
+/* inputs */
+.stTextInput > div > div,
+.stSelectbox > div > div,
+.stTextArea textarea {
+    background: rgba(10, 15, 30, 0.85) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+}
+
+/* buttony */
+.stButton > button,
+.stDownloadButton > button {
+    border-radius: 12px !important;
+    border: 1px solid rgba(98, 139, 255, 0.30) !important;
+    background: linear-gradient(180deg, rgba(24, 32, 59, 0.95), rgba(18, 24, 45, 0.95)) !important;
+    color: #eef4ff !important;
+    font-weight: 600 !important;
+    min-height: 44px !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.22);
+}
+
+.stButton > button:hover,
+.stDownloadButton > button:hover {
+    border-color: rgba(53, 214, 255, 0.55) !important;
+    box-shadow: 0 0 0 1px rgba(53,214,255,0.15), 0 12px 28px rgba(0,0,0,0.26);
+}
+
+/* primarni button */
+.stButton > button[kind="primary"] {
+    background: linear-gradient(90deg, #1b9fff, #7c5cff) !important;
+    border: none !important;
+}
+
+/* dataframe */
+[data-testid="stDataFrame"] {
+    background: rgba(17, 23, 41, 0.78) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+}
+
+/* expandery */
+.streamlit-expanderHeader {
+    background: rgba(17, 23, 41, 0.72) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+}
+
+/* metricy */
+[data-testid="stMetric"] {
+    background: rgba(17, 23, 41, 0.72);
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+    border-radius: 16px;
+}
+
+/* card wrapper */
+.tt-card {
+    background: linear-gradient(180deg, rgba(20, 26, 47, 0.82), rgba(15, 20, 38, 0.88));
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 20px 22px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.18);
+    backdrop-filter: blur(10px);
+    margin-bottom: 18px;
+}
+
+.tt-card h3, .tt-card h4 {
+    margin-top: 0;
+    color: #f4f7ff;
+}
+
+.tt-muted {
+    color: var(--muted);
+    font-size: 0.95rem;
+}
+
+.tt-section-gap {
+    height: 10px;
+}
+
+/* logo / top nav */
+.top-header {
+    position: sticky;
+    top: 0;
+    z-index: 999;
+    background: linear-gradient(180deg, rgba(11,16,32,0.98), rgba(11,16,32,0.82));
+    backdrop-filter: blur(10px);
+    padding: 12px 0 18px 0;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.header-logo {
+    font-size: 46px;
+    font-weight: 800;
+    color: #35d6ff;
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+}
+
+/* menší nadpisy */
+h2, h3 {
+    letter-spacing: -0.02em;
+}
+
+/* schovat default streamlit menu/footer pokud chceš čistší look */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+</style>
+""", unsafe_allow_html=True)
+
 
 # Debug information to determine where the script is actually running.
 # Streamlit often copies the Python file to /tmp, which makes __file__ and
@@ -327,7 +499,20 @@ if 'selected_tab' not in st.session_state:
     st.session_state.selected_tab = 'build'
 
 # ---------- SIDEBAR: LOGO + PROJECT MANAGEMENT ----------
-with st.sidebar:    
+with st.sidebar:  
+    st.markdown("""
+    <div style="
+        background: linear-gradient(180deg, rgba(20,26,47,0.82), rgba(15,20,38,0.88));
+        border: 1px solid rgba(110,140,220,0.22);
+        border-radius: 18px;
+        padding: 16px 16px 10px 16px;
+        margin-bottom: 16px;
+    ">
+        <div style="font-size: 1.25rem; font-weight: 700; color: #f4f7ff;">🧪 Testool</div>
+        <div style="font-size: 0.9rem; color: #a9b4d0;">Project workspace</div>
+    </div>
+    """, unsafe_allow_html=True)      
+
     st.subheader("📁 Project")
 
     project_names = list(st.session_state.projects.keys())
@@ -364,6 +549,8 @@ with st.sidebar:
 
     if current_project:
         st.markdown("---")
+
+        st.markdown('<div class="tt-card">', unsafe_allow_html=True)
         st.subheader("🛠️ Project Settings")
 
         # Rename project
@@ -407,8 +594,12 @@ with st.sidebar:
                 if st.button("Cancel", use_container_width=True):
                     st.session_state.project_to_delete = None
 
+        st.markdown('</div>', unsafe_allow_html=True)            
+
+
         # Subject settings
         st.markdown("---")
+        st.markdown('<div class="tt-card">', unsafe_allow_html=True)
         st.subheader("📨 Subject Settings")
 
         subject_val = st.session_state.projects[current_project].get("subject", "")
@@ -428,6 +619,8 @@ with st.sidebar:
                 save_and_update_projects(st.session_state.projects)
                 st.success("Subject cleared.")
 
+        st.markdown('</div>', unsafe_allow_html=True)        
+
 # ---------- MAIN CONTENT: STICKY TOP NAV ----------
 if 'selected_tab' not in st.session_state:
     st.session_state.selected_tab = 'build'
@@ -435,54 +628,14 @@ if 'selected_tab' not in st.session_state:
 selected_tab = st.session_state.selected_tab
 
 # Sticky top navigation bar - centered logo and tabs
+
 st.markdown("""
-<style>
-    .top-header {
-        position: sticky;
-        top: 0;
-        z-index: 999;
-        background-color: #0E1117;
-        padding: 24px 0;
-        margin: -50px -50px 0 -50px;
-        text-align: center;
-        width: calc(100% + 100px);
-    }
-    .header-logo {
-        font-size: 54px;
-        font-weight: 800;
-        color: #6ac9ff;
-        margin-bottom: 14px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-    }
-    .tab-btn {
-        min-width: 170px;
-        color: #c5d7f0;
-        border: 1px solid #6496f0;
-        background-color: #101c34;
-        padding: 10px 14px;
-        border-radius: 8px;
-        font-size: 15px;
-        font-weight: 700;
-        transition: all .2s ease;
-    }
-    .tab-btn:hover {
-        color: #eff8ff;
-        border-color: #00758C;
-        background-color: #172342;
-    }
-    .tab-active {
-        color: #ffffff;
-        border-color: #00D5FF;
-        background-color: #110066;
-    }
-</style>
 <div class="top-header">
-    <div class="header-logo">Testool</div>
+    <div class="header-logo">🧪 Testool</div>
+    <div class="tt-muted">Professional test case builder and manager</div>
 </div>
 """, unsafe_allow_html=True)
+
 
 # Tab buttons centered below logo
 col_space1, tab_col1, tab_col2, tab_col3, col_space2 = st.columns([1, 1, 1, 1, 1])
@@ -567,20 +720,39 @@ if selected_tab == "build":
     else:
         project_data = st.session_state.projects[project_name]
         project_exists = True
-    
+
+    testcases = project_data.get("scenarios", [])
+    total_count = len(testcases)
+    b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
+    b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
+    high_priority_count = sum(1 for tc in testcases if tc.get("priority") == "1-High")
+
+    st.markdown("### Build Test Cases")
+    st.markdown('<div class="tt-muted">Build, manage and export assisted test cases for the selected project.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="tt-section-gap"></div>', unsafe_allow_html=True)
+
+    m1, m2, m3, m4 = st.columns(4)
+    with m1:
+        st.metric("Total Test Cases", total_count)
+    with m2:
+        st.metric("B2B", b2b_count)
+    with m3:
+        st.metric("B2C", b2c_count)
+    with m4:
+        st.metric("High Priority", high_priority_count)
 
     # ---------- ROW 1: PROJECT OVERVIEW + ANALYSIS ----------
     col_overview, col_analysis = st.columns([1, 1.5])  # Pravá část (graf) větší
     
     with col_overview:
+        st.markdown('<div class="tt-card">', unsafe_allow_html=True)
         st.subheader("📊 Project Overview")
         subject_value = project_data.get('subject', "")
         display_project_name = project_name if project_name else "— no project selected —"
         st.write(f"**Active Project:** {display_project_name}")
         st.write(f"**Subject:** {subject_value}")
-        
-        # Actions by Segment - přesunuto sem
-        st.markdown("---")
+
+        st.markdown("<br>", unsafe_allow_html=True)
         st.subheader("📋 Actions by Segment")
         
         testcases = project_data.get("scenarios", [])
@@ -632,10 +804,15 @@ if selected_tab == "build":
                         st.write("No test cases")
         else:
             st.info("No test cases yet")
+
+        st.markdown('</div>', unsafe_allow_html=True)    
+
     
     # ----------------------------GRAF---------------------------
     with col_analysis:
+        st.markdown('<div class="tt-card">', unsafe_allow_html=True)
         st.markdown("<h3 style='text-align: center;'>📈 Distribution Analysis</h3>", unsafe_allow_html=True)
+        
         testcases = project_data.get("scenarios", [])
         
         if testcases:
@@ -649,26 +826,28 @@ if selected_tab == "build":
                 labels=[f'B2C: {b2c_count}', f'B2B: {b2b_count}'],  # Hodnoty v labelu
                 values=[b2c_count, b2b_count],
                 hole=0.5,  # Větší díra uprostřed
-                marker_colors=["#0A65CEE2", "#BD146B"],  # modra a tmavá magenta
+                marker_colors=["#35D6FF", "#FF1FAE"],  # modra a tmavá magenta
                 textinfo='label',  # Zobrazí pouze label s hodnotou
                 textposition='inside',  # Text uvnitř segmentů
-                textfont=dict(size=16, color='white'),
+                textfont=dict(size=14, color='white'),
                 hoverinfo='label+percent',
                 hovertemplate='<b>%{label}</b><br>Percentage: %{percent}<extra></extra>',
                 insidetextorientation='horizontal'
             )])
             
             fig_segment.update_layout(
-                showlegend=False,  # Bez legendy
-                height=400,
-                margin=dict(t=20, b=20, l=20, r=20),
+                showlegend=False,
+                height=360,
+                margin=dict(t=10, b=10, l=10, r=10),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
                 annotations=[
                     dict(
-                        text=f"Total<br>{testcase_count}",
+                        text=f"<b>Total</b><br>{testcase_count}",
                         x=0.5, y=0.5,
-                        font_size=24,
+                        font_size=28,
                         showarrow=False,
-                        font=dict(color='#333333', family="Arial Black")
+                        font=dict(color="#dfe9ff", family="Inter")
                     )
                 ]
             )
@@ -695,10 +874,17 @@ if selected_tab == "build":
             )
             st.plotly_chart(fig_empty, use_container_width=True)
 
+        st.markdown('</div>', unsafe_allow_html=True)
+
 
     # ------------------------------------ EXPORT SECTION ------------------------------------
     st.markdown("---")
+
+    st.markdown('<div class="tt-card">', unsafe_allow_html=True)
     st.markdown("### 💾 Export Test Cases")
+    st.markdown('<div class="tt-muted">Generate clean, renumbered and diacritics-free Excel export for the selected project.</div>', unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+
     st.write("Generate clean, renumbered & diacritics-free test cases Excel file.")
 
     col_export, col_future = st.columns([1, 2])
@@ -777,7 +963,7 @@ if selected_tab == "build":
             use_container_width=False
         )
 
-    st.markdown("---")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 
 # ---------- ROW 2: TEST CASES LIST ----------
@@ -801,6 +987,9 @@ if selected_tab == "build":
         if not df.empty:
             df = df.sort_values(by="Order", ascending=True)
         
+
+        st.markdown('<div class="tt-card">', unsafe_allow_html=True)
+        st.subheader("📋 Test Cases List")
         st.dataframe(
             df,
             use_container_width=True,
@@ -816,6 +1005,8 @@ if selected_tab == "build":
                 "Steps": st.column_config.NumberColumn("Steps", width="small")
             }
         )
+        st.markdown('</div>', unsafe_allow_html=True)
+
     else:
         st.info("No test cases yet. Add your first test case below.")
     
@@ -823,7 +1014,10 @@ if selected_tab == "build":
 
     
     # ---------- ROW 3: ADD NEW TEST CASE ----------
+    st.markdown('<div class="tt-card">', unsafe_allow_html=True)
+
     st.subheader("➕ Add New Test Case")
+    st.markdown('<div class="tt-muted">Create a new test case from a requirement sentence and an existing action template.</div>', unsafe_allow_html=True)
     
     if not project_exists:
         st.info("Create a project first to add test cases.")
@@ -906,10 +1100,13 @@ if selected_tab == "build":
                 save_and_update_projects(st.session_state.projects)
                 st.success(f"✅ Test case added: {test_name}")
                 st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 
     # ---------- ROW 4: EDIT EXISTING TEST CASE ----------
     # no wrapper, styling applied inside expander
+    st.markdown("### Maintenance")
+    st.markdown('<div class="tt-muted">Optional actions for editing or deleting existing test cases.</div>', unsafe_allow_html=True)
     with st.expander("✏️ Edit Existing Test Case", expanded=False):
     
         if project_data["scenarios"]:
@@ -1039,6 +1236,8 @@ if selected_tab == "build":
             st.info("No test cases available to edit. Add a test case first.")
 
     # ---------- ROW 5: DELETE TEST CASE ----------
+    st.markdown("### Maintenance")
+    st.markdown('<div class="tt-muted">Optional actions for editing or deleting existing test cases.</div>', unsafe_allow_html=True)
     with st.expander("🗑️ Delete Test Case", expanded=False):
     
         if project_data["scenarios"]:
@@ -1116,8 +1315,10 @@ if selected_tab == "edit":
 
     # layout top row: left shows counts+action list, right has small commit button
     # main row: left panel action list, tiny separator, right panel commit + counts
+    st.markdown('<div class="tt-card">', unsafe_allow_html=True)
     left, sep, right = st.columns([3, 0.05, 2])
-    
+    st.markdown('</div>', unsafe_allow_html=True)
+
     # Calculate correct counts: disk = what's in kroky.json, non-committed = what's in memory but NOT on disk
     disk_data = load_json(KROKY_PATH)
     
@@ -1419,7 +1620,10 @@ if selected_tab == "edit":
 # ---------- TAB 3: TEXT COMPARATOR ----------
 if selected_tab == "text":
     # 📝 Text Comparator
-    st.markdown("Compare two texts with highlighted differences")
+    st.markdown('<div class="tt-card">', unsafe_allow_html=True)
+    st.markdown("### 📝 Text Comparator")
+    st.markdown('<div class="tt-muted">Compare two texts and highlight character-level differences.</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
     
     if 'text1_area' not in st.session_state:
         st.session_state.text1_area = ""
