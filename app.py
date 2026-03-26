@@ -17,7 +17,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 PROJECTS_PATH = DATA_DIR / "projects.json"
 KROKY_PATH = DATA_DIR / "kroky.json"
-KROKY_CUSTOM_PATH = DATA_DIR / "kroky_custom.json"  # UI overrides over immutable kroky.json
+KROKY_CUSTOM_PATH = DATA_DIR / "kroky_custom.json"  # fallback file for custom actions
 
 # ensure data directory exists as early as possible
 DATA_DIR.mkdir(exist_ok=True)
@@ -81,211 +81,171 @@ def save_and_update_projects(data):
     return success
 
 
-def normalize_action_content(action_data):
-    """Normalize action payload to {'description': str, 'steps': list[dict]}."""
-    if isinstance(action_data, dict):
-        steps = action_data.get("steps", [])
-        description = action_data.get("description", "")
-    elif isinstance(action_data, list):
-        steps = action_data
-        description = ""
-    else:
-        steps = []
-        description = ""
-
-    normalized_steps = []
-    if isinstance(steps, list):
-        for step in steps:
-            if isinstance(step, dict):
-                normalized_steps.append({
-                    "description": str(step.get("description", "")).strip(),
-                    "expected": str(step.get("expected", "")).strip()
-                })
-            else:
-                normalized_steps.append({
-                    "description": str(step).strip(),
-                    "expected": ""
-                })
-
+def normalize_action_content(content):
+    """Normalize one action payload to {"description": str, "steps": [...]}."""
+    if isinstance(content, dict) and "steps" in content:
+        return {
+            "description": str(content.get("description", "") or ""),
+            "steps": copy.deepcopy(content.get("steps", []) or [])
+        }
+    if isinstance(content, list):
+        return {
+            "description": "",
+            "steps": copy.deepcopy(content)
+        }
     return {
-        "description": str(description).strip(),
-        "steps": normalized_steps
+        "description": "",
+        "steps": []
     }
 
-
-def normalize_steps_map(data):
-    """Normalize whole action dictionary and keep keys sorted."""
+def normalize_steps_dict(raw):
+    """Normalize dict of actions."""
+    if not isinstance(raw, dict):
+        return {}
     normalized = {}
-    if not isinstance(data, dict):
-        return normalized
-
-    for action_name, action_data in data.items():
-        action_key = str(action_name).strip()
-        if not action_key:
+    for action_name, content in raw.items():
+        if not isinstance(action_name, str):
             continue
-        normalized[action_key] = normalize_action_content(action_data)
+        normalized[action_name] = normalize_action_content(content)
+    return normalized
 
-    return dict(sorted(normalized.items(), key=lambda kv: kv[0].lower()))
-
-
-def validate_steps_payload(data):
-    """Validate all actions before saving overrides."""
-    if not isinstance(data, dict):
-        return False, "Actions payload must be a dictionary."
-
-    for action_name, action_data in data.items():
-        if not str(action_name).strip():
-            return False, "Action name cannot be empty."
-
-        normalized = normalize_action_content(action_data)
-        if not normalized["description"]:
-            return False, f"Action '{action_name}' must have a description."
-        if not normalized["steps"]:
-            return False, f"Action '{action_name}' must have at least one step."
-
-        for idx, step in enumerate(normalized["steps"], start=1):
-            if not step.get("description", "").strip():
-                return False, f"Action '{action_name}' has empty description in step {idx}."
-            if not step.get("expected", "").strip():
-                return False, f"Action '{action_name}' has empty expected result in step {idx}."
-
-    return True, ""
-
+def load_base_steps():
+    """Read immutable base actions from kroky.json."""
+    return normalize_steps_dict(load_json(KROKY_PATH))
 
 def load_custom_overrides():
     """
-    Load custom overrides. Supports both the new format with _status and
-    older plain mirror files for backwards compatibility.
+    Read app overrides from kroky_custom.json.
+
+    Supported formats:
+    1) New override format:
+       {
+         "Action": {"_status": "added|modified|deleted", ...}
+       }
+    2) Legacy plain format:
+       {
+         "Action": {"description": "...", "steps": [...]}
+       }
+       Legacy format is treated as modified overrides for compatibility.
     """
     raw = load_json(KROKY_CUSTOM_PATH)
     if not isinstance(raw, dict):
         return {}
 
     overrides = {}
-    for action_name, payload in raw.items():
-        action_key = str(action_name).strip()
-        if not action_key:
+    for action_name, content in raw.items():
+        if not isinstance(action_name, str):
             continue
 
-        if isinstance(payload, dict) and payload.get("_status") in {"added", "modified", "deleted"}:
-            status = payload.get("_status")
+        if isinstance(content, dict) and content.get("_status") in {"added", "modified", "deleted"}:
+            status = content["_status"]
             if status == "deleted":
-                overrides[action_key] = {"_status": "deleted"}
+                overrides[action_name] = {"_status": "deleted"}
             else:
-                action_payload = {
-                    "description": payload.get("description", ""),
-                    "steps": payload.get("steps", [])
-                }
-                overrides[action_key] = {
-                    "_status": status,
-                    **normalize_action_content(action_payload)
-                }
+                normalized = normalize_action_content(content)
+                normalized["_status"] = status
+                overrides[action_name] = normalized
         else:
-            # Legacy format = treat as override payload
-            overrides[action_key] = {
-                "_status": "modified",
-                **normalize_action_content(payload)
-            }
+            # backward compatibility: plain content stored in custom file
+            normalized = normalize_action_content(content)
+            normalized["_status"] = "modified"
+            overrides[action_name] = normalized
 
-    return dict(sorted(overrides.items(), key=lambda kv: kv[0].lower()))
+    return overrides
 
-
-def merge_steps(base_steps, custom_overrides):
-    """Create effective steps map from immutable base + custom overrides."""
-    effective = normalize_steps_map(base_steps)
-
-    if not isinstance(custom_overrides, dict):
-        return effective
-
-    for action_name, override in custom_overrides.items():
-        if not isinstance(override, dict):
-            continue
-
+def merge_steps(base_steps, overrides):
+    """Return effective actions = kroky.json + kroky_custom.json overrides."""
+    effective = copy.deepcopy(base_steps)
+    for action_name, override in overrides.items():
         status = override.get("_status")
         if status == "deleted":
             effective.pop(action_name, None)
-            continue
-
-        if status in {"added", "modified"}:
-            effective[action_name] = normalize_action_content(override)
-
+        elif status in {"added", "modified"}:
+            effective[action_name] = {
+                "description": str(override.get("description", "") or ""),
+                "steps": copy.deepcopy(override.get("steps", []) or [])
+            }
     return dict(sorted(effective.items(), key=lambda kv: kv[0].lower()))
 
-
 def load_effective_steps():
-    """Return steps visible in the app: kroky.json + overrides from kroky_custom.json."""
-    return merge_steps(load_json(KROKY_PATH), load_custom_overrides())
+    """Convenience loader for base + overrides + effective."""
+    base_steps = load_base_steps()
+    overrides = load_custom_overrides()
+    effective_steps = merge_steps(base_steps, overrides)
+    return base_steps, overrides, effective_steps
 
-
-def build_custom_overrides(effective_steps):
-    """Build override file contents by diffing immutable base against effective steps."""
-    base_steps = normalize_steps_map(load_json(KROKY_PATH))
-    effective_steps = normalize_steps_map(effective_steps)
+def build_overrides_from_effective(effective_steps):
+    """
+    Build kroky_custom.json contents by comparing current effective state to kroky.json.
+    Result contains only app changes, never rewrites kroky.json.
+    """
+    base_steps = load_base_steps()
+    effective_steps = normalize_steps_dict(effective_steps)
 
     overrides = {}
 
-    # added / modified
-    for action_name, action_data in effective_steps.items():
-        if action_name not in base_steps:
+    # Added / modified
+    for action_name, effective_payload in effective_steps.items():
+        base_payload = base_steps.get(action_name)
+        if base_payload is None:
             overrides[action_name] = {
                 "_status": "added",
-                **normalize_action_content(action_data)
+                "description": effective_payload.get("description", ""),
+                "steps": copy.deepcopy(effective_payload.get("steps", []) or [])
             }
-        elif normalize_action_content(base_steps[action_name]) != normalize_action_content(action_data):
+        elif effective_payload != base_payload:
             overrides[action_name] = {
                 "_status": "modified",
-                **normalize_action_content(action_data)
+                "description": effective_payload.get("description", ""),
+                "steps": copy.deepcopy(effective_payload.get("steps", []) or [])
             }
 
-    # deleted
+    # Deleted
     for action_name in base_steps.keys():
         if action_name not in effective_steps:
             overrides[action_name] = {"_status": "deleted"}
 
     return dict(sorted(overrides.items(), key=lambda kv: kv[0].lower()))
 
+def refresh_steps_state():
+    """Reload effective steps from disk into session state."""
+    _base, _overrides, effective = load_effective_steps()
+    st.session_state.steps_data = copy.deepcopy(effective)
+    if "edit_steps_data" in st.session_state:
+        st.session_state.edit_steps_data = copy.deepcopy(effective)
+    return effective
 
 def save_and_update_steps(data):
     """
-    Save ONLY custom overrides to kroky_custom.json.
-    kroky.json remains immutable from inside the app.
+    Save current app action state ONLY to kroky_custom.json.
+
+    kroky.json is treated as immutable baseline.
+    kroky_custom.json stores overrides:
+    - added
+    - modified
+    - deleted
     """
-    normalized_effective = normalize_steps_map(data)
-    valid, error_message = validate_steps_payload(normalized_effective)
-    if not valid:
-        st.error(f"❌ {error_message}")
-        return False
-
-    overrides = build_custom_overrides(normalized_effective)
-
-    print(f"[DEBUG] SAVE_AND_UPDATE_OVERRIDES: BASE_DIR={BASE_DIR}")
-    print(f"[DEBUG] SAVE_AND_UPDATE_OVERRIDES: kroky_path={KROKY_PATH}")
-    print(f"[DEBUG] SAVE_AND_UPDATE_OVERRIDES: kroky_custom_path={KROKY_CUSTOM_PATH}")
-    print(f"[DEBUG] SAVE_AND_UPDATE_OVERRIDES: saving {len(overrides)} override records")
-
+    effective_steps = normalize_steps_dict(data)
+    overrides = build_overrides_from_effective(effective_steps)
     success = save_json(KROKY_CUSTOM_PATH, overrides)
-    saved_to = "kroky_custom.json"
 
     if success:
-        effective = load_effective_steps()
-        st.session_state.steps_data = copy.deepcopy(effective)
-        st.session_state.edit_steps_data = copy.deepcopy(effective)
-        st.toast("✅ Saved UI overrides to kroky_custom.json", icon="💾")
+        refreshed = refresh_steps_state()
+        st.toast("✅ Saved UI changes to kroky_custom.json", icon="💾")
+        try:
+            dbg_path = BASE_DIR / "data" / "save_debug.log"
+            with open(dbg_path, "a", encoding="utf-8") as dbg:
+                dbg.write(
+                    f"{datetime.now().isoformat()} saved_overrides={len(overrides)} "
+                    f"effective_actions={len(refreshed)} path={KROKY_CUSTOM_PATH}\n"
+                )
+        except Exception:
+            pass
     else:
-        st.error("❌ Failed to save action overrides. Please contact admin.")
-
-    try:
-        dbg_path = BASE_DIR / "data" / "save_debug.log"
-        with open(dbg_path, "a", encoding="utf-8") as dbg:
-            dbg.write(
-                f"{datetime.now().isoformat()} BASE_DIR={BASE_DIR} "
-                f"kroky={KROKY_PATH} kroky_custom={KROKY_CUSTOM_PATH} "
-                f"saved_to={saved_to} success={success} override_count={len(overrides)}\\n"
-            )
-    except Exception:
-        pass
+        st.error("❌ Failed to save UI changes to kroky_custom.json.")
 
     return success
+
 def clean_tc_name(name: str) -> str:
     """
     Odstraní části 'UNKNOWN' z názvu ticketu a opraví duplicitní podtržítka.
@@ -400,7 +360,7 @@ def update_scenarios_with_action_steps(projects_data: dict, steps_data: dict, ac
         
         for scenario in project_data.get("scenarios", []):
             if scenario.get("akce") == action_name:
-                # Get updated steps from effective actions
+                # Get updated steps from effective app actions
                 if action_name in steps_data:
                     action_data = steps_data[action_name]
                     if isinstance(action_data, dict) and "steps" in action_data:
@@ -425,26 +385,23 @@ def update_scenarios_with_action_steps(projects_data: dict, steps_data: dict, ac
 
 # (DATA_DIR already created by module-level code.)
 
+
 # Načtení dat
 projects = load_json(PROJECTS_PATH)
-steps_data = load_effective_steps()
-
+base_steps, custom_overrides, steps_data = load_effective_steps()
 
 # Zajistíme, aby se prázdné soubory inicializovaly s minimem dat
 if not projects or projects == {}:
     projects = {}
     save_json(PROJECTS_PATH, projects)
 
-if not load_json(KROKY_PATH):
+if not KROKY_PATH.exists():
     save_json(KROKY_PATH, {})
-if not load_json(KROKY_CUSTOM_PATH):
+
+if not KROKY_CUSTOM_PATH.exists():
     save_json(KROKY_CUSTOM_PATH, {})
 
-# Session state initialization:
-# IMPORTANT: We initialize ONLY on first run (no 'in st.session_state'),
-# and then PRESERVE the in-memory copy across st.rerun() calls.
-# This allows temporary changes (new actions) to persist within the session
-# until the app is fully restarted.
+# Session state initialization
 if 'projects' not in st.session_state:
     st.session_state.projects = copy.deepcopy(projects)
 
@@ -453,7 +410,7 @@ if 'selected_project' not in st.session_state:
 
 if 'steps_data' not in st.session_state:
     st.session_state.steps_data = copy.deepcopy(steps_data)
-    print(f"[DEBUG] INIT: steps_data first initialization from disk")
+    print(f"[DEBUG] INIT: effective steps_data loaded from base + overrides")
 
 # Initialize selected tab
 if 'selected_tab' not in st.session_state:
@@ -971,7 +928,7 @@ if selected_tab == "build":
     with st.form("add_testcase_form"):
         sentence = st.text_area("Requirement Sentence", height=100, 
                               placeholder="e.g.: Activate DSL for B2C via SHOP channel...")
-        action = st.selectbox("Action (from effective action list)", options=action_list)
+        action = st.selectbox("Action", options=action_list)
         
         # Priority, Complexity, Segment, Kanal - 4 columns
         PRIORITY_MAP_VALUES = ["1-High", "2-Medium", "3-Low"]
@@ -1076,7 +1033,7 @@ if selected_tab == "build":
 
                     
                     action = st.selectbox(
-                        "Action (from effective action list)", 
+                        "Action", 
                         options=action_list,
                         index=action_list.index(testcase_to_edit["akce"]) if testcase_to_edit["akce"] in action_list else 0,
                         key="edit_action"
@@ -1218,56 +1175,28 @@ if selected_tab == "build":
 # ---------- TAB 2: EDIT ACTIONS & STEPS ----------
 if selected_tab == "edit":
     # 🔧 Edit Actions & Steps
-    
-    # Load current effective data from disk to ensure we always have the latest
-    disk_steps = load_effective_steps()
-    
-    # Initialize edit_steps_data: combine disk data with any session state data
-    # This handles the case where session_state was reset on F5 refresh
-    if "edit_steps_data" not in st.session_state:
-        # First visit to this page (no prior session state)
-        st.session_state.edit_steps_data = copy.deepcopy(disk_steps)
-        print(f"[DEBUG] INIT edit_steps_data: Created from disk. Keys: {sorted(st.session_state.edit_steps_data.keys())[:3]}...")
-    else:
-        # Session state exists - merge disk data with session data
-        # Preserve any new actions that user added but not yet saved
-        print(f"[DEBUG] RESTORE edit_steps_data from session")
-        print(f"[DEBUG]   Session has ({len(st.session_state.edit_steps_data)}): {sorted(st.session_state.edit_steps_data.keys())[:3]}...")
-        print(f"[DEBUG]   Disk has ({len(disk_steps)}): {sorted(disk_steps.keys())[:3]}...")
-        # Keep any actions from session that are not on disk (new unsaved actions)
-        for action_name, action_data in st.session_state.edit_steps_data.items():
-            # Don't overwrite session data with disk data - keep the session version
-            # This preserves new actions user added
-            if action_name not in disk_steps:
-                print(f"[DEBUG]   Keeping unsaved action from session: {action_name}")
-    
+
+    base_steps, custom_overrides, effective_steps = load_effective_steps()
+
+    # Always refresh edit page state from current effective data on entry
+    st.session_state.edit_steps_data = copy.deepcopy(effective_steps)
+
     if "editing_action" not in st.session_state:
         st.session_state.editing_action = None
 
-    # layout top row: left shows counts+action list, right has small commit button
-    # main row: left panel action list, tiny separator, right panel commit + counts
     left, sep, right = st.columns([3, 0.05, 2])
-    
-    # Calculate correct counts: disk = what's in kroky.json, non-committed = what's in memory but NOT on disk
-    disk_data = load_json(KROKY_PATH)
-    
-    # IMPORTANT: Convert to dict keys sets properly
-    disk_action_names = set(disk_data.keys()) if disk_data else set()
-    mem_action_names = set(st.session_state.edit_steps_data.keys()) if st.session_state.edit_steps_data else set()
-    
-    # Actions that are in memory but NOT on disk are non-committed
-    non_committed = mem_action_names - disk_action_names
-    
-    disk_count = len(disk_action_names)
-    mem_count = len(non_committed)
-    
-    # DEBUG: Log what we see
-    print(f"[DEBUG] EDIT_ACTIONS_PAGE disk_data keys ({disk_count}): {sorted(disk_action_names)}")
-    print(f"[DEBUG] EDIT_ACTIONS_PAGE edit_steps_data keys: {sorted(mem_action_names)}")
-    print(f"[DEBUG] EDIT_ACTIONS_PAGE non_committed ({mem_count}): {non_committed}")
-    
+
+    base_count = len(base_steps)
+    override_count = len(custom_overrides)
+    effective_count = len(effective_steps)
+
     with left:
-        st.text_area("All actions:", value="\n".join(sorted(st.session_state.edit_steps_data.keys())), height=150, disabled=True)
+        st.text_area(
+            "All available actions:",
+            value="\n".join(sorted(st.session_state.edit_steps_data.keys())),
+            height=150,
+            disabled=True
+        )
     with sep:
         st.markdown("<div style='border-left:1px solid gray;height:100%'></div>", unsafe_allow_html=True)
     with right:
@@ -1276,10 +1205,8 @@ if selected_tab == "edit":
         st.write(f"**Effective actions in app:** {effective_count}")
         if st.button("💾 Save UI overrides", help="Save current app changes only to kroky_custom.json", use_container_width=True):
             save_and_update_steps(st.session_state.edit_steps_data)
-            st.success("UI overrides saved to kroky_custom.json")
-    
-    # the initialization and controls above already handle everything;
-    # drop the duplicated commit/count/debugging section to keep UI clean.
+            st.success("UI overrides saved.")
+
     if "new_steps" not in st.session_state:
         st.session_state.new_steps = []
 
@@ -1290,7 +1217,7 @@ if selected_tab == "edit":
         st.session_state.delete_action = None
 
     st.markdown("---")
-    
+
     if st.button("➕ **Add New Action**", key="new_action_main", use_container_width=True):
         st.session_state.new_action = True
         st.session_state.editing_action = None
@@ -1366,7 +1293,7 @@ if selected_tab == "edit":
                         # This ensures data persists even if session_state resets
                         save_and_update_steps(st.session_state.edit_steps_data)
                         
-                        st.success(f"✅ Action '{action_name}' saved to UI overrides!")
+                        st.success(f"✅ Action '{action_name}' saved!")
                         st.session_state.new_action = False
                         st.session_state.new_steps = []
                         st.rerun()
@@ -1436,7 +1363,7 @@ if selected_tab == "edit":
                                         scenario["kroky"] = []
                         save_and_update_projects(st.session_state.projects)
                         
-                        st.success(f"✅ Action '{action}' deleted in UI overrides!")
+                        st.success(f"✅ Action '{action}' deleted from available actions!")
                         if affected_count > 0:
                             st.info(f"📊 Cleared steps from {affected_count} test case(s)")
                         st.session_state.delete_action = None
@@ -1531,7 +1458,7 @@ if selected_tab == "edit":
                         updated = update_scenarios_with_action_steps(st.session_state.projects, st.session_state.steps_data, action)
                         save_and_update_projects(st.session_state.projects)
                         
-                        st.success(f"✅ Action '{action}' updated in UI overrides!")
+                        st.success(f"✅ Action '{action}' updated in app overrides!")
                         if updated > 0:
                             st.info(f"📊 Updated {updated} test case(s) with new steps")
                         
