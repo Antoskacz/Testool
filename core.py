@@ -263,25 +263,44 @@ def export_to_excel(project_name: str, projects_data: dict):
 
 # ---------- DATA ANALYSIS ----------
 def analyze_scenarios(scenarios: list):
-    """Count scenarios by segment -> channel -> action"""
-    segment_data = {"B2C": {"SHOP": {}, "IL": {}}, "B2B": {"SHOP": {}, "IL": {}}}
-
+    """Analyze scenarios for tree structure display"""
+    segment_data = {"B2C": {}, "B2B": {}}
+    
     for scenario in scenarios:
         segment = scenario.get("segment", "UNKNOWN")
         channel = scenario.get("kanal", "UNKNOWN")
+        test_name = scenario.get("test_name", "")
         action = scenario.get("akce", "UNKNOWN")
-
+        
+        # Detect technology
+        technology = "DSL"
+        tech_keywords = {
+            "FIBER": "FIBER",
+            "FWA_BISI": "FWA BISI",
+            "FWA_BI": "FWA BI",
+            "CABLE": "CABLE",
+            "HLAS": "HLAS",
+            "DSL": "DSL"
+        }
+        
+        for keyword, tech in tech_keywords.items():
+            if keyword in test_name.upper():
+                technology = tech
+                break
+        
+        # Organize data
         if segment not in segment_data:
             segment_data[segment] = {}
-
+        
         if channel not in segment_data[segment]:
             segment_data[segment][channel] = {}
-
-        if action not in segment_data[segment][channel]:
-            segment_data[segment][channel][action] = 0
-
-        segment_data[segment][channel][action] += 1
-
+            
+        if technology not in segment_data[segment][channel]:
+            segment_data[segment][channel][technology] = []
+            
+        if action not in segment_data[segment][channel][technology]:
+            segment_data[segment][channel][technology].append(action)
+    
     return segment_data
 
 def get_automatic_complexity(step_count: int):
