@@ -298,8 +298,8 @@ def analyze_scenarios(scenarios: list):
         if technology not in segment_data[segment][channel]:
             segment_data[segment][channel][technology] = []
             
-        # Always append the action to count scenarios (even if duplicate action name)
-        segment_data[segment][channel][technology].append(action)
+        if action not in segment_data[segment][channel][technology]:
+            segment_data[segment][channel][technology].append(action)
     
     return segment_data
 
