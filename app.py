@@ -242,69 +242,114 @@ def save_and_update_projects(data):
         st.session_state.projects = copy.deepcopy(data)
     return success
 
-def save_and_update_steps(data):
-    """Uloží kroky do souboru a aktualizuje session_state.
+def normalize_action_payload(action_data):
+    """Return canonical action structure."""
+    if isinstance(action_data, dict):
+        return {
+            "description": action_data.get("description", "").strip(),
+            "steps": copy.deepcopy(action_data.get("steps", []))
+        }
+    elif isinstance(action_data, list):
+        return {
+            "description": "",
+            "steps": copy.deepcopy(action_data)
+        }
+    return {"description": "", "steps": []}
 
-    Tries to save to kroky.json first (original file). If that fails,
-    falls back to kroky_custom.json. On startup, both files are loaded
-    and merged so users never lose data.
+
+def action_payload_equal(a, b):
+    return normalize_action_payload(a) == normalize_action_payload(b)
+
+
+def load_base_steps():
+    data = load_json(KROKY_PATH)
+    return data if isinstance(data, dict) else {}
+
+
+def load_custom_overrides():
+    data = load_json(KROKY_CUSTOM_PATH)
+    return data if isinstance(data, dict) else {}
+
+
+def load_effective_steps():
+    """Base kroky.json + overrides from kroky_custom.json"""
+    base_steps = load_base_steps()
+    overrides = load_custom_overrides()
+    effective = copy.deepcopy(base_steps)
+
+    for action_name, override_data in overrides.items():
+        if not isinstance(override_data, dict):
+            continue
+
+        status = override_data.get("_status")
+
+        if status == "deleted":
+            effective.pop(action_name, None)
+        elif status in ("added", "modified"):
+            effective[action_name] = {
+                "description": override_data.get("description", "").strip(),
+                "steps": copy.deepcopy(override_data.get("steps", []))
+            }
+
+    return effective
+
+
+def build_overrides_from_effective(base_steps, effective_steps):
     """
-    # use fixed paths relative to script location; cwd may be /tmp when
-    # Streamlit copies the file for execution, so relying on __file__ keeps
-    # data inside the workspace where it survives restart.
-    kroky_path = KROKY_PATH
-    kroky_custom_path = KROKY_CUSTOM_PATH
+    Compare current effective state with immutable base and produce override-only kroky_custom.json.
+    """
+    overrides = {}
 
-    # sort keys so file is alphabetical
-    ordered = dict(sorted(data.items(), key=lambda kv: kv[0].lower()))
-    
-    # debug: show where files are written
-    print(f"[DEBUG] SAVE_AND_UPDATE: BASE_DIR={BASE_DIR}")
-    print(f"[DEBUG] SAVE_AND_UPDATE: kroky_path={kroky_path}")
-    print(f"[DEBUG] SAVE_AND_UPDATE: kroky_custom_path={kroky_custom_path}")
-    print(f"[DEBUG] SAVE_AND_UPDATE: Attempting to save {len(ordered)} actions to disk")
-    
-    # Try primary file first
-    success = save_json(kroky_path, ordered)
-    saved_to = "kroky.json"
-    
-    # If primary fails, still write to custom file
-    if not success:
-        print(f"[ERROR] SAVE_AND_UPDATE: Failed to save to kroky.json, trying custom...")
-        st.warning(
-            "⚠️ Could not write to kroky.json. "
-            "Saving to kroky_custom.json instead. Your data is safe!"
-        )
-        success = save_json(kroky_custom_path, ordered)
-        saved_to = "kroky_custom.json"
-        # when primary fails we obviously need custom for merge info later
-        if success:
-            print(f"[SUCCESS] SAVE_AND_UPDATE: Successfully saved to kroky_custom.json")
-            st.info(
-                "ℹ️ Next app restart will automatically merge "
-                "kroky_custom.json into kroky.json"
-            )
-        else:
-            print(f"[CRITICAL ERROR] SAVE_AND_UPDATE: Failed to save to both files!")
-    else:
-        print(f"[SUCCESS] SAVE_AND_UPDATE: Successfully saved {len(ordered)} actions to kroky.json")
-        # Primary succeeded – mirror to custom file as backup/log
-        save_json(kroky_custom_path, ordered)
-        saved_to = "both kroky.json and kroky_custom.json"    
+    all_action_names = sorted(set(base_steps.keys()) | set(effective_steps.keys()), key=str.lower)
+
+    for action_name in all_action_names:
+        in_base = action_name in base_steps
+        in_effective = action_name in effective_steps
+
+        if in_base and not in_effective:
+            overrides[action_name] = {"_status": "deleted"}
+            continue
+
+        if not in_base and in_effective:
+            payload = normalize_action_payload(effective_steps[action_name])
+            overrides[action_name] = {
+                "_status": "added",
+                "description": payload["description"],
+                "steps": payload["steps"]
+            }
+            continue
+
+        if in_base and in_effective:
+            base_payload = normalize_action_payload(base_steps[action_name])
+            eff_payload = normalize_action_payload(effective_steps[action_name])
+
+            if base_payload != eff_payload:
+                overrides[action_name] = {
+                    "_status": "modified",
+                    "description": eff_payload["description"],
+                    "steps": eff_payload["steps"]
+                }
+
+    return dict(sorted(overrides.items(), key=lambda kv: kv[0].lower()))
+
+
+def save_ui_overrides(effective_steps):
+    """
+    Save only UI changes to kroky_custom.json.
+    kroky.json remains untouched.
+    """
+    base_steps = load_base_steps()
+    overrides = build_overrides_from_effective(base_steps, effective_steps)
+
+    success = save_json(KROKY_CUSTOM_PATH, overrides)
+
     if success:
-        st.session_state.steps_data = copy.deepcopy(ordered)
-        # Add subtle debug info if in dev mode
-        st.toast(f"✅ Saved to {saved_to}", icon="💾")
+        refreshed_effective = load_effective_steps()
+        st.session_state.steps_data = copy.deepcopy(refreshed_effective)
+        st.session_state.edit_steps_data = copy.deepcopy(refreshed_effective)
+        st.toast("✅ UI overrides saved to kroky_custom.json", icon="💾")
     else:
-        st.error("❌ Failed to save actions. Please contact admin.")
-
-    # write a persistent debug record regardless of streamlit log visibility
-    try:
-        dbg_path = BASE_DIR / "data" / "save_debug.log"
-        with open(dbg_path, "a", encoding="utf-8") as dbg:
-            dbg.write(f"{datetime.now().isoformat()} BASE_DIR={BASE_DIR} kroky={kroky_path} kroky_custom={kroky_custom_path} saved_to={saved_to} success={success}\n")
-    except Exception:
-        pass
+        st.error("❌ Failed to save UI overrides.")
 
     return success
 	
@@ -454,14 +499,7 @@ def render_section_intro(title: str, subtitle: str):
 
 # Načtení dat
 projects = load_json(PROJECTS_PATH)
-steps_data = load_json(KROKY_PATH)
-
-# Load custom actions (fallback file) and merge them with primary
-custom_steps = load_json(KROKY_CUSTOM_PATH)
-if custom_steps:
-    # Merge custom actions into primary
-    steps_data.update(custom_steps)
-    # optionally log that we found custom actions
+steps_data = load_effective_steps()
 
 
 # Zajistíme, aby se prázdné soubory inicializovaly s minimem dat
@@ -1018,10 +1056,7 @@ if selected_tab == "edit":
     # 🔧 Edit Actions & Steps
     
     # Load current data from disk to ensure we always have the latest
-    disk_steps = load_json(KROKY_PATH)
-    custom_steps = load_json(KROKY_CUSTOM_PATH)
-    if custom_steps:
-        disk_steps.update(custom_steps)
+    disk_steps = load_effective_steps()
     
     # Initialize edit_steps_data: combine disk data with any session state data
     # This handles the case where session_state was reset on F5 refresh
@@ -1050,17 +1085,16 @@ if selected_tab == "edit":
     left, sep, right = st.columns([3, 0.05, 2])
     
     # Calculate correct counts: disk = what's in kroky.json, non-committed = what's in memory but NOT on disk
-    disk_data = load_json(KROKY_PATH)
-    
-    # IMPORTANT: Convert to dict keys sets properly
-    disk_action_names = set(disk_data.keys()) if disk_data else set()
-    mem_action_names = set(st.session_state.edit_steps_data.keys()) if st.session_state.edit_steps_data else set()
-    
-    # Actions that are in memory but NOT on disk are non-committed
-    non_committed = mem_action_names - disk_action_names
-    
-    disk_count = len(disk_action_names)
-    mem_count = len(non_committed)
+    base_steps = load_base_steps()
+    committed_overrides = load_custom_overrides()
+    committed_effective = load_effective_steps()
+    current_effective = st.session_state.edit_steps_data if st.session_state.edit_steps_data else {}
+
+    base_count = len(base_steps)
+    override_count = len(committed_overrides)
+
+    pending_overrides = build_overrides_from_effective(base_steps, current_effective)
+    pending_count = len(pending_overrides)
     
     # DEBUG: Log what we see
     print(f"[DEBUG] EDIT_ACTIONS_PAGE disk_data keys ({disk_count}): {sorted(disk_action_names)}")
@@ -1072,11 +1106,13 @@ if selected_tab == "edit":
     with sep:
         st.markdown("<div style='border-left:1px solid gray;height:100%'></div>", unsafe_allow_html=True)
     with right:
-        st.write(f"**Actions in kroky.json:** {disk_count}")
-        st.write(f"**Non committed actions:** {mem_count}")
-        if st.button("💾 Commit", help="Save current in‑memory list to disk", use_container_width=True):
-            save_and_update_steps(st.session_state.edit_steps_data)
-            st.success("All actions pushed to file")
+        st.write(f"**Actions in kroky.json:** {base_count}")
+        st.write(f"**Committed UI overrides:** {override_count}")
+        st.write(f"**Pending UI changes:** {pending_count}")
+
+        if st.button("💾 Commit", help="Save UI changes to kroky_custom.json", use_container_width=True):
+            save_ui_overrides(st.session_state.edit_steps_data)
+            st.success("All UI changes saved to kroky_custom.json")
     
     # the initialization and controls above already handle everything;
     # drop the duplicated commit/count/debugging section to keep UI clean.
@@ -1164,9 +1200,9 @@ if selected_tab == "edit":
                         }
                         # CRITICAL: Save to disk BEFORE st.rerun()
                         # This ensures data persists even if session_state resets
-                        save_and_update_steps(st.session_state.edit_steps_data)
+                        save_ui_overrides(st.session_state.edit_steps_data)
                         
-                        st.success(f"✅ Action '{action_name}' saved!")
+                        st.success(f"✅ Action '{action_name}' saved to UI overrides!")
                         st.session_state.new_action = False
                         st.session_state.new_steps = []
                         st.rerun()
@@ -1226,7 +1262,7 @@ if selected_tab == "edit":
                         # Remove action from kroky.json
                         del st.session_state.edit_steps_data[action]
                         # use helper to persist steps data
-                        save_and_update_steps(st.session_state.edit_steps_data)
+                        save_ui_overrides(st.session_state.edit_steps_data)
                         
                         # Clear steps from all affected scenarios
                         for project_data in st.session_state.projects.values():
@@ -1236,7 +1272,7 @@ if selected_tab == "edit":
                                         scenario["kroky"] = []
                         save_and_update_projects(st.session_state.projects)
                         
-                        st.success(f"✅ Action '{action}' deleted from kroky.json!")
+                        st.success(f"✅ Action '{action}' updated in UI overrides!")
                         if affected_count > 0:
                             st.info(f"📊 Cleared steps from {affected_count} test case(s)")
                         st.session_state.delete_action = None
@@ -1325,13 +1361,13 @@ if selected_tab == "edit":
                             "steps": st.session_state[f"edit_steps_{action}"].copy()
                         }
                         # helper updates file and session_state
-                        save_and_update_steps(st.session_state.edit_steps_data)
+                        save_ui_overrides(st.session_state.edit_steps_data)
                         
                         # 🔄 Propagate changes to all scenarios using this action
                         updated = update_scenarios_with_action_steps(st.session_state.projects, st.session_state.steps_data, action)
                         save_and_update_projects(st.session_state.projects)
                         
-                        st.success(f"✅ Action '{action}' updated in kroky.json!")
+                        st.success(f"✅ Action '{action}' deleted from UI overrides!")
                         if updated > 0:
                             st.info(f"📊 Updated {updated} test case(s) with new steps")
                         
