@@ -9,6 +9,8 @@ import plotly.graph_objects as go  # zobrazeni grafu
 import plotly.express as px        # volitelny
 import re
 from datetime import datetime
+import subprocess
+
 
 # define base directory as the location of this script. This is
 # stable even when Streamlit copies the code to /tmp or the current
@@ -231,6 +233,68 @@ def save_json(filepath, data):
     except Exception as e:
         st.error(f"Error saving {filepath}: {e}")
         return False
+
+def normalize_override_entry(entry):
+    if entry is None:
+        return None
+    if not isinstance(entry, dict):
+        return entry
+
+    normalized = copy.deepcopy(entry)
+
+    if "description" in normalized and isinstance(normalized["description"], str):
+        normalized["description"] = normalized["description"].strip()
+
+    return normalized
+
+
+def load_json_from_git_head(path_str: str):
+    """
+    Load file content from last git commit (HEAD).
+    If file does not exist in HEAD yet, return {}.
+    """
+    try:
+        repo_root = Path.cwd()
+        rel_path = str(Path(path_str).resolve().relative_to(repo_root.resolve()))
+
+        result = subprocess.run(
+            ["git", "show", f"HEAD:{rel_path}"],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+
+        if result.returncode != 0 or not result.stdout.strip():
+            return {}
+
+        return json.loads(result.stdout)
+
+    except Exception:
+        return {}
+
+
+def count_git_pending_override_changes(current_custom_data: dict, custom_path: str):
+    """
+    Compare current kroky_custom.json with committed version in HEAD.
+    Returns:
+      pending_count,
+      pending_keys
+    """
+    head_custom_data = load_json_from_git_head(custom_path) or {}
+    current_custom_data = current_custom_data or {}
+
+    all_keys = set(head_custom_data.keys()) | set(current_custom_data.keys())
+
+    changed_keys = []
+    for key in sorted(all_keys):
+        head_val = normalize_override_entry(head_custom_data.get(key))
+        current_val = normalize_override_entry(current_custom_data.get(key))
+
+        if head_val != current_val:
+            changed_keys.append(key)
+
+    return len(changed_keys), changed_keys
+
 
 def save_and_update_projects(data):
     """Uloží projekty do souboru a aktualizuje session_state"""
@@ -1084,45 +1148,22 @@ if selected_tab == "edit":
     # Calculate correct counts: disk = what's in kroky.json, non-committed = what's in memory but NOT on disk
     left, sep, right = st.columns([3, 0.05, 2])
 
-    base_data = load_json(KROKY_PATH) or {}
-    custom_data = load_json(KROKY_CUSTOM_PATH) or {}
+    base_steps = load_base_steps()
+    current_custom_overrides = load_custom_overrides()
 
-    # committed state on disk = base + custom overrides
-    effective_disk = copy.deepcopy(base_data)
-    effective_disk.update(custom_data)
+    base_count = len(base_steps)
+    custom_count = len(current_custom_overrides)
 
-    current_mem = st.session_state.edit_steps_data if st.session_state.edit_steps_data else {}
-
-    def normalize_action_payload(action_data):
-        if action_data is None:
-            return None
-        if isinstance(action_data, dict):
-            return {
-                "description": action_data.get("description", "").strip(),
-                "steps": copy.deepcopy(action_data.get("steps", []))
-            }
-        if isinstance(action_data, list):
-            return {
-                "description": "",
-                "steps": copy.deepcopy(action_data)
-            }
-        return action_data
-
-    base_count = len(base_data)
-    custom_count = len(custom_data)
-
-    all_action_names = set(effective_disk.keys()) | set(current_mem.keys())
-
-    pending_changes = {
-        name for name in all_action_names
-        if normalize_action_payload(effective_disk.get(name)) != normalize_action_payload(current_mem.get(name))
-    }
-    pending_count = len(pending_changes)
+    pending_count, pending_keys = count_git_pending_override_changes(
+        current_custom_overrides,
+        KROKY_CUSTOM_PATH
+    )
 
     print(f"[DEBUG] EDIT_ACTIONS_PAGE base_count: {base_count}")
     print(f"[DEBUG] EDIT_ACTIONS_PAGE custom_count: {custom_count}")
     print(f"[DEBUG] EDIT_ACTIONS_PAGE pending_count: {pending_count}")
-    print(f"[DEBUG] EDIT_ACTIONS_PAGE pending_changes: {sorted(pending_changes)}")
+    print(f"[DEBUG] EDIT_ACTIONS_PAGE pending_keys: {pending_keys}")
+
 
     with left:
         st.text_area(

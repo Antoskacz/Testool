@@ -740,10 +740,6 @@
           {
             "description": "[CNH] Zkontroluj notifikace o provedené změně podle COM notifikací v service orders.",
             "expected": "Notifikace jsou v pořádku, přišly všechny a ve správném znění."
-          },
-          {
-            "description": "test",
-            "expected": "test"
           }
         ]
       }
