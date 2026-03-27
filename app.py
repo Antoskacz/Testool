@@ -631,7 +631,7 @@ st.markdown("""
     color: #9fb3d9;
     font-size: 0.98rem;
     margin-top: 0.4rem;
-    margin-bottom: 0.8rem;
+    margin-bottom: 0.1rem;
 ">
     Create test cases and export them to an Excel format ready for direct HPQC upload.
 </div>
