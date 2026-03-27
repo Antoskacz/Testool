@@ -646,9 +646,6 @@ if selected_tab == "build":
     if not project_exists:
         st.markdown("<div class='tt-note'>Select or create a project in the sidebar to work with test cases.</div>", unsafe_allow_html=True)
 
-    render_section_intro("Build Test Cases", "Build, manage and export assisted test cases for the selected project.")
-    st.markdown("---")
-
     col_overview, col_analysis = st.columns([1, 1.15])
 
     with col_overview:
