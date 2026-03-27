@@ -1084,20 +1084,45 @@ if selected_tab == "edit":
     # Calculate correct counts: disk = what's in kroky.json, non-committed = what's in memory but NOT on disk
     left, sep, right = st.columns([3, 0.05, 2])
 
-    base_steps = load_base_steps()
-    committed_overrides = load_custom_overrides()
-    current_effective = st.session_state.edit_steps_data if st.session_state.edit_steps_data else {}
+    base_data = load_json(KROKY_PATH) or {}
+    custom_data = load_json(KROKY_CUSTOM_PATH) or {}
 
-    base_count = len(base_steps)
-    override_count = len(committed_overrides)
-    pending_overrides = build_overrides_from_effective(base_steps, current_effective)
-    pending_count = len(pending_overrides)
+    # committed state on disk = base + custom overrides
+    effective_disk = copy.deepcopy(base_data)
+    effective_disk.update(custom_data)
+
+    current_mem = st.session_state.edit_steps_data if st.session_state.edit_steps_data else {}
+
+    def normalize_action_payload(action_data):
+        if action_data is None:
+            return None
+        if isinstance(action_data, dict):
+            return {
+                "description": action_data.get("description", "").strip(),
+                "steps": copy.deepcopy(action_data.get("steps", []))
+            }
+        if isinstance(action_data, list):
+            return {
+                "description": "",
+                "steps": copy.deepcopy(action_data)
+            }
+        return action_data
+
+    base_count = len(base_data)
+    custom_count = len(custom_data)
+
+    all_action_names = set(effective_disk.keys()) | set(current_mem.keys())
+
+    pending_changes = {
+        name for name in all_action_names
+        if normalize_action_payload(effective_disk.get(name)) != normalize_action_payload(current_mem.get(name))
+    }
+    pending_count = len(pending_changes)
 
     print(f"[DEBUG] EDIT_ACTIONS_PAGE base_count: {base_count}")
-    print(f"[DEBUG] EDIT_ACTIONS_PAGE override_count: {override_count}")
+    print(f"[DEBUG] EDIT_ACTIONS_PAGE custom_count: {custom_count}")
     print(f"[DEBUG] EDIT_ACTIONS_PAGE pending_count: {pending_count}")
-    print(f"[DEBUG] EDIT_ACTIONS_PAGE current_effective keys: {sorted(current_effective.keys())}")
-    print(f"[DEBUG] EDIT_ACTIONS_PAGE pending_overrides keys: {sorted(pending_overrides.keys())}")
+    print(f"[DEBUG] EDIT_ACTIONS_PAGE pending_changes: {sorted(pending_changes)}")
 
     with left:
         st.text_area(
@@ -1112,7 +1137,7 @@ if selected_tab == "edit":
 
     with right:
         st.write(f"**Actions in kroky.json:** {base_count}")
-        st.write(f"**Actions in kroky_custom.json:** {override_count}")
+        st.write(f"**Actions in kroky_custom.json:** {custom_count}")
         st.write(f"**Pending changes:** {pending_count}")
     
     # the initialization and controls above already handle everything;
