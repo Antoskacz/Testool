@@ -8,5 +8,15 @@
         "expected": "test"
       }
     ]
+  },
+  "testt": {
+    "_status": "added",
+    "description": "test",
+    "steps": [
+      {
+        "description": "test",
+        "expected": "test"
+      }
+    ]
   }
 }
