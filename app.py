@@ -626,8 +626,14 @@ with tab_col3:
         st.rerun()
 
 st.markdown("""
-<div class="tt-muted" style="text-align:center; margin-top: 0.4rem; margin-bottom: 1.8rem;">
-    Create test cases and export them to an Excel format ready for direct HPQC upload
+<div style="
+    text-align: center;
+    color: #9fb3d9;
+    font-size: 0.98rem;
+    margin-top: 0.4rem;
+    margin-bottom: 0.8rem;
+">
+    Create test cases and export them to an Excel format ready for direct HPQC upload.
 </div>
 """, unsafe_allow_html=True)
 
