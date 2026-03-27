@@ -1094,8 +1094,10 @@ if selected_tab == "edit":
     pending_count = len(pending_overrides)
 
     print(f"[DEBUG] EDIT_ACTIONS_PAGE base_count: {base_count}")
-    print(f"[DEBUG] EDIT_ACTIONS_PAGE committed_overrides: {override_count}")
+    print(f"[DEBUG] EDIT_ACTIONS_PAGE override_count: {override_count}")
     print(f"[DEBUG] EDIT_ACTIONS_PAGE pending_count: {pending_count}")
+    print(f"[DEBUG] EDIT_ACTIONS_PAGE current_effective keys: {sorted(current_effective.keys())}")
+    print(f"[DEBUG] EDIT_ACTIONS_PAGE pending_overrides keys: {sorted(pending_overrides.keys())}")
 
     with left:
         st.text_area(
@@ -1110,12 +1112,8 @@ if selected_tab == "edit":
 
     with right:
         st.write(f"**Actions in kroky.json:** {base_count}")
-        st.write(f"**Committed UI overrides:** {override_count}")
-        st.write(f"**Pending UI changes:** {pending_count}")
-
-        if st.button("💾 Commit", help="Save UI changes to kroky_custom.json", use_container_width=True):
-            save_ui_overrides(st.session_state.edit_steps_data)
-            st.success("All UI changes saved to kroky_custom.json")
+        st.write(f"**Actions in kroky_custom.json:** {override_count}")
+        st.write(f"**Pending changes:** {pending_count}")
     
     # the initialization and controls above already handle everything;
     # drop the duplicated commit/count/debugging section to keep UI clean.

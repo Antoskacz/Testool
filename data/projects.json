@@ -1,6 +1,6 @@
 {
   "CCCTR-1111 - test": {
-    "next_id": 11,
+    "next_id": 12,
     "subject": "UAT2\\Antosova\\\\",
     "scenarios": [
       {
@@ -704,6 +704,46 @@
           {
             "description": "V Siebel zkontroluj dokoncenou objednavku a provedene akce na sluzbe",
             "expected": "Objednavka je dokoncena a pozadovana akce se vydarila"
+          }
+        ]
+      },
+      {
+        "order_no": 11,
+        "test_name": "011_SHOP_B2C_Test",
+        "akce": "Zmena tarifu - FIX",
+        "segment": "B2C",
+        "kanal": "SHOP",
+        "priority": "2-Medium",
+        "complexity": "4-Medium",
+        "veta": "test",
+        "kroky": [
+          {
+            "description": "Jdi na konkrétního zákazníka na detail služeb a přes roletky fix vyber změna tarifu.",
+            "expected": "Prokliknutí do košíku."
+          },
+          {
+            "description": "Zvol možnost změny tarifu - tarif s nizsi rychlosti (zkontroluj, ze se nabizi jen nizsi rychlosti nez byla puvodni) / tarif na zaklade overeni dostupnosti - a vyber novou rychlost pevného internetu.",
+            "expected": "Nový tarif vybrán."
+          },
+          {
+            "description": "Vyplň povinná a požadovaná pole a proklikej se až k odeslání objednávky.",
+            "expected": "Proklikání úspěšné až k odeslání objednávky."
+          },
+          {
+            "description": "Objednávku odešli do COM a zkontroluj správný rozpad tasků bez chyby.",
+            "expected": "Objednávka správně běží a sama se dokončí."
+          },
+          {
+            "description": "Zkontroluj nastavené změny v Siebel včetně dokončené objednávky.",
+            "expected": "V Siebel jsou změny propsané a objednávka dokončená."
+          },
+          {
+            "description": "[CNH] Zkontroluj notifikace o provedené změně podle COM notifikací v service orders.",
+            "expected": "Notifikace jsou v pořádku, přišly všechny a ve správném znění."
+          },
+          {
+            "description": "test",
+            "expected": "test"
           }
         ]
       }
