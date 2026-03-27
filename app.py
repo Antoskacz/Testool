@@ -625,6 +625,12 @@ with tab_col3:
         st.session_state.selected_tab = "text"
         st.rerun()
 
+st.markdown("""
+<div class="tt-muted" style="text-align:center; margin-top: 0.4rem; margin-bottom: 1.8rem;">
+    Create test cases and export them to an Excel format ready for direct HPQC upload
+</div>
+""", unsafe_allow_html=True)
+
 # Content separator
 st.markdown("---")
 
