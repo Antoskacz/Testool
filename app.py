@@ -1080,31 +1080,34 @@ if selected_tab == "edit":
     if "editing_action" not in st.session_state:
         st.session_state.editing_action = None
 
-    # layout top row: left shows counts+action list, right has small commit button
-    # main row: left panel action list, tiny separator, right panel commit + counts
-    left, sep, right = st.columns([3, 0.05, 2])
     
     # Calculate correct counts: disk = what's in kroky.json, non-committed = what's in memory but NOT on disk
+    left, sep, right = st.columns([3, 0.05, 2])
+
     base_steps = load_base_steps()
     committed_overrides = load_custom_overrides()
-    committed_effective = load_effective_steps()
     current_effective = st.session_state.edit_steps_data if st.session_state.edit_steps_data else {}
 
     base_count = len(base_steps)
     override_count = len(committed_overrides)
-
     pending_overrides = build_overrides_from_effective(base_steps, current_effective)
     pending_count = len(pending_overrides)
-    
-    # DEBUG: Log what we see
-    print(f"[DEBUG] EDIT_ACTIONS_PAGE disk_data keys ({disk_count}): {sorted(disk_action_names)}")
-    print(f"[DEBUG] EDIT_ACTIONS_PAGE edit_steps_data keys: {sorted(mem_action_names)}")
-    print(f"[DEBUG] EDIT_ACTIONS_PAGE non_committed ({mem_count}): {non_committed}")
-    
+
+    print(f"[DEBUG] EDIT_ACTIONS_PAGE base_count: {base_count}")
+    print(f"[DEBUG] EDIT_ACTIONS_PAGE committed_overrides: {override_count}")
+    print(f"[DEBUG] EDIT_ACTIONS_PAGE pending_count: {pending_count}")
+
     with left:
-        st.text_area("All actions:", value="\n".join(sorted(st.session_state.edit_steps_data.keys())), height=150, disabled=True)
+        st.text_area(
+            "All actions:",
+            value="\n".join(sorted(st.session_state.edit_steps_data.keys())),
+            height=150,
+            disabled=True
+        )
+
     with sep:
         st.markdown("<div style='border-left:1px solid gray;height:100%'></div>", unsafe_allow_html=True)
+
     with right:
         st.write(f"**Actions in kroky.json:** {base_count}")
         st.write(f"**Committed UI overrides:** {override_count}")
