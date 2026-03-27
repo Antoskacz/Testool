@@ -364,44 +364,25 @@ def extract_technology(text: str) -> str:
     return "UNKNOWN"
 
 def analyze_scenarios(scenarios: list):
-    """Analyze scenarios for tree structure display"""
-    segment_data = {"B2C": {}, "B2B": {}}
-    
+    """Count scenarios by segment -> channel -> action"""
+    segment_data = {"B2C": {"SHOP": {}, "IL": {}}, "B2B": {"SHOP": {}, "IL": {}}}
+
     for scenario in scenarios:
         segment = scenario.get("segment", "UNKNOWN")
         channel = scenario.get("kanal", "UNKNOWN")
-        test_name = scenario.get("test_name", "")
         action = scenario.get("akce", "UNKNOWN")
-        
-        # Detect technology from test name
-        technology = "DSL"
-        tech_keywords = {
-            "FIBER": "FIBER",
-            "FWA_BISI": "FWA BISI", 
-            "FWA_BI": "FWA BI",
-            "CABLE": "CABLE",
-            "HLAS": "HLAS",
-            "DSL": "DSL"
-        }
-        
-        for keyword, tech in tech_keywords.items():
-            if keyword in test_name.upper():
-                technology = tech
-                break
-        
-        # Organize data
+
         if segment not in segment_data:
             segment_data[segment] = {}
-        
+
         if channel not in segment_data[segment]:
             segment_data[segment][channel] = {}
-            
-        if technology not in segment_data[segment][channel]:
-            segment_data[segment][channel][technology] = []
-            
-        if action not in segment_data[segment][channel][technology]:
-            segment_data[segment][channel][technology].append(action)
-    
+
+        if action not in segment_data[segment][channel]:
+            segment_data[segment][channel][action] = 0
+
+        segment_data[segment][channel][action] += 1
+
     return segment_data
 
 def remove_diacritics(text):
@@ -689,30 +670,28 @@ if selected_tab == "build":
 
             for segment_name, icon, target_col in segment_config:
                 with target_col:
+                    segment_channels = nested_segment_data.get(segment_name, {})
                     segment_total = sum(
-                        len(actions)
-                        for tech_map in nested_segment_data.get(segment_name, {}).values()
-                        for actions in tech_map.values()
+                        sum(action_map.values())
+                        for action_map in segment_channels.values()
                     )
+
                     with st.expander(f"{icon} {segment_name} ({segment_total})", expanded=True):
-                        segment_channels = nested_segment_data.get(segment_name, {})
                         if not segment_channels:
                             st.write("No test cases")
                         else:
                             for channel_name in ["SHOP", "IL"]:
-                                channel_data = segment_channels.get(channel_name, {})
-                                channel_total = sum(len(actions) for actions in channel_data.values())
-                                if channel_data:
-                                    st.markdown(f"**{channel_name} ({channel_total})**")
-                                    action_counts = {}
-                                    for actions in channel_data.values():
-                                        for action in actions:
-                                            action_counts[action] = action_counts.get(action, 0) + 1
-                                    for action, count in sorted(action_counts.items(), key=lambda x: (-x[1], x[0])):
+                                action_map = segment_channels.get(channel_name, {})
+                                channel_total = sum(action_map.values())
+
+                                st.markdown(f"**{channel_name} ({channel_total})**")
+
+                                if action_map:
+                                    for action, count in sorted(action_map.items(), key=lambda x: (-x[1], x[0])):
                                         st.write(f"- {action}: {count}")
                                 else:
-                                    st.markdown(f"**{channel_name} (0)**")
                                     st.caption("No test cases")
+
                                 st.markdown("")
         else:
             st.info("No test cases yet")
