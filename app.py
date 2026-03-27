@@ -628,7 +628,7 @@ with tab_col3:
 st.markdown("""
 <div style="
     text-align: center;
-    color: #9fb3d9;
+    color: #5D6980;
     font-size: 0.98rem;
     margin-top: 0.4rem;
     margin-bottom: 0.1rem;
