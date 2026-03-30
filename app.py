@@ -1034,7 +1034,7 @@ if selected_tab == "build":
                 with st.form("edit_testcase_form"):
                     st.write(f"**Currently editing:** {testcase_to_edit['test_name']}")
                     sentence = st.text_area("Requirement Sentence", value=st.session_state.edit_sentence_value, height=100, key=f"edit_sentence_{testcase_to_edit['order_no']}")
-                    action = st.selectbox("Action (from kroky.json)", options=action_list, index=action_list.index(testcase_to_edit["action"]) if testcase_to_edit["action"] in action_list else 0, key="edit_action")
+                    action = st.selectbox("Action (from kroky.json)", options=action_list, index=action_list.index(testcase_to_edit["akce"]) if testcase_to_edit["akce"] in action_list else 0, key="edit_action")
 
                     SEGMENT_OPTIONS = ["B2C", "B2B"]
                     KANAL_OPTIONS = ["SHOP", "IL"]
