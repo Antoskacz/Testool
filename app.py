@@ -594,6 +594,12 @@ if 'steps_data' not in st.session_state:
 if 'selected_tab' not in st.session_state:
     st.session_state.selected_tab = 'build'
 
+if "edit_case_done" not in st.session_state:
+    st.session_state.edit_case_done = False
+
+if "delete_case_done" not in st.session_state:
+    st.session_state.delete_case_done = False
+
 # ---------- SIDEBAR: LOGO + PROJECT MANAGEMENT ----------
 with st.sidebar:    
     st.subheader("📁 Project")
@@ -1049,45 +1055,58 @@ if selected_tab == "build":
                     with col_kanal:
                         kanal = st.selectbox("Kanál", options=KANAL_OPTIONS, index=KANAL_OPTIONS.index(testcase_to_edit["kanal"]) if testcase_to_edit["kanal"] in KANAL_OPTIONS else 0, key="edit_kanal")
 
-                    if st.form_submit_button("💾 Save Changes"):
-                        if not sentence.strip():
-                            st.error("Requirement sentence cannot be empty.")
-                        elif not action:
-                            st.error("Select an action.")
-                        else:
-                            order = testcase_to_edit["order_no"]
-                            technology = extract_technology(sentence)
-                            prefix_parts = [f"{order:03d}", kanal, segment, technology]
-                            filtered_parts = [p for p in prefix_parts if p and p != "UNKNOWN"]
-                            prefix = "_".join(filtered_parts)
-                            while '__' in prefix:
-                                prefix = prefix.replace('__', '_')
-                            prefix = prefix.strip('_')
-                            new_test_name = clean_tc_name(f"{prefix}_{sentence.strip().capitalize()}")
+                    col_save_btn, col_save_msg = st.columns([1, 1])
 
-                            kroky_pro_akci = []
-                            if action in st.session_state.steps_data:
-                                action_data = st.session_state.steps_data[action]
-                                if isinstance(action_data, dict) and "steps" in action_data:
-                                    kroky_pro_akci = copy.deepcopy(action_data["steps"])
-                                elif isinstance(action_data, list):
-                                    kroky_pro_akci = copy.deepcopy(action_data)
+                with col_save_btn:
+                    save_clicked = st.form_submit_button("💾 Save Changes")
 
-                            st.session_state.edit_sentence_value = sentence.strip()
-                            testcase_to_edit.update({
-                                "test_name": new_test_name,
-                                "akce": action,
-                                "segment": segment,
-                                "kanal": kanal,
-                                "priority": priority,
-                                "complexity": complexity,
-                                "veta": sentence.strip(),
-                                "kroky": kroky_pro_akci
-                            })
+                with col_save_msg:
+                    if st.session_state.get("edit_case_done", False):
+                        st.markdown(
+                            "<div style='color:#29d391; font-weight:600; padding-top:10px;'>✅ Edited</div>",
+                            unsafe_allow_html=True
+                        )
 
-                            save_and_update_projects(st.session_state.projects)
-                            st.toast("✅ Updated", icon="✅")
-                            st.rerun()
+                if save_clicked:
+                    if not sentence.strip():
+                        st.error("Requirement sentence cannot be empty.")
+                    elif not action:
+                        st.error("Select an action.")
+                    else:
+                        order = testcase_to_edit["order_no"]
+                        technology = extract_technology(sentence)
+                        prefix_parts = [f"{order:03d}", kanal, segment, technology]
+                        filtered_parts = [p for p in prefix_parts if p and p != "UNKNOWN"]
+                        prefix = "_".join(filtered_parts)
+                        while "__" in prefix:
+                            prefix = prefix.replace("__", "_")
+                        prefix = prefix.strip("_")
+                        new_test_name = clean_tc_name(f"{prefix}_{sentence.strip().capitalize()}")
+
+                        kroky_pro_akci = []
+                        if action in st.session_state.steps_data:
+                            action_data = st.session_state.steps_data[action]
+                            if isinstance(action_data, dict) and "steps" in action_data:
+                                kroky_pro_akci = copy.deepcopy(action_data["steps"])
+                            elif isinstance(action_data, list):
+                                kroky_pro_akci = copy.deepcopy(action_data)
+
+                        st.session_state.edit_sentence_value = sentence.strip()
+                        testcase_to_edit.update({
+                            "test_name": new_test_name,
+                            "akce": action,
+                            "segment": segment,
+                            "kanal": kanal,
+                            "priority": priority,
+                            "complexity": complexity,
+                            "veta": sentence.strip(),
+                            "kroky": kroky_pro_akci
+                        })
+
+                        save_and_update_projects(st.session_state.projects)
+
+                        st.session_state.edit_case_done = True
+                        st.session_state.delete_case_done = False
         else:
             st.info("No test cases available to edit. Add a test case first.")
 
@@ -1096,22 +1115,23 @@ if selected_tab == "build":
             delete_options = [f"{tc['order_no']:03d} - {tc['test_name']}" for tc in project_data["scenarios"]]
             testcase_to_delete = st.selectbox("Select Test Case to Delete", options=delete_options, index=0, key="delete_testcase_select")
 
-            if st.button("⚠️ Delete Selected Test Case", type="secondary"):
-                index_to_delete = delete_options.index(testcase_to_delete)
-                deleted_tc = project_data["scenarios"].pop(index_to_delete)
-                for idx, tc in enumerate(project_data["scenarios"], start=1):
-                    tc["order_no"] = idx
-                    if tc["test_name"].startswith(f"{idx-1:03d}_"):
-                        tc["test_name"] = f"{idx:03d}_" + tc["test_name"][4:]
-                    elif "_" in tc["test_name"]:
-                        parts = tc["test_name"].split("_", 1)
-                        if len(parts[0]) == 3 and parts[0].isdigit():
-                            tc["test_name"] = f"{idx:03d}_" + parts[1]
+            col_delete_btn, col_delete_msg = st.columns([1, 1])
 
-                project_data["next_id"] = len(project_data["scenarios"]) + 1
-                save_and_update_projects(st.session_state.projects)
-                st.toast("✅ Deleted", icon="✅")
-                st.rerun()
+        with col_delete_btn:
+            delete_clicked = st.button("⚠️ Delete Selected Test Case", use_container_width=True)
+
+        with col_delete_msg:
+            if st.session_state.get("delete_case_done", False):
+                st.markdown(
+                    "<div style='color:#29d391; font-weight:600; padding-top:10px;'>✅ Deleted</div>",
+                    unsafe_allow_html=True
+                )
+
+        if delete_clicked:
+            # tvoje existující delete logika
+            save_and_update_projects(st.session_state.projects)
+            st.session_state.delete_case_done = True
+            st.session_state.edit_case_done = False
         else:
             st.info("No test cases available to delete.")
 

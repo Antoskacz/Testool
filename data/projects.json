@@ -1,27 +1,11 @@
 {
   "CCCTR-1111 - test": {
-    "next_id": 11,
+    "next_id": 10,
     "subject": "UAT2\\Antosova\\\\",
     "scenarios": [
       {
         "order_no": 1,
-        "test_name": "001_SHOP_B2C_T",
-        "akce": "test",
-        "segment": "B2C",
-        "kanal": "SHOP",
-        "priority": "1-High",
-        "complexity": "2-Huge",
-        "veta": "t",
-        "kroky": [
-          {
-            "description": "test",
-            "expected": "test"
-          }
-        ]
-      },
-      {
-        "order_no": 2,
-        "test_name": "002_SHOP_B2C_1",
+        "test_name": "001_SHOP_B2C_1",
         "akce": "test",
         "segment": "B2C",
         "kanal": "SHOP",
@@ -36,8 +20,8 @@
         ]
       },
       {
-        "order_no": 3,
-        "test_name": "003_SHOP_B2C_12",
+        "order_no": 2,
+        "test_name": "002_SHOP_B2C_12",
         "akce": "Aktivace + VAS - FIX",
         "segment": "B2C",
         "kanal": "SHOP",
@@ -128,8 +112,8 @@
         ]
       },
       {
-        "order_no": 4,
-        "test_name": "004_IL_B2B_123",
+        "order_no": 3,
+        "test_name": "003_IL_B2B_123",
         "akce": "Dokup HW - FIX",
         "segment": "B2B",
         "kanal": "IL",
@@ -164,8 +148,8 @@
         ]
       },
       {
-        "order_no": 5,
-        "test_name": "005_SHOP_B2C_3",
+        "order_no": 4,
+        "test_name": "004_SHOP_B2C_3",
         "akce": "Aktivace + VAS - FIX",
         "segment": "B2C",
         "kanal": "SHOP",
@@ -256,8 +240,8 @@
         ]
       },
       {
-        "order_no": 6,
-        "test_name": "006_SHOP_B2C_34",
+        "order_no": 5,
+        "test_name": "005_SHOP_B2C_34",
         "akce": "Aktivace + VAS - FIX",
         "segment": "B2C",
         "kanal": "SHOP",
@@ -348,6 +332,58 @@
         ]
       },
       {
+        "order_no": 6,
+        "test_name": "006_SHOP_B2C_Test",
+        "akce": "BULK",
+        "segment": "B2C",
+        "kanal": "SHOP",
+        "priority": "2-Medium",
+        "complexity": "4-Medium",
+        "veta": "test",
+        "kroky": [
+          {
+            "description": "V Siebel jdi na objednavky mimo zakaznika, hromadne objednavky",
+            "expected": "Otevre se prehled hromadnych objednavek"
+          },
+          {
+            "description": "V zalozce sablony objednavek vytvor novou sablonu dle pozadavku",
+            "expected": "Vypsan typ, nazev a zalozena sablona"
+          },
+          {
+            "description": "Pred ulozenim sablony pridej polozku na pozadovany PO... typ pozadovane akce (nikdy nemichat vic polozek dohromady, muze vznikat duplikace)",
+            "expected": "Polozka byla pridana"
+          },
+          {
+            "description": "Sablonu nyni uloz a aktivuj, opis si jeji cislo",
+            "expected": "Otevre se prehled sablon s nami vytvorenou novou sablonou"
+          },
+          {
+            "description": "Prejdi na hromadne objednavky a klikni na nova hromadna objednavka",
+            "expected": "Otevre se formular objednavky"
+          },
+          {
+            "description": "Napis typ a nazev objednavky a pokracuj",
+            "expected": "Otevre se objednavkovy formular"
+          },
+          {
+            "description": "Stahni soubor .xlxs a vypln pozadovane sloupce - 1. sloupec zkopirovane cislo sablony, cislo sluzby, notifikace",
+            "expected": "Soubor jde stahnout, je vyplneny ulozeny a znovu nahrany"
+          },
+          {
+            "description": "Po par vterinach klikni na aktualizovat stav a odeslat hromadnou objednavku",
+            "expected": "Propsal se nahrany soubor a objednavka sla odeslat"
+          },
+          {
+            "description": "V COM/bulk orders zkontroluj prubeh obejdnavky",
+            "expected": "Objednavka je completed a kladne dokoncena"
+          },
+          {
+            "description": "V Siebel zkontroluj dokoncenou objednavku a provedene akce na sluzbe",
+            "expected": "Objednavka je dokoncena a pozadovana akce se vydarila"
+          }
+        ]
+      },
+      {
         "order_no": 7,
         "test_name": "007_SHOP_B2C_Test",
         "akce": "BULK",
@@ -401,59 +437,7 @@
       },
       {
         "order_no": 8,
-        "test_name": "008_SHOP_B2C_Test",
-        "akce": "BULK",
-        "segment": "B2C",
-        "kanal": "SHOP",
-        "priority": "2-Medium",
-        "complexity": "4-Medium",
-        "veta": "test",
-        "kroky": [
-          {
-            "description": "V Siebel jdi na objednavky mimo zakaznika, hromadne objednavky",
-            "expected": "Otevre se prehled hromadnych objednavek"
-          },
-          {
-            "description": "V zalozce sablony objednavek vytvor novou sablonu dle pozadavku",
-            "expected": "Vypsan typ, nazev a zalozena sablona"
-          },
-          {
-            "description": "Pred ulozenim sablony pridej polozku na pozadovany PO... typ pozadovane akce (nikdy nemichat vic polozek dohromady, muze vznikat duplikace)",
-            "expected": "Polozka byla pridana"
-          },
-          {
-            "description": "Sablonu nyni uloz a aktivuj, opis si jeji cislo",
-            "expected": "Otevre se prehled sablon s nami vytvorenou novou sablonou"
-          },
-          {
-            "description": "Prejdi na hromadne objednavky a klikni na nova hromadna objednavka",
-            "expected": "Otevre se formular objednavky"
-          },
-          {
-            "description": "Napis typ a nazev objednavky a pokracuj",
-            "expected": "Otevre se objednavkovy formular"
-          },
-          {
-            "description": "Stahni soubor .xlxs a vypln pozadovane sloupce - 1. sloupec zkopirovane cislo sablony, cislo sluzby, notifikace",
-            "expected": "Soubor jde stahnout, je vyplneny ulozeny a znovu nahrany"
-          },
-          {
-            "description": "Po par vterinach klikni na aktualizovat stav a odeslat hromadnou objednavku",
-            "expected": "Propsal se nahrany soubor a objednavka sla odeslat"
-          },
-          {
-            "description": "V COM/bulk orders zkontroluj prubeh obejdnavky",
-            "expected": "Objednavka je completed a kladne dokoncena"
-          },
-          {
-            "description": "V Siebel zkontroluj dokoncenou objednavku a provedene akce na sluzbe",
-            "expected": "Objednavka je dokoncena a pozadovana akce se vydarila"
-          }
-        ]
-      },
-      {
-        "order_no": 9,
-        "test_name": "009_SHOP_B2B_Test",
+        "test_name": "008_SHOP_B2B_Test",
         "akce": "BULK",
         "segment": "B2B",
         "kanal": "SHOP",
@@ -504,8 +488,8 @@
         ]
       },
       {
-        "order_no": 10,
-        "test_name": "010_SHOP_B2B_Test",
+        "order_no": 9,
+        "test_name": "009_SHOP_B2B_Test",
         "akce": "BULK",
         "segment": "B2B",
         "kanal": "SHOP",
