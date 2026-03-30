@@ -1086,7 +1086,7 @@ if selected_tab == "build":
                             })
 
                             save_and_update_projects(st.session_state.projects)
-                            st.success(f"✅ Test case updated: {new_test_name}")
+                            st.toast("✅ Updated", icon="✅")
                             st.rerun()
         else:
             st.info("No test cases available to edit. Add a test case first.")
@@ -1110,7 +1110,7 @@ if selected_tab == "build":
 
                 project_data["next_id"] = len(project_data["scenarios"]) + 1
                 save_and_update_projects(st.session_state.projects)
-                st.success(f"🗑️ Test case deleted: {deleted_tc['test_name']}")
+                st.toast("✅ Deleted", icon="✅")
                 st.rerun()
         else:
             st.info("No test cases available to delete.")
