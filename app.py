@@ -37,7 +37,16 @@ st.set_page_config(
 # ---------- AUTENTIZACE ----------
 _CONFIG_PATH = Path(__file__).resolve().parent / "config.yaml"
 
+_DEFAULT_CONFIG = {
+    "credentials": {"usernames": {}},
+    "cookie": {"expiry_days": 30, "key": "testool_secret_key_2024", "name": "testool_auth"},
+    "registration_code": "testoolantoska",
+}
+
 def _load_config() -> dict:
+    if not _CONFIG_PATH.exists():
+        _save_config(_DEFAULT_CONFIG)
+        return dict(_DEFAULT_CONFIG)
     with open(_CONFIG_PATH, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 

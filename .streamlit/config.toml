@@ -1,10 +1,11 @@
 [server]
 enableXsrfProtection = true
 enableCORS = false
+port = 8502
 
 [browser]
 serverAddress = "localhost"
+gatherUsageStats = false
 
-# Zakáže automatické hledání stránek
 [runner]
 magicEnabled = false
