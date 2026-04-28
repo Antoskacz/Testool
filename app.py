@@ -405,14 +405,20 @@ def load_effective_steps():
 
 
 def save_ui_overrides(effective_steps):
-    """Uloží akce přímo do kroky.json."""
+    """Uloží akce do kroky.json a automaticky zálohuje do kroky_custom.json."""
     ordered = dict(sorted(effective_steps.items(), key=lambda kv: kv[0].lower()))
+
+    # záloha před zápisem — kroky_custom.json = předchozí stav
+    existing = load_json(KROKY_PATH)
+    if existing:
+        save_json(KROKY_CUSTOM_PATH, dict(sorted(existing.items(), key=lambda kv: kv[0].lower())))
+
     success = save_json(KROKY_PATH, ordered)
 
     if success:
         st.session_state.steps_data = copy.deepcopy(ordered)
         st.session_state.edit_steps_data = copy.deepcopy(ordered)
-        st.toast("✅ Akce uloženy do kroky.json", icon="💾")
+        st.toast("✅ Akce uloženy", icon="💾")
     else:
         st.error("❌ Nepodařilo se uložit akce.")
 
