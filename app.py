@@ -446,8 +446,18 @@ def _backup_kroky():
         old.unlink(missing_ok=True)
 
 
-# ---------- OLLAMA AI ----------
+# ---------- AI BACKEND (Groq + Ollama fallback) ----------
 OLLAMA_URL = "http://localhost:11434"
+GROQ_MODELS = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "mixtral-8x7b-32768"]
+
+def _get_groq_key() -> str:
+    try:
+        return st.secrets.get("groq_api_key", "")
+    except Exception:
+        return ""
+
+def groq_is_available() -> bool:
+    return bool(_get_groq_key())
 
 def ollama_is_running() -> bool:
     try:
@@ -459,50 +469,88 @@ def ollama_is_running() -> bool:
 def ollama_list_models() -> list[str]:
     try:
         r = requests.get(f"{OLLAMA_URL}/api/tags", timeout=3)
-        data = r.json()
-        return [m["name"] for m in data.get("models", [])]
+        return [m["name"] for m in r.json().get("models", [])]
     except Exception:
         return []
 
-def ollama_generate_tcs(br_text: str, actions: list[str], model: str) -> list[dict]:
-    """Zavolá Ollama a vrátí seznam navržených TC jako list diktů."""
+def _build_ai_prompt(br_text: str, actions: list[str]) -> tuple[str, str]:
     actions_str = "\n".join(f"- {a}" for a in sorted(actions))
-    system_prompt = f"""Jsi expert na UAT testování systému Siebel CZ pro telekomunikační společnost.
+    system = f"""Jsi expert na UAT testování systému Siebel CZ pro telekomunikační společnost.
 Znáš tyto dostupné akce (použij POUZE tyto, nevymýšlej jiné):
 {actions_str}
 
 Na základě zadaných Business Requirements vygeneruj seznam testovacích scénářů (TC).
 Každý TC musí mít tato pole:
-- nazev: krátký popis scénáře (česky, bez speciálních znaků)
+- nazev: krátký popis scénáře (česky)
 - akce: jedna z dostupných akcí výše (přesný název)
 - priorita: "1-High", "2-Medium" nebo "3-Low"
-- segment: "B2C" nebo "B2B" (odvoď z BR)
-- kanal: "SHOP" nebo "IL" (odvoď z BR)
-- poznamka: krátká poznámka k TC (volitelně)
+- segment: "B2C" nebo "B2B"
+- kanal: "SHOP" nebo "IL"
+- poznamka: krátká poznámka (volitelně)
 
-Odpověz POUZE validním JSON polem, žádný jiný text. Příklad:
-[{{"nazev":"Aktivace DSL B2C","akce":"Aktivace - FIX","priorita":"2-Medium","segment":"B2C","kanal":"SHOP","poznamka":""}}]"""
+Odpověz POUZE validním JSON polem, žádný jiný text.
+Příklad: [{{"nazev":"Aktivace DSL B2C","akce":"Aktivace - FIX","priorita":"2-Medium","segment":"B2C","kanal":"SHOP","poznamka":""}}]"""
+    user = f"Business Requirements:\n\n{br_text}\n\nVygeneruj TC jako JSON pole."
+    return system, user
 
+def _parse_ai_response(raw: str) -> list[dict]:
+    import json as _json
+    raw = raw.strip()
+    # najdi první [ ... ] blok
+    start = raw.find("[")
+    end = raw.rfind("]")
+    if start != -1 and end != -1:
+        raw = raw[start:end+1]
+    result = _json.loads(raw)
+    if isinstance(result, list):
+        return result
+    if isinstance(result, dict) and "test_cases" in result:
+        return result["test_cases"]
+    return []
+
+def generate_tcs_groq(br_text: str, actions: list[str], model: str) -> list[dict]:
+    from groq import Groq
+    system, user = _build_ai_prompt(br_text, actions)
+    try:
+        client = Groq(api_key=_get_groq_key())
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            temperature=0.3,
+            max_tokens=4096,
+        )
+        raw = response.choices[0].message.content
+        return _parse_ai_response(raw)
+    except Exception as e:
+        st.error(f"Chyba Groq API: {e}")
+        return []
+
+def generate_tcs_ollama(br_text: str, actions: list[str], model: str) -> list[dict]:
+    system, user = _build_ai_prompt(br_text, actions)
     payload = {
         "model": model,
-        "prompt": f"Business Requirements:\n\n{br_text}\n\nVygeneruj TC jako JSON pole.",
-        "system": system_prompt,
+        "prompt": user,
+        "system": system,
         "stream": False,
         "format": "json",
     }
     try:
         r = requests.post(f"{OLLAMA_URL}/api/generate", json=payload, timeout=120)
-        raw = r.json().get("response", "[]")
-        import json as _json
-        result = _json.loads(raw)
-        if isinstance(result, list):
-            return result
-        if isinstance(result, dict) and "test_cases" in result:
-            return result["test_cases"]
-        return []
+        return _parse_ai_response(r.json().get("response", "[]"))
     except Exception as e:
-        st.error(f"Chyba při komunikaci s Ollama: {e}")
+        st.error(f"Chyba Ollama: {e}")
         return []
+
+def get_available_ai() -> str:
+    """Vrátí 'groq', 'ollama' nebo 'none'."""
+    if groq_is_available():
+        return "groq"
+    if ollama_is_running():
+        return "ollama"
+    return "none"
 
 
 def save_ui_overrides(effective_steps):
@@ -868,15 +916,18 @@ if selected_tab == "br":
     st.markdown("## 📋 BR Generátor")
     st.markdown("Vložte Business Requirements a AI navrhne testovací scénáře. Scénáře zkontrolujte, upravte a přeneste do projektu.")
 
-    # Ollama status
-    if not ollama_is_running():
-        st.error("⚠️ Ollama není spuštěna. Spusťte ji příkazem: `ollama serve` a poté stáhněte model: `ollama pull mistral`")
-        st.info("Ollama ke stažení: https://ollama.com")
-        st.stop()
+    # Detekce dostupného AI backendu
+    ai_backend = get_available_ai()
 
-    available_models = ollama_list_models()
-    if not available_models:
-        st.warning("Ollama běží, ale nemáte stažený žádný model. Spusťte: `ollama pull mistral`")
+    if ai_backend == "groq":
+        available_models = GROQ_MODELS
+        st.caption("AI: Groq Cloud")
+    elif ai_backend == "ollama":
+        available_models = ollama_list_models()
+        st.caption("AI: Ollama (lokální)")
+    else:
+        st.error("⚠️ Žádné AI není dostupné. Přidejte Groq API klíč do secrets nebo spusťte Ollama lokálně.")
+        st.info("Groq (zdarma): https://console.groq.com | Ollama (lokální): https://ollama.com")
         st.stop()
 
     # Inicializace session state pro BR stránku
@@ -912,7 +963,10 @@ if selected_tab == "br":
             st.session_state.br_text = br_text
             with st.spinner("AI generuje testovací scénáře..."):
                 actions = list(st.session_state.steps_data.keys())
-                tcs = ollama_generate_tcs(br_text, actions, selected_model)
+                if ai_backend == "groq":
+                    tcs = generate_tcs_groq(br_text, actions, selected_model)
+                else:
+                    tcs = generate_tcs_ollama(br_text, actions, selected_model)
             if tcs:
                 st.session_state.br_tcs = tcs
                 st.session_state.br_selected = [True] * len(tcs)
