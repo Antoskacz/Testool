@@ -65,19 +65,28 @@ def _build_authenticator(cfg: dict):
 cfg = _load_config()
 authenticator = _build_authenticator(cfg)
 
-login_result = authenticator.login(location="main")
-if login_result is not None:
-    name, auth_status, username = login_result
-else:
-    name, auth_status, username = None, None, None
+# Podpora starší i novější verze streamlit-authenticator
+try:
+    login_result = authenticator.login(location="main")
+    if isinstance(login_result, tuple) and len(login_result) == 3:
+        name, auth_status, username = login_result
+    else:
+        name = st.session_state.get("name")
+        auth_status = st.session_state.get("authentication_status")
+        username = st.session_state.get("username")
+except Exception:
+    authenticator.login(location="main")
+    name = st.session_state.get("name")
+    auth_status = st.session_state.get("authentication_status")
+    username = st.session_state.get("username")
 
-if auth_status is False:
-    st.error("Nesprávné jméno nebo heslo.")
-    st.stop()
-
-if auth_status is None:
+if auth_status is not True:
     st.title("🧪 Testool")
-    st.info("Přihlaste se výše nebo se zaregistrujte.")
+
+    if auth_status is False:
+        st.error("Nesprávné jméno nebo heslo.")
+    else:
+        st.info("Přihlaste se výše nebo se zaregistrujte.")
 
     with st.expander("Registrace nového uživatele"):
         reg_code = st.text_input("Registrační kód", type="password", key="reg_code")
