@@ -40,18 +40,28 @@ st.set_page_config(
 # ---------- AUTENTIZACE ----------
 _CONFIG_PATH = Path(__file__).resolve().parent / "config.yaml"
 
-_DEFAULT_CONFIG = {
-    "credentials": {"usernames": {}},
-    "cookie": {"expiry_days": 30, "key": "testool_secret_key_2024", "name": "testool_auth"},
-    "registration_code": "testoolantoska",
-}
+def _get_secret(key: str, fallback: str = "") -> str:
+    try:
+        return st.secrets[key]
+    except Exception:
+        return fallback
 
 def _load_config() -> dict:
+    cookie_key = _get_secret("cookie_key", "testool_cookie_key_local")
+    reg_code = _get_secret("registration_code", "")
+    default = {
+        "credentials": {"usernames": {}},
+        "cookie": {"expiry_days": 30, "key": cookie_key, "name": "testool_auth"},
+        "registration_code": reg_code,
+    }
     if not _CONFIG_PATH.exists():
-        _save_config(_DEFAULT_CONFIG)
-        return dict(_DEFAULT_CONFIG)
-    with open(_CONFIG_PATH, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        _save_config(default)
+        return default
+    cfg = yaml.safe_load(_CONFIG_PATH.read_text(encoding="utf-8")) or {}
+    # cookie key vždy ze secrets, ne ze souboru
+    cfg.setdefault("cookie", {})["key"] = cookie_key
+    cfg["registration_code"] = reg_code
+    return cfg
 
 def _save_config(cfg: dict):
     with open(_CONFIG_PATH, "w", encoding="utf-8") as f:

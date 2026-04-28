@@ -7,3 +7,4 @@ config.yaml
 data/users/
 data/backups/
 data/save_debug.log
+.streamlit/secrets.toml
