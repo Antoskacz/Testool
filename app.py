@@ -14,6 +14,7 @@ import yaml
 import streamlit_authenticator as stauth
 import bcrypt
 import user_data
+import supabase_data
 import requests
 
 
@@ -49,19 +50,25 @@ def _get_secret(key: str, fallback: str = "") -> str:
 def _load_config() -> dict:
     cookie_key = _get_secret("cookie_key", "testool_cookie_key_local")
     reg_code = _get_secret("registration_code", "")
-    default = {
-        "credentials": {"usernames": {}},
+    # Pokud je Supabase dostupné, načti credentials z DB
+    if supabase_data.is_available():
+        credentials = supabase_data.get_all_credentials()
+    else:
+        if not _CONFIG_PATH.exists():
+            default = {
+                "credentials": {"usernames": {}},
+                "cookie": {"expiry_days": 30, "key": cookie_key, "name": "testool_auth"},
+                "registration_code": reg_code,
+            }
+            _save_config(default)
+            return default
+        credentials_cfg = yaml.safe_load(_CONFIG_PATH.read_text(encoding="utf-8")) or {}
+        credentials = credentials_cfg.get("credentials", {"usernames": {}})
+    return {
+        "credentials": credentials,
         "cookie": {"expiry_days": 30, "key": cookie_key, "name": "testool_auth"},
         "registration_code": reg_code,
     }
-    if not _CONFIG_PATH.exists():
-        _save_config(default)
-        return default
-    cfg = yaml.safe_load(_CONFIG_PATH.read_text(encoding="utf-8")) or {}
-    # cookie key vždy ze secrets, ne ze souboru
-    cfg.setdefault("cookie", {})["key"] = cookie_key
-    cfg["registration_code"] = reg_code
-    return cfg
 
 def _save_config(cfg: dict):
     with open(_CONFIG_PATH, "w", encoding="utf-8") as f:
@@ -118,15 +125,20 @@ if auth_status is not True:
                 hashed = bcrypt.hashpw(reg_password.encode(), bcrypt.gensalt()).decode()
                 if "usernames" not in cfg["credentials"]:
                     cfg["credentials"]["usernames"] = {}
-                cfg["credentials"]["usernames"][reg_username] = {
-                    "email": "",
-                    "name": reg_name,
-                    "password": hashed,
-                }
-                _save_config(cfg)
-                user_data._ensure_dirs(reg_username)
-                st.success(f"Účet '{reg_username}' byl vytvořen. Přihlaste se výše.")
-                st.rerun()
+                if supabase_data.is_available():
+                    ok = supabase_data.create_user(reg_username, reg_name, hashed)
+                else:
+                    cfg["credentials"]["usernames"][reg_username] = {
+                        "email": "",
+                        "name": reg_name,
+                        "password": hashed,
+                    }
+                    _save_config(cfg)
+                    user_data._ensure_dirs(reg_username)
+                    ok = True
+                if ok:
+                    st.success(f"Účet '{reg_username}' byl vytvořen. Přihlaste se výše.")
+                    st.rerun()
     st.stop()
 
 # ---------- GLOBAL THEME ----------
@@ -375,9 +387,12 @@ def count_git_pending_override_changes(current_custom_data: dict, custom_path: s
 
 
 def save_and_update_projects(data, current_username=None):
-    """Uloží projekty do per-user souboru a aktualizuje session_state"""
+    """Uloží projekty (Supabase nebo lokální soubor) a aktualizuje session_state."""
     uname = current_username or st.session_state.get('_projects_owner', 'default')
-    success = user_data.save_user_projects(uname, data)
+    if supabase_data.is_available():
+        success = supabase_data.save_user_projects(uname, data)
+    else:
+        success = user_data.save_user_projects(uname, data)
     if success:
         st.session_state.projects = copy.deepcopy(data)
         st.session_state[f"projects_{uname}"] = copy.deepcopy(data)
@@ -658,7 +673,10 @@ def render_section_intro(title: str, subtitle: str):
 # ---------- NAČTENÍ DAT (per-user) ----------
 _session_user_key = f"projects_{username}"
 if _session_user_key not in st.session_state:
-    st.session_state[_session_user_key] = user_data.load_user_projects(username)
+    if supabase_data.is_available():
+        st.session_state[_session_user_key] = supabase_data.load_user_projects(username)
+    else:
+        st.session_state[_session_user_key] = user_data.load_user_projects(username)
 
 if 'selected_project' not in st.session_state:
     st.session_state.selected_project = None
