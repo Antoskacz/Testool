@@ -5,4 +5,5 @@ __pycache__/
 exports/*.xlsx
 config.yaml
 data/users/
+data/backups/
 data/save_debug.log

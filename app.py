@@ -404,11 +404,28 @@ def load_effective_steps():
     return load_base_steps()
 
 
+def _backup_kroky():
+    """Uloží timestampovanou zálohu kroky.json do data/backups/, zachová posledních 30."""
+    existing = load_json(KROKY_PATH)
+    if not existing:
+        return
+    backups_dir = DATA_DIR / "backups"
+    backups_dir.mkdir(exist_ok=True)
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    backup_path = backups_dir / f"kroky_{timestamp}.json"
+    save_json(backup_path, dict(sorted(existing.items(), key=lambda kv: kv[0].lower())))
+    # ponechat max 30 záloh, nejstarší smazat
+    all_backups = sorted(backups_dir.glob("kroky_*.json"))
+    for old in all_backups[:-30]:
+        old.unlink(missing_ok=True)
+
+
 def save_ui_overrides(effective_steps):
-    """Uloží akce do kroky.json a automaticky zálohuje do kroky_custom.json."""
+    """Uloží akce do kroky.json, zálohuje předchozí stav (timestamp + kroky_custom.json)."""
     ordered = dict(sorted(effective_steps.items(), key=lambda kv: kv[0].lower()))
 
-    # záloha před zápisem — kroky_custom.json = předchozí stav
+    _backup_kroky()  # timestampovaná záloha před změnou
+    # kroky_custom.json = záloha předchozího stavu (rychlý přístup)
     existing = load_json(KROKY_PATH)
     if existing:
         save_json(KROKY_CUSTOM_PATH, dict(sorted(existing.items(), key=lambda kv: kv[0].lower())))
