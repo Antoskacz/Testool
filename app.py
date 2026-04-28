@@ -9,10 +9,12 @@ import plotly.graph_objects as go  # zobrazeni grafu
 import plotly.express as px        # volitelny
 import re
 from datetime import datetime
+import subprocess
 import yaml
 import streamlit_authenticator as stauth
 import bcrypt
 import user_data
+
 
 # define base directory as the location of this script. This is
 # stable even when Streamlit copies the code to /tmp or the current
@@ -65,7 +67,6 @@ def _build_authenticator(cfg: dict):
 cfg = _load_config()
 authenticator = _build_authenticator(cfg)
 
-# Podpora starší i novější verze streamlit-authenticator
 try:
     login_result = authenticator.login(location="main")
     if isinstance(login_result, tuple) and len(login_result) == 3:
@@ -81,8 +82,6 @@ except Exception:
     username = st.session_state.get("username")
 
 if auth_status is not True:
-    st.title("🧪 Testool")
-
     if auth_status is False:
         st.error("Nesprávné jméno nebo heslo.")
     else:
@@ -119,6 +118,175 @@ if auth_status is not True:
                 st.rerun()
     st.stop()
 
+# ---------- GLOBAL THEME ----------
+st.markdown("""
+<style>
+:root {
+    --bg: #08111f;
+    --bg-2: #0b1730;
+    --panel: rgba(14, 24, 46, 0.88);
+    --panel-strong: rgba(17, 29, 54, 0.96);
+    --border: rgba(107, 152, 255, 0.22);
+    --text: #edf4ff;
+    --muted: #93a7c8;
+    --accent: #3ad7ff;
+    --accent-2: #6b8cff;
+    --pink: #ff1fae;
+}
+
+.stApp {
+    background:
+        radial-gradient(circle at top center, rgba(56, 120, 255, 0.14), transparent 28%),
+        radial-gradient(circle at right top, rgba(255, 0, 170, 0.08), transparent 20%),
+        linear-gradient(180deg, var(--bg) 0%, #06101f 100%);
+    color: var(--text);
+}
+
+.block-container {
+    max-width: 1450px !important;
+    padding-top: 2.0rem !important;
+    padding-bottom: 2rem !important;
+}
+
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, rgba(24,28,43,0.98) 0%, rgba(17,22,37,0.98) 100%);
+    border-right: 1px solid rgba(255,255,255,0.06);
+}
+section[data-testid="stSidebar"] .block-container {
+    padding-top: 1rem !important;
+}
+
+/* keep sidebar toggle visible */
+[data-testid="collapsedControl"] {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+h1, h2, h3 {
+    letter-spacing: -0.02em;
+}
+
+.stTextInput > div > div > input,
+.stTextArea textarea,
+.stSelectbox [data-baseweb="select"] > div,
+.stMultiSelect [data-baseweb="select"] > div {
+    background: rgba(10, 15, 30, 0.85) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text) !important;
+    border-radius: 12px !important;
+}
+
+.stButton > button,
+.stDownloadButton > button,
+button[kind="secondary"] {
+    background: linear-gradient(180deg, rgba(25,36,66,0.95), rgba(17,26,49,0.95)) !important;
+    border: 1px solid rgba(112,156,255,0.36) !important;
+    color: #ebf3ff !important;
+    border-radius: 12px !important;
+    min-height: 44px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+}
+
+.stButton > button:hover,
+.stDownloadButton > button:hover {
+    border-color: rgba(58,215,255,0.55) !important;
+}
+
+.stButton > button[kind="primary"] {
+    background: linear-gradient(90deg, #188dff, #6b5cff) !important;
+    border: none !important;
+}
+
+[data-testid="stMetric"] {
+    background: transparent !important;
+    border: none !important;
+}
+
+[data-testid="stDataFrame"] {
+    background: rgba(17, 23, 41, 0.78) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+}
+
+.streamlit-expanderHeader {
+    background: rgba(17, 23, 41, 0.72) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+}
+
+.tt-header {
+    text-align: center;
+    padding: 2.2rem 0 0.8rem 0;
+}
+.tt-logo {
+    font-size: 3rem;
+    font-weight: 800;
+    color: #3ad7ff;
+    margin: 0;
+}
+.tt-subtitle {
+    color: var(--muted);
+    margin-top: 0.2rem;
+    margin-bottom: 1.2rem;
+}
+.tt-card {
+    background: linear-gradient(180deg, rgba(20, 28, 50, 0.78), rgba(14, 20, 38, 0.9));
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 20px 22px;
+    box-shadow: 0 18px 45px rgba(0,0,0,0.16);
+    margin-bottom: 18px;
+}
+.tt-metric {
+    background: linear-gradient(180deg, rgba(16, 26, 48, 0.88), rgba(10, 18, 36, 0.96));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    min-height: 92px;
+}
+.tt-metric-label {
+    color: #dfe9ff;
+    font-size: 0.92rem;
+    font-weight: 700;
+    margin-bottom: 0.45rem;
+}
+.tt-metric-value {
+    color: #ffffff;
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+}
+.tt-empty {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height: 320px;
+    color: var(--muted);
+    background: linear-gradient(180deg, rgba(13, 20, 38, 0.72), rgba(10, 16, 30, 0.84));
+    border: 1px dashed rgba(111,153,255,0.24);
+    border-radius: 16px;
+    text-align:center;
+    padding: 1rem;
+}
+.tt-note {
+    background: linear-gradient(90deg, rgba(85,95,0,0.55), rgba(70,80,0,0.35));
+    border: 1px solid rgba(189, 200, 70, 0.18);
+    color: #f6f3c7;
+    padding: 0.9rem 1rem;
+    border-radius: 12px;
+    margin: 1rem 0 1.4rem 0;
+}
+.tt-muted { color: var(--muted); }
+hr {
+    border-color: rgba(255,255,255,0.08) !important;
+}
+#MainMenu, footer { visibility: hidden; }
+</style>
+""", unsafe_allow_html=True)
+
 # Debug information to determine where the script is actually running.
 # Streamlit often copies the Python file to /tmp, which makes __file__ and
 # cwd point to a temporary location. We need to know the original workspace
@@ -152,6 +320,68 @@ def save_json(filepath, data):
         st.error(f"Error saving {filepath}: {e}")
         return False
 
+def normalize_override_entry(entry):
+    if entry is None:
+        return None
+    if not isinstance(entry, dict):
+        return entry
+
+    normalized = copy.deepcopy(entry)
+
+    if "description" in normalized and isinstance(normalized["description"], str):
+        normalized["description"] = normalized["description"].strip()
+
+    return normalized
+
+
+def load_json_from_git_head(path_str: str):
+    """
+    Load file content from last git commit (HEAD).
+    If file does not exist in HEAD yet, return {}.
+    """
+    try:
+        repo_root = Path.cwd()
+        rel_path = str(Path(path_str).resolve().relative_to(repo_root.resolve()))
+
+        result = subprocess.run(
+            ["git", "show", f"HEAD:{rel_path}"],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+
+        if result.returncode != 0 or not result.stdout.strip():
+            return {}
+
+        return json.loads(result.stdout)
+
+    except Exception:
+        return {}
+
+
+def count_git_pending_override_changes(current_custom_data: dict, custom_path: str):
+    """
+    Compare current kroky_custom.json with committed version in HEAD.
+    Returns:
+      pending_count,
+      pending_keys
+    """
+    head_custom_data = load_json_from_git_head(custom_path) or {}
+    current_custom_data = current_custom_data or {}
+
+    all_keys = set(head_custom_data.keys()) | set(current_custom_data.keys())
+
+    changed_keys = []
+    for key in sorted(all_keys):
+        head_val = normalize_override_entry(head_custom_data.get(key))
+        current_val = normalize_override_entry(current_custom_data.get(key))
+
+        if head_val != current_val:
+            changed_keys.append(key)
+
+    return len(changed_keys), changed_keys
+
+
 def save_and_update_projects(data, current_username=None):
     """Uloží projekty do per-user souboru a aktualizuje session_state"""
     uname = current_username or st.session_state.get('_projects_owner', 'default')
@@ -161,69 +391,114 @@ def save_and_update_projects(data, current_username=None):
         st.session_state[f"projects_{uname}"] = copy.deepcopy(data)
     return success
 
-def save_and_update_steps(data):
-    """Uloží kroky do souboru a aktualizuje session_state.
+def normalize_action_payload(action_data):
+    """Return canonical action structure."""
+    if isinstance(action_data, dict):
+        return {
+            "description": action_data.get("description", "").strip(),
+            "steps": copy.deepcopy(action_data.get("steps", []))
+        }
+    elif isinstance(action_data, list):
+        return {
+            "description": "",
+            "steps": copy.deepcopy(action_data)
+        }
+    return {"description": "", "steps": []}
 
-    Tries to save to kroky.json first (original file). If that fails,
-    falls back to kroky_custom.json. On startup, both files are loaded
-    and merged so users never lose data.
+
+def action_payload_equal(a, b):
+    return normalize_action_payload(a) == normalize_action_payload(b)
+
+
+def load_base_steps():
+    data = load_json(KROKY_PATH)
+    return data if isinstance(data, dict) else {}
+
+
+def load_custom_overrides():
+    data = load_json(KROKY_CUSTOM_PATH)
+    return data if isinstance(data, dict) else {}
+
+
+def load_effective_steps():
+    """Base kroky.json + overrides from kroky_custom.json"""
+    base_steps = load_base_steps()
+    overrides = load_custom_overrides()
+    effective = copy.deepcopy(base_steps)
+
+    for action_name, override_data in overrides.items():
+        if not isinstance(override_data, dict):
+            continue
+
+        status = override_data.get("_status")
+
+        if status == "deleted":
+            effective.pop(action_name, None)
+        elif status in ("added", "modified"):
+            effective[action_name] = {
+                "description": override_data.get("description", "").strip(),
+                "steps": copy.deepcopy(override_data.get("steps", []))
+            }
+
+    return effective
+
+
+def build_overrides_from_effective(base_steps, effective_steps):
     """
-    # use fixed paths relative to script location; cwd may be /tmp when
-    # Streamlit copies the file for execution, so relying on __file__ keeps
-    # data inside the workspace where it survives restart.
-    kroky_path = KROKY_PATH
-    kroky_custom_path = KROKY_CUSTOM_PATH
+    Compare current effective state with immutable base and produce override-only kroky_custom.json.
+    """
+    overrides = {}
 
-    # sort keys so file is alphabetical
-    ordered = dict(sorted(data.items(), key=lambda kv: kv[0].lower()))
-    
-    # debug: show where files are written
-    print(f"[DEBUG] SAVE_AND_UPDATE: BASE_DIR={BASE_DIR}")
-    print(f"[DEBUG] SAVE_AND_UPDATE: kroky_path={kroky_path}")
-    print(f"[DEBUG] SAVE_AND_UPDATE: kroky_custom_path={kroky_custom_path}")
-    print(f"[DEBUG] SAVE_AND_UPDATE: Attempting to save {len(ordered)} actions to disk")
-    
-    # Try primary file first
-    success = save_json(kroky_path, ordered)
-    saved_to = "kroky.json"
-    
-    # If primary fails, still write to custom file
-    if not success:
-        print(f"[ERROR] SAVE_AND_UPDATE: Failed to save to kroky.json, trying custom...")
-        st.warning(
-            "⚠️ Could not write to kroky.json. "
-            "Saving to kroky_custom.json instead. Your data is safe!"
-        )
-        success = save_json(kroky_custom_path, ordered)
-        saved_to = "kroky_custom.json"
-        # when primary fails we obviously need custom for merge info later
-        if success:
-            print(f"[SUCCESS] SAVE_AND_UPDATE: Successfully saved to kroky_custom.json")
-            st.info(
-                "ℹ️ Next app restart will automatically merge "
-                "kroky_custom.json into kroky.json"
-            )
-        else:
-            print(f"[CRITICAL ERROR] SAVE_AND_UPDATE: Failed to save to both files!")
-    else:
-        print(f"[SUCCESS] SAVE_AND_UPDATE: Successfully saved {len(ordered)} actions to kroky.json")
-        # Primary succeeded – mirror to custom file as backup/log
-        save_json(kroky_custom_path, ordered)
-        saved_to = "both kroky.json and kroky_custom.json"    
+    all_action_names = sorted(set(base_steps.keys()) | set(effective_steps.keys()), key=str.lower)
+
+    for action_name in all_action_names:
+        in_base = action_name in base_steps
+        in_effective = action_name in effective_steps
+
+        if in_base and not in_effective:
+            overrides[action_name] = {"_status": "deleted"}
+            continue
+
+        if not in_base and in_effective:
+            payload = normalize_action_payload(effective_steps[action_name])
+            overrides[action_name] = {
+                "_status": "added",
+                "description": payload["description"],
+                "steps": payload["steps"]
+            }
+            continue
+
+        if in_base and in_effective:
+            base_payload = normalize_action_payload(base_steps[action_name])
+            eff_payload = normalize_action_payload(effective_steps[action_name])
+
+            if base_payload != eff_payload:
+                overrides[action_name] = {
+                    "_status": "modified",
+                    "description": eff_payload["description"],
+                    "steps": eff_payload["steps"]
+                }
+
+    return dict(sorted(overrides.items(), key=lambda kv: kv[0].lower()))
+
+
+def save_ui_overrides(effective_steps):
+    """
+    Save only UI changes to kroky_custom.json.
+    kroky.json remains untouched.
+    """
+    base_steps = load_base_steps()
+    overrides = build_overrides_from_effective(base_steps, effective_steps)
+
+    success = save_json(KROKY_CUSTOM_PATH, overrides)
+
     if success:
-        st.session_state.steps_data = copy.deepcopy(ordered)
-        # Add subtle debug info if in dev mode
-        st.toast(f"✅ Saved to {saved_to}", icon="💾")
+        refreshed_effective = load_effective_steps()
+        st.session_state.steps_data = copy.deepcopy(refreshed_effective)
+        st.session_state.edit_steps_data = copy.deepcopy(refreshed_effective)
+        st.toast("✅ UI overrides saved to kroky_custom.json", icon="💾")
     else:
-        st.error("❌ Failed to save actions. Please contact admin.")
-
-    # write a persistent debug record regardless of streamlit log visibility
-    try:
-        dbg_path = BASE_DIR / "data" / "save_debug.log"
-        with open(dbg_path, "a", encoding="utf-8") as dbg:
-            dbg.write(f"{datetime.now().isoformat()} BASE_DIR={BASE_DIR} kroky={kroky_path} kroky_custom={kroky_custom_path} saved_to={saved_to} success={success}\n")
-    except Exception:
-        pass
+        st.error("❌ Failed to save UI overrides.")
 
     return success
 	
@@ -283,44 +558,25 @@ def extract_technology(text: str) -> str:
     return "UNKNOWN"
 
 def analyze_scenarios(scenarios: list):
-    """Analyze scenarios for tree structure display"""
-    segment_data = {"B2C": {}, "B2B": {}}
-    
+    """Count scenarios by segment -> channel -> action"""
+    segment_data = {"B2C": {"SHOP": {}, "IL": {}}, "B2B": {"SHOP": {}, "IL": {}}}
+
     for scenario in scenarios:
         segment = scenario.get("segment", "UNKNOWN")
         channel = scenario.get("kanal", "UNKNOWN")
-        test_name = scenario.get("test_name", "")
         action = scenario.get("akce", "UNKNOWN")
-        
-        # Detect technology from test name
-        technology = "DSL"
-        tech_keywords = {
-            "FIBER": "FIBER",
-            "FWA_BISI": "FWA BISI", 
-            "FWA_BI": "FWA BI",
-            "CABLE": "CABLE",
-            "HLAS": "HLAS",
-            "DSL": "DSL"
-        }
-        
-        for keyword, tech in tech_keywords.items():
-            if keyword in test_name.upper():
-                technology = tech
-                break
-        
-        # Organize data
+
         if segment not in segment_data:
             segment_data[segment] = {}
-        
+
         if channel not in segment_data[segment]:
             segment_data[segment][channel] = {}
-            
-        if technology not in segment_data[segment][channel]:
-            segment_data[segment][channel][technology] = []
-            
-        if action not in segment_data[segment][channel][technology]:
-            segment_data[segment][channel][technology].append(action)
-    
+
+        if action not in segment_data[segment][channel]:
+            segment_data[segment][channel][action] = 0
+
+        segment_data[segment][channel][action] += 1
+
     return segment_data
 
 def remove_diacritics(text):
@@ -354,9 +610,31 @@ def update_scenarios_with_action_steps(projects_data: dict, steps_data: dict, ac
     
     return updated_count
 
+
+def render_metric_card(title: str, value: int):
+    st.markdown(
+        f"""<div class="tt-metric">
+            <div class="tt-metric-label">{title}</div>
+            <div class="tt-metric-value">{value}</div>
+        </div>""",
+        unsafe_allow_html=True,
+    )
+
+
+def render_empty_panel(message: str, height: int = 320):
+    st.markdown(
+        f"<div class='tt-empty' style='min-height:{height}px'>{message}</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def render_section_intro(title: str, subtitle: str):
+    st.markdown(f"### {title}")
+    st.markdown(f"<div class='tt-muted'>{subtitle}</div>", unsafe_allow_html=True)
+
+
 # ---------- HLAVNÍ APLIKACE ----------
-st.title("🧪 Testool")
-st.markdown("### Professional test case builder and manager")
+# Top nav handles title + tabs, žáden repeating headings zde
 
 # ---------- SIDEBAR ----------
 # paths (BASE_DIR, DATA_DIR, PROJECTS_PATH, KROKY_PATH, KROKY_CUSTOM_PATH)
@@ -383,23 +661,14 @@ if 'projects' not in st.session_state or st.session_state.get('_projects_owner')
     st.session_state.projects = st.session_state[_session_user_key]
     st.session_state['_projects_owner'] = username
 
-# ---------- SIDEBAR ----------
+# Initialize selected tab
+if 'selected_tab' not in st.session_state:
+    st.session_state.selected_tab = 'build'
+
+# ---------- SIDEBAR: LOGO + PROJECT MANAGEMENT ----------
 with st.sidebar:
-    st.title("🧪 Testool")
     st.caption(f"Přihlášen: **{name}** ({username})")
     authenticator.logout("Odhlásit se", location="sidebar")
-    st.markdown("---")
-
-    # Navigation
-    page = st.radio(
-        "Navigation",
-        [
-            "🏗️ Build Test Cases",
-            "🔧 Edit Actions & Steps",
-            "📝 Text Comparator"
-        ]
-    )
-
     st.markdown("---")
     st.subheader("📁 Project")
 
@@ -516,186 +785,186 @@ with st.sidebar:
             st.success(f"Projekt je nyní: {label}")
             st.rerun()
 
+# ---------- MAIN CONTENT: STICKY TOP NAV ----------
+if 'selected_tab' not in st.session_state:
+    st.session_state.selected_tab = 'build'
 
-    # ---------- STRÁNKA 1: BUILD TEST CASES ----------
-if page == "🏗️ Build Test Cases":
-    st.title("🏗️ Build Test Cases")
-    
-    if st.session_state.selected_project is None:
-        st.info("Select or create a project in the sidebar.")
-        st.stop()
-    
+selected_tab = st.session_state.selected_tab
+
+# Top navigation - centered logo without boxed background
+st.markdown("""
+<div class="tt-header">
+    <div class="tt-logo">🧪 Testool</div>
+    <div class="tt-subtitle">Professional test case builder and manager</div>
+</div>
+""", unsafe_allow_html=True)
+
+col_space1, tab_col1, tab_col2, tab_col3, col_space2 = st.columns([1, 1, 1, 1, 1])
+
+with tab_col1:
+    if st.button("Test Cases", use_container_width=True, key="nav_build", type=("primary" if selected_tab == "build" else "secondary")):
+        st.session_state.selected_tab = "build"
+        st.rerun()
+
+with tab_col2:
+    if st.button("Actions & Steps", use_container_width=True, key="nav_edit", type=("primary" if selected_tab == "edit" else "secondary")):
+        st.session_state.selected_tab = "edit"
+        st.rerun()
+
+with tab_col3:
+    if st.button("Text Comparator", use_container_width=True, key="nav_text", type=("primary" if selected_tab == "text" else "secondary")):
+        st.session_state.selected_tab = "text"
+        st.rerun()
+
+st.markdown("""
+<div style="
+    text-align: center;
+    color: #5D6980;
+    font-size: 0.98rem;
+    margin-top: 0.4rem;
+    margin-bottom: 0.1rem;
+">
+    Create test cases and export them to an Excel format ready for direct HPQC upload.
+</div>
+""", unsafe_allow_html=True)
+
+# Content separator
+st.markdown("---")
+
+# ---------- TAB 1: BUILD TEST CASES ----------
+if selected_tab == "build":
     project_name = st.session_state.selected_project
-    project_data = st.session_state.projects[project_name]
-    
-    # ---------- ROW 1: PROJECT OVERVIEW + ANALYSIS ----------
-    col_overview, col_analysis = st.columns([1, 1.5])  # Pravá část (graf) větší
-    
+    if project_name is None:
+        project_data = {"subject": "", "scenarios": [], "next_id": 1}
+        project_exists = False
+    else:
+        project_data = st.session_state.projects[project_name]
+        project_exists = True
+
+    testcases = project_data.get("scenarios", [])
+    testcase_count = len(testcases)
+    b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
+    b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
+
+    if not project_exists:
+        st.markdown("<div class='tt-note'>Select or create a project in the sidebar to work with test cases.</div>", unsafe_allow_html=True)
+
+    col_overview, col_analysis = st.columns([1, 1.15])
+
     with col_overview:
         st.subheader("📊 Project Overview")
-        subject_value = project_data.get('subject', r'UAT2\Antosova\\')
-        st.write(f"**Active Project:** {project_name}")
-        st.write(f"**Subject:** {subject_value}")
-        
-        # Actions by Segment - přesunuto sem
+        display_project_name = project_name if project_name else "— no project selected —"
+        st.write(f"**Active Project:** {display_project_name}")
+        st.write(f"**Subject:** {project_data.get('subject', '')}")
+
         st.markdown("---")
         st.subheader("📋 Actions by Segment")
-        
-        testcases = project_data.get("scenarios", [])
+
         if testcases:
-            # Statistiky pro expandery
-            b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
-            b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
-            
-            # Vytvořit strukturovaná data pro akce
-            segment_data = {"B2C": {}, "B2B": {}}
-            for tc in testcases:
-                segment = tc.get("segment", "UNKNOWN")
-                action = tc.get("akce", "UNKNOWN")
-                
-                if segment in ["B2C", "B2B"]:
-                    if action not in segment_data[segment]:
-                        segment_data[segment][action] = 0
-                    segment_data[segment][action] += 1
-            
-            # Dva expandery vedle sebe
-            col_b2c, col_b2b = st.columns(2)
-            
-            with col_b2c:
-                with st.expander(f"👥 B2C ({b2c_count})", expanded=True):
-                    if segment_data["B2C"]:
-                        # Seřadit akce podle počtu test cases (nejvíc první)
-                        sorted_actions = sorted(
-                            segment_data["B2C"].items(), 
-                            key=lambda x: x[1], 
-                            reverse=True
-                        )
-                        for action, count in sorted_actions:
-                            st.write(f"**{action}:** {count}")
-                    else:
-                        st.write("No test cases")
-            
-            with col_b2b:
-                with st.expander(f"🏢 B2B ({b2b_count})", expanded=True):
-                    if segment_data["B2B"]:
-                        # Seřadit akce podle počtu test cases (nejvíc první)
-                        sorted_actions = sorted(
-                            segment_data["B2B"].items(), 
-                            key=lambda x: x[1], 
-                            reverse=True
-                        )
-                        for action, count in sorted_actions:
-                            st.write(f"**{action}:** {count}")
-                    else:
-                        st.write("No test cases")
+            nested_segment_data = analyze_scenarios(testcases)
+            segment_columns = st.columns(2)
+            segment_config = [
+                ("B2C", "👥", segment_columns[0]),
+                ("B2B", "🏢", segment_columns[1]),
+            ]
+
+            for segment_name, icon, target_col in segment_config:
+                with target_col:
+                    segment_channels = nested_segment_data.get(segment_name, {})
+                    segment_total = sum(
+                        sum(action_map.values())
+                        for action_map in segment_channels.values()
+                    )
+
+                    with st.expander(f"{icon} {segment_name} ({segment_total})", expanded=True):
+                        if not segment_channels:
+                            st.write("No test cases")
+                        else:
+                            for channel_name in ["SHOP", "IL"]:
+                                action_map = segment_channels.get(channel_name, {})
+                                channel_total = sum(action_map.values())
+
+                                st.markdown(f"**{channel_name} ({channel_total})**")
+
+                                if action_map:
+                                    for action, count in sorted(action_map.items(), key=lambda x: (-x[1], x[0])):
+                                        st.write(f"- {action}: {count}")
+                                else:
+                                    st.caption("No test cases")
+
+                                st.markdown("")
         else:
             st.info("No test cases yet")
-    
-    # ----------------------------GRAF---------------------------
+
     with col_analysis:
-        st.markdown("<h3 style='text-align: center;'>📈 Distribution Analysis</h3>", unsafe_allow_html=True)
-        testcases = project_data.get("scenarios", [])
-        
-        if testcases:
-            # Základní statistiky
-            testcase_count = len(testcases)
-            b2c_count = sum(1 for tc in testcases if tc.get("segment") == "B2C")
-            b2b_count = sum(1 for tc in testcases if tc.get("segment") == "B2B")
-            
-            # Vytvoři donut graf s hodnotami uvnitř
-            fig_segment = go.Figure(data=[go.Pie(
-                labels=[f'B2C: {b2c_count}', f'B2B: {b2b_count}'],  # Hodnoty v labelu
-                values=[b2c_count, b2b_count],
-                hole=0.5,  # Větší díra uprostřed
-                marker_colors=["#16FF1EE5", "#FF0084"],  # Zelená a tmavá magenta
-                textinfo='label',  # Zobrazí pouze label s hodnotou
-                textposition='inside',  # Text uvnitř segmentů
-                textfont=dict(size=16, color='white'),
-                hoverinfo='label+percent',
-                hovertemplate='<b>%{label}</b><br>Percentage: %{percent}<extra></extra>',
-                insidetextorientation='horizontal'
+        st.markdown("<h3 style='text-align:center;'>📈 Distribution Analysis</h3>", unsafe_allow_html=True)
+        st.markdown("<div class='tt-muted' style='text-align:center; margin-top:-0.35rem; margin-bottom:0.8rem;'>Distribution by test complexity</div>", unsafe_allow_html=True)
+        if testcase_count > 0:
+            complexity_order = ["1-Giant", "2-Huge", "3-Big", "4-Medium", "5-Low"]
+            complexity_counts = {label: 0 for label in complexity_order}
+            for tc in testcases:
+                value = tc.get("complexity", "UNKNOWN")
+                if value in complexity_counts:
+                    complexity_counts[value] += 1
+                else:
+                    complexity_counts[value] = complexity_counts.get(value, 0) + 1
+
+            filtered_items = [(label, count) for label, count in complexity_counts.items() if count > 0]
+            labels = [label.split('-', 1)[1] if '-' in label else label for label, _ in filtered_items]
+            values = [count for _, count in filtered_items]
+            colors = ["#ff4fbf", "#8b5cf6", "#35d6ff", "#22c55e", "#f59e0b"][:len(values)]
+
+            fig_complexity = go.Figure(data=[go.Pie(
+                labels=labels,
+                values=values,
+                hole=0.58,
+                marker_colors=colors,
+                textinfo='label+value',
+                textposition='inside',
+                textfont=dict(size=14, color='white'),
+                hovertemplate='<b>%{label}</b><br>Count: %{value}<br>Percentage: %{percent}<extra></extra>',
+                sort=False,
+                direction='clockwise'
             )])
-            
-            fig_segment.update_layout(
-                showlegend=False,  # Bez legendy
-                height=400,
-                margin=dict(t=20, b=20, l=20, r=20),
-                annotations=[
-                    dict(
-                        text=f"Total<br>{testcase_count}",
-                        x=0.5, y=0.5,
-                        font_size=24,
-                        showarrow=False,
-                        font=dict(color='#333333', family="Arial Black")
-                    )
-                ]
+            fig_complexity.update_layout(
+                showlegend=True,
+                legend=dict(
+                    orientation='h',
+                    yanchor='bottom',
+                    y=-0.08,
+                    xanchor='center',
+                    x=0.5,
+                    font=dict(color='#dfe9ff', size=12)
+                ),
+                height=420,
+                margin=dict(t=10, b=60, l=10, r=10),
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                annotations=[dict(text=f"<b>Total</b><br>{testcase_count}", x=0.5, y=0.5, font_size=26, showarrow=False, font=dict(color='#dfe9ff'))]
             )
-            
-            st.plotly_chart(fig_segment, use_container_width=True)
-            
+            st.plotly_chart(fig_complexity, use_container_width=True)
         else:
-            # Prázdný graf placeholder
-            fig_empty = go.Figure()
-            fig_empty.update_layout(
-                xaxis=dict(visible=False),
-                yaxis=dict(visible=False),
-                annotations=[
-                    dict(
-                        text="No test cases yet",
-                        x=0.5,
-                        y=0.5,
-                        showarrow=False,
-                        font=dict(size=16)
-                    )
-                ],
-                height=400,
-                margin=dict(t=20, b=20, l=20, r=20)
-            )
-            st.plotly_chart(fig_empty, use_container_width=True)
-
-
-    # ------------------------------------ EXPORT SECTION ------------------------------------
+            render_empty_panel("No test cases yet", height=360)
     st.markdown("---")
     st.markdown("### 💾 Export Test Cases")
     st.write("Generate clean, renumbered & diacritics-free test cases Excel file.")
-
-    col_export, col_future = st.columns([1, 2])
-
-    with col_export:
-        export_button = st.button(
-            "💾 Export Test Cases to Excel",
-            use_container_width=True
-        )
+    export_button = st.button("💾 Export Test Cases to Excel", use_container_width=False, disabled=(not project_exists or not testcases))
 
     if export_button:
-        # 1) Reindex test cases
         project_data = st.session_state.projects[project_name]
-
-        project_data["scenarios"] = sorted(
-            project_data["scenarios"],
-            key=lambda x: x.get("order_no", 0)
-        )
+        project_data["scenarios"] = sorted(project_data["scenarios"], key=lambda x: x.get("order_no", 0))
 
         for i, tc in enumerate(project_data["scenarios"], start=1):
             tc["order_no"] = i
-
             channel = tc["kanal"]
             segment = tc["segment"]
             technology = extract_technology(tc["veta"])
             sentence = tc["veta"].strip()
-
-            prefix = "_".join(
-                p for p in [f"{i:03d}", channel, segment, technology]
-                if p and p != "UNKNOWN"
-            )
-
-            tc["test_name"] = clean_tc_name(
-                f"{prefix}_{sentence.capitalize()}"
-            )
+            prefix = "_".join(p for p in [f"{i:03d}", channel, segment, technology] if p and p != "UNKNOWN")
+            tc["test_name"] = clean_tc_name(f"{prefix}_{sentence.capitalize()}")
 
         save_and_update_projects(st.session_state.projects, username)
 
-        # 2) Build export data
         rows = []
         for tc in project_data["scenarios"]:
             for i, step in enumerate(tc.get("kroky", []), start=1):
@@ -716,7 +985,6 @@ if page == "🏗️ Build Test Cases":
                 })
 
         df = pd.DataFrame(rows)
-
         import io
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine="openpyxl") as writer:
@@ -724,9 +992,7 @@ if page == "🏗️ Build Test Cases":
         output.seek(0)
 
         safe_name = project_name.replace(" ", "_").replace("/", "_").replace("\\", "_")
-
         st.success("Export successful. File is ready for download.")
-
         st.download_button(
             "⬇️ Download Excel file",
             data=output.getvalue(),
@@ -734,13 +1000,8 @@ if page == "🏗️ Build Test Cases":
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=False
         )
-
     st.markdown("---")
-
-
-# ---------- ROW 2: TEST CASES LIST ----------
     st.subheader("📋 Test Cases List")
-    
     if project_data.get("scenarios"):
         df_data = []
         for tc in project_data["scenarios"]:
@@ -754,11 +1015,11 @@ if page == "🏗️ Build Test Cases":
                 "Complexity": tc.get("complexity"),
                 "Steps": len(tc.get("kroky", [])) if "kroky" in tc else 0
             })
-        
+
         df = pd.DataFrame(df_data)
         if not df.empty:
             df = df.sort_values(by="Order", ascending=True)
-        
+
         st.dataframe(
             df,
             use_container_width=True,
@@ -776,30 +1037,28 @@ if page == "🏗️ Build Test Cases":
         )
     else:
         st.info("No test cases yet. Add your first test case below.")
-    
     st.markdown("---")
-
-    
-    # ---------- ROW 3: ADD NEW TEST CASE ----------
     st.subheader("➕ Add New Test Case")
-    
+
+    if not project_exists:
+        st.info("Create a project first to add test cases.")
+        st.stop()
+
     if not st.session_state.steps_data:
         st.error("❌ No actions found! Please add actions in 'Edit Actions & Steps' page first.")
         st.stop()
-    
+
     action_list = sorted(list(st.session_state.steps_data.keys()))
-    
+
     with st.form("add_testcase_form"):
-        sentence = st.text_area("Requirement Sentence", height=100, 
-                              placeholder="e.g.: Activate DSL for B2C via SHOP channel...")
+        sentence = st.text_area("Requirement Sentence", height=100, placeholder="e.g.: Activate DSL for B2C via SHOP channel...")
         action = st.selectbox("Action (from kroky.json)", options=action_list)
-        
-        # Priority, Complexity, Segment, Kanal - 4 columns
+
         PRIORITY_MAP_VALUES = ["1-High", "2-Medium", "3-Low"]
         COMPLEXITY_MAP_VALUES = ["1-Giant", "2-Huge", "3-Big", "4-Medium", "5-Low"]
         SEGMENT_OPTIONS = ["B2C", "B2B"]
         KANAL_OPTIONS = ["SHOP", "IL"]
-        
+
         col_priority, col_complexity, col_segment, col_kanal = st.columns(4)
         with col_priority:
             priority = st.selectbox("Priority", options=PRIORITY_MAP_VALUES, index=1)
@@ -809,32 +1068,20 @@ if page == "🏗️ Build Test Cases":
             segment = st.selectbox("Segment", options=SEGMENT_OPTIONS, index=0)
         with col_kanal:
             kanal = st.selectbox("Kanál", options=KANAL_OPTIONS, index=0)
-        
+
         if st.form_submit_button("➕ Add Test Case"):
             if not sentence.strip():
                 st.error("Requirement sentence cannot be empty.")
             elif not action:
                 st.error("Select an action.")
             else:
-                # Generování test case
                 order = project_data["next_id"]
-                
-                # Build test name
-                # Používáme vybrané hodnoty z dropdownů, ne extrahování z textu
                 technology = extract_technology(sentence)
-
-                # Sestavíme prefix a vyčistíme UNKNOWN části
                 prefix_parts = [f"{order:03d}", kanal, segment, technology]
-                # Filtrujeme UNKNOWN a prázdné hodnoty
                 filtered_parts = [p for p in prefix_parts if p and p != "UNKNOWN"]
                 prefix = "_".join(filtered_parts)
+                test_name = clean_tc_name(f"{prefix}_{sentence.strip().capitalize()}")
 
-                test_name = f"{prefix}_{sentence.strip().capitalize()}"
-
-                # Vyčistíme název
-                test_name = clean_tc_name(test_name)
-                
-                # Get steps for action
                 kroky_pro_akci = []
                 if action in st.session_state.steps_data:
                     action_data = st.session_state.steps_data[action]
@@ -842,7 +1089,7 @@ if page == "🏗️ Build Test Cases":
                         kroky_pro_akci = copy.deepcopy(action_data["steps"])
                     elif isinstance(action_data, list):
                         kroky_pro_akci = copy.deepcopy(action_data)
-                
+
                 new_testcase = {
                     "order_no": order,
                     "test_name": test_name,
@@ -854,116 +1101,59 @@ if page == "🏗️ Build Test Cases":
                     "veta": sentence.strip(),
                     "kroky": kroky_pro_akci
                 }
-                
+
                 project_data["next_id"] += 1
                 project_data["scenarios"].append(new_testcase)
                 save_and_update_projects(st.session_state.projects, username)
                 st.success(f"✅ Test case added: {test_name}")
                 st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    # ---------- ROW 4: EDIT EXISTING TEST CASE ----------
-    # ---------- ROW 4: EDIT EXISTING TEST CASE ----------
-    # no wrapper, styling applied inside expander
     with st.expander("✏️ Edit Existing Test Case", expanded=False):
-    
         if project_data["scenarios"]:
             testcase_options = {f"{tc['order_no']:03d} - {tc['test_name']}": tc for tc in project_data["scenarios"]}
-            selected_testcase_key = st.selectbox(
-                "Select Test Case to Edit",
-                options=list(testcase_options.keys()),
-                index=0,
-                key="edit_testcase_select"
-            )
-            
+            selected_testcase_key = st.selectbox("Select Test Case to Edit", options=list(testcase_options.keys()), index=0, key="edit_testcase_select")
+
             if selected_testcase_key:
                 testcase_to_edit = testcase_options[selected_testcase_key]
-                # Initialize edit sentence only when testcase changes
-                if "edit_sentence_value" not in st.session_state or \
-                st.session_state.get("edit_sentence_tc") != testcase_to_edit["order_no"]:
+                if "edit_sentence_value" not in st.session_state or st.session_state.get("edit_sentence_tc") != testcase_to_edit["order_no"]:
                     st.session_state.edit_sentence_value = testcase_to_edit["veta"]
                     st.session_state.edit_sentence_tc = testcase_to_edit["order_no"]
 
-                
                 with st.form("edit_testcase_form"):
-                    # Zobrazíme aktuální hodnoty
                     st.write(f"**Currently editing:** {testcase_to_edit['test_name']}")
-                    
-                    sentence = st.text_area(
-                        "Requirement Sentence",
-                        value=st.session_state.edit_sentence_value,
-                        height=100,
-                        key=f"edit_sentence_{testcase_to_edit['order_no']}"
-                    )
+                    sentence = st.text_area("Requirement Sentence", value=st.session_state.edit_sentence_value, height=100, key=f"edit_sentence_{testcase_to_edit['order_no']}")
+                    action = st.selectbox("Action (from kroky.json)", options=action_list, index=action_list.index(testcase_to_edit["akce"]) if testcase_to_edit["akce"] in action_list else 0, key="edit_action")
 
-                    
-                    action = st.selectbox(
-                        "Action (from kroky.json)", 
-                        options=action_list,
-                        index=action_list.index(testcase_to_edit["akce"]) if testcase_to_edit["akce"] in action_list else 0,
-                        key="edit_action"
-                    )
-                    
-                    # Priority, Complexity, Segment, Kanal - 4 columns
                     SEGMENT_OPTIONS = ["B2C", "B2B"]
                     KANAL_OPTIONS = ["SHOP", "IL"]
-                    
+
                     col_priority, col_complexity, col_segment, col_kanal = st.columns(4)
                     with col_priority:
-                        priority = st.selectbox(
-                            "Priority", 
-                            options=PRIORITY_MAP_VALUES,
-                            index=PRIORITY_MAP_VALUES.index(testcase_to_edit["priority"]) if testcase_to_edit["priority"] in PRIORITY_MAP_VALUES else 1,
-                            key="edit_priority"
-                        )
+                        priority = st.selectbox("Priority", options=PRIORITY_MAP_VALUES, index=PRIORITY_MAP_VALUES.index(testcase_to_edit["priority"]) if testcase_to_edit["priority"] in PRIORITY_MAP_VALUES else 1, key="edit_priority")
                     with col_complexity:
-                        complexity = st.selectbox(
-                            "Complexity", 
-                            options=COMPLEXITY_MAP_VALUES,
-                            index=COMPLEXITY_MAP_VALUES.index(testcase_to_edit["complexity"]) if testcase_to_edit["complexity"] in COMPLEXITY_MAP_VALUES else 3,
-                            key="edit_complexity"
-                        )
+                        complexity = st.selectbox("Complexity", options=COMPLEXITY_MAP_VALUES, index=COMPLEXITY_MAP_VALUES.index(testcase_to_edit["complexity"]) if testcase_to_edit["complexity"] in COMPLEXITY_MAP_VALUES else 3, key="edit_complexity")
                     with col_segment:
-                        segment = st.selectbox(
-                            "Segment",
-                            options=SEGMENT_OPTIONS,
-                            index=SEGMENT_OPTIONS.index(testcase_to_edit["segment"]) if testcase_to_edit["segment"] in SEGMENT_OPTIONS else 0,
-                            key="edit_segment"
-                        )
+                        segment = st.selectbox("Segment", options=SEGMENT_OPTIONS, index=SEGMENT_OPTIONS.index(testcase_to_edit["segment"]) if testcase_to_edit["segment"] in SEGMENT_OPTIONS else 0, key="edit_segment")
                     with col_kanal:
-                        kanal = st.selectbox(
-                            "Kanál",
-                            options=KANAL_OPTIONS,
-                            index=KANAL_OPTIONS.index(testcase_to_edit["kanal"]) if testcase_to_edit["kanal"] in KANAL_OPTIONS else 0,
-                            key="edit_kanal"
-                        )
-                    
+                        kanal = st.selectbox("Kanál", options=KANAL_OPTIONS, index=KANAL_OPTIONS.index(testcase_to_edit["kanal"]) if testcase_to_edit["kanal"] in KANAL_OPTIONS else 0, key="edit_kanal")
+
                     if st.form_submit_button("💾 Save Changes"):
                         if not sentence.strip():
                             st.error("Requirement sentence cannot be empty.")
                         elif not action:
                             st.error("Select an action.")
                         else:
-                            # Re-generate test name with updated values
                             order = testcase_to_edit["order_no"]
-                            
-                            # Build test name - Používáme vybrané hodnoty z dropdownů
                             technology = extract_technology(sentence)
-                            
-                            # Sestavíme prefix a vyčistíme UNKNOWN části
                             prefix_parts = [f"{order:03d}", kanal, segment, technology]
-                            # Filtrujeme UNKNOWN a prázdné hodnoty
                             filtered_parts = [p for p in prefix_parts if p and p != "UNKNOWN"]
                             prefix = "_".join(filtered_parts)
-                            
-                            # Ošetříme případ duplicitních podtržítek v prefixu
                             while '__' in prefix:
                                 prefix = prefix.replace('__', '_')
                             prefix = prefix.strip('_')
-                            
-                            new_test_name = f"{prefix}_{sentence.strip().capitalize()}"
-                            new_test_name = clean_tc_name(new_test_name)
-                            
-                            # Get steps for the new action
+                            new_test_name = clean_tc_name(f"{prefix}_{sentence.strip().capitalize()}")
+
                             kroky_pro_akci = []
                             if action in st.session_state.steps_data:
                                 action_data = st.session_state.steps_data[action]
@@ -973,8 +1163,6 @@ if page == "🏗️ Build Test Cases":
                                     kroky_pro_akci = copy.deepcopy(action_data)
 
                             st.session_state.edit_sentence_value = sentence.strip()
-
-                            # Update the test case
                             testcase_to_edit.update({
                                 "test_name": new_test_name,
                                 "akce": action,
@@ -985,67 +1173,43 @@ if page == "🏗️ Build Test Cases":
                                 "veta": sentence.strip(),
                                 "kroky": kroky_pro_akci
                             })
-                            
+
                             save_and_update_projects(st.session_state.projects, username)
                             st.success(f"✅ Test case updated: {new_test_name}")
                             st.rerun()
         else:
             st.info("No test cases available to edit. Add a test case first.")
 
-    # ---------- ROW 5: DELETE TEST CASE ----------
     with st.expander("🗑️ Delete Test Case", expanded=False):
-    
         if project_data["scenarios"]:
             delete_options = [f"{tc['order_no']:03d} - {tc['test_name']}" for tc in project_data["scenarios"]]
-            testcase_to_delete = st.selectbox(
-                "Select Test Case to Delete",
-                options=delete_options,
-                index=0,
-                key="delete_testcase_select"
-            )
-            
-            if st.button("⚠️ Delete Selected Test Case", type="secondary"):
-                # Najdeme index test case k smazání
-                index_to_delete = delete_options.index(testcase_to_delete)
-                
-                # Odstraníme
-                deleted_tc = project_data["scenarios"].pop(index_to_delete)
+            testcase_to_delete = st.selectbox("Select Test Case to Delete", options=delete_options, index=0, key="delete_testcase_select")
 
-                # Přečíslujeme všechny zbývající test case tak, aby šly za sebou od 1
+            if st.button("⚠️ Delete Selected Test Case", type="secondary"):
+                index_to_delete = delete_options.index(testcase_to_delete)
+                deleted_tc = project_data["scenarios"].pop(index_to_delete)
                 for idx, tc in enumerate(project_data["scenarios"], start=1):
                     tc["order_no"] = idx
-                    # Také aktualizujeme test_name aby odrážel nové pořadové číslo
-                    # Nahradíme původní 3-místné číslo na začátku (XXX_) novým
                     if tc["test_name"].startswith(f"{idx-1:03d}_"):
-                        # Pokud se číslo změnilo, aktualizuj ho
                         tc["test_name"] = f"{idx:03d}_" + tc["test_name"][4:]
                     elif "_" in tc["test_name"]:
-                        # Fallback: pokud format není očekávaný, zkus najít a nahradit 3-místné číslo
                         parts = tc["test_name"].split("_", 1)
                         if len(parts[0]) == 3 and parts[0].isdigit():
                             tc["test_name"] = f"{idx:03d}_" + parts[1]
 
-                # Aktualizujeme next_id tak, aby nový TC dostal další pořadové číslo
                 project_data["next_id"] = len(project_data["scenarios"]) + 1
-
-                # Uložíme
                 save_and_update_projects(st.session_state.projects, username)
                 st.success(f"🗑️ Test case deleted: {deleted_tc['test_name']}")
                 st.rerun()
         else:
             st.info("No test cases available to delete.")
-    # end delete expander
-            
 
-# ---------- STRÁNKA 2: EDIT ACTIONS & STEPS ----------
-elif page == "🔧 Edit Actions & Steps":
-    st.title("🔧 Edit Actions & Steps")
+# ---------- TAB 2: EDIT ACTIONS & STEPS ----------
+if selected_tab == "edit":
+    # 🔧 Edit Actions & Steps
     
     # Load current data from disk to ensure we always have the latest
-    disk_steps = load_json(KROKY_PATH)
-    custom_steps = load_json(KROKY_CUSTOM_PATH)
-    if custom_steps:
-        disk_steps.update(custom_steps)
+    disk_steps = load_effective_steps()
     
     # Initialize edit_steps_data: combine disk data with any session state data
     # This handles the case where session_state was reset on F5 refresh
@@ -1069,38 +1233,42 @@ elif page == "🔧 Edit Actions & Steps":
     if "editing_action" not in st.session_state:
         st.session_state.editing_action = None
 
-    # layout top row: left shows counts+action list, right has small commit button
-    # main row: left panel action list, tiny separator, right panel commit + counts
-    left, sep, right = st.columns([3, 0.05, 2])
     
     # Calculate correct counts: disk = what's in kroky.json, non-committed = what's in memory but NOT on disk
-    disk_data = load_json(KROKY_PATH)
-    
-    # IMPORTANT: Convert to dict keys sets properly
-    disk_action_names = set(disk_data.keys()) if disk_data else set()
-    mem_action_names = set(st.session_state.edit_steps_data.keys()) if st.session_state.edit_steps_data else set()
-    
-    # Actions that are in memory but NOT on disk are non-committed
-    non_committed = mem_action_names - disk_action_names
-    
-    disk_count = len(disk_action_names)
-    mem_count = len(non_committed)
-    
-    # DEBUG: Log what we see
-    print(f"[DEBUG] EDIT_ACTIONS_PAGE disk_data keys ({disk_count}): {sorted(disk_action_names)}")
-    print(f"[DEBUG] EDIT_ACTIONS_PAGE edit_steps_data keys: {sorted(mem_action_names)}")
-    print(f"[DEBUG] EDIT_ACTIONS_PAGE non_committed ({mem_count}): {non_committed}")
-    
+    left, sep, right = st.columns([3, 0.05, 2])
+
+    base_steps = load_base_steps()
+    current_custom_overrides = load_custom_overrides()
+
+    base_count = len(base_steps)
+    custom_count = len(current_custom_overrides)
+
+    pending_count, pending_keys = count_git_pending_override_changes(
+        current_custom_overrides,
+        KROKY_CUSTOM_PATH
+    )
+
+    print(f"[DEBUG] EDIT_ACTIONS_PAGE base_count: {base_count}")
+    print(f"[DEBUG] EDIT_ACTIONS_PAGE custom_count: {custom_count}")
+    print(f"[DEBUG] EDIT_ACTIONS_PAGE pending_count: {pending_count}")
+    print(f"[DEBUG] EDIT_ACTIONS_PAGE pending_keys: {pending_keys}")
+
+
     with left:
-        st.text_area("All actions:", value="\n".join(sorted(st.session_state.edit_steps_data.keys())), height=150, disabled=True)
+        st.text_area(
+            "All actions:",
+            value="\n".join(sorted(st.session_state.edit_steps_data.keys())),
+            height=150,
+            disabled=True
+        )
+
     with sep:
         st.markdown("<div style='border-left:1px solid gray;height:100%'></div>", unsafe_allow_html=True)
+
     with right:
-        st.write(f"**Actions in kroky.json:** {disk_count}")
-        st.write(f"**Non committed actions:** {mem_count}")
-        if st.button("💾 Commit", help="Save current in‑memory list to disk", use_container_width=True):
-            save_and_update_steps(st.session_state.edit_steps_data)
-            st.success("All actions pushed to file")
+        st.write(f"**Actions in kroky.json:** {base_count}")
+        st.write(f"**Actions in kroky_custom.json:** {custom_count}")
+        st.write(f"**Pending changes:** {pending_count}")
     
     # the initialization and controls above already handle everything;
     # drop the duplicated commit/count/debugging section to keep UI clean.
@@ -1188,9 +1356,9 @@ elif page == "🔧 Edit Actions & Steps":
                         }
                         # CRITICAL: Save to disk BEFORE st.rerun()
                         # This ensures data persists even if session_state resets
-                        save_and_update_steps(st.session_state.edit_steps_data)
+                        save_ui_overrides(st.session_state.edit_steps_data)
                         
-                        st.success(f"✅ Action '{action_name}' saved!")
+                        st.success(f"✅ Action '{action_name}' saved to UI overrides!")
                         st.session_state.new_action = False
                         st.session_state.new_steps = []
                         st.rerun()
@@ -1250,7 +1418,7 @@ elif page == "🔧 Edit Actions & Steps":
                         # Remove action from kroky.json
                         del st.session_state.edit_steps_data[action]
                         # use helper to persist steps data
-                        save_and_update_steps(st.session_state.edit_steps_data)
+                        save_ui_overrides(st.session_state.edit_steps_data)
                         
                         # Clear steps from all affected scenarios
                         for project_data in st.session_state.projects.values():
@@ -1260,7 +1428,7 @@ elif page == "🔧 Edit Actions & Steps":
                                         scenario["kroky"] = []
                         save_and_update_projects(st.session_state.projects, username)
                         
-                        st.success(f"✅ Action '{action}' deleted from kroky.json!")
+                        st.success(f"✅ Action '{action}' updated in UI overrides!")
                         if affected_count > 0:
                             st.info(f"📊 Cleared steps from {affected_count} test case(s)")
                         st.session_state.delete_action = None
@@ -1349,13 +1517,13 @@ elif page == "🔧 Edit Actions & Steps":
                             "steps": st.session_state[f"edit_steps_{action}"].copy()
                         }
                         # helper updates file and session_state
-                        save_and_update_steps(st.session_state.edit_steps_data)
+                        save_ui_overrides(st.session_state.edit_steps_data)
                         
                         # 🔄 Propagate changes to all scenarios using this action
                         updated = update_scenarios_with_action_steps(st.session_state.projects, st.session_state.steps_data, action)
                         save_and_update_projects(st.session_state.projects, username)
                         
-                        st.success(f"✅ Action '{action}' updated in kroky.json!")
+                        st.success(f"✅ Action '{action}' deleted from UI overrides!")
                         if updated > 0:
                             st.info(f"📊 Updated {updated} test case(s) with new steps")
                         
@@ -1371,15 +1539,15 @@ elif page == "🔧 Edit Actions & Steps":
                         del st.session_state[f"edit_steps_{action}"]
                     st.rerun()
 
-# ---------- STRÁNKA 3: TEXT COMPARATOR ----------
-elif page == "📝 Text Comparator":
-    st.title("📝 Text Comparator")
+# ---------- TAB 3: TEXT COMPARATOR ----------
+if selected_tab == "text":
+    # 📝 Text Comparator
     st.markdown("Compare two texts with highlighted differences")
     
-    if 'text1_input' not in st.session_state:
-        st.session_state.text1_input = ""
-    if 'text2_input' not in st.session_state:
-        st.session_state.text2_input = ""
+    if 'text1_area' not in st.session_state:
+        st.session_state.text1_area = ""
+    if 'text2_area' not in st.session_state:
+        st.session_state.text2_area = ""
     
     col1, col2 = st.columns(2)
     
@@ -1389,7 +1557,7 @@ elif page == "📝 Text Comparator":
             "Enter first text:", 
             height=300, 
             key="text1_area",
-            value=st.session_state.text1_input,
+            value=st.session_state.text1_area,
             help="Enter or paste your first text here"
         )
     
@@ -1399,7 +1567,7 @@ elif page == "📝 Text Comparator":
             "Enter second text:", 
             height=300, 
             key="text2_area",
-            value=st.session_state.text2_input,
+            value=st.session_state.text2_area,
             help="Enter or paste your second text here"
         )
     
@@ -1407,31 +1575,42 @@ elif page == "📝 Text Comparator":
     
     # Create buttons in a row
     col_buttons = st.columns([1, 1, 1, 4])
-    
+
+    def remove_diacritics_action():
+        st.session_state.text1_area = remove_diacritics(st.session_state.get('text1_area', ''))
+        st.session_state.text2_area = remove_diacritics(st.session_state.get('text2_area', ''))
+        st.session_state.comparator_message = '✅ Diacritics removed from both texts'
+
+    def reset_action():
+        st.session_state.text1_area = ''
+        st.session_state.text2_area = ''
+        st.session_state.comparator_message = '✅ Texts cleared'
+
     with col_buttons[0]:
         compare_btn = st.button("🔍 **Compare**", use_container_width=True, type="primary", help="Compare texts and highlight differences")
-    
+
     with col_buttons[1]:
-        diacritics_btn = st.button("❌ **Remove Diacritics**", use_container_width=True, help="Remove all accents, háčky and čárky from both texts")
-    
+        diacritics_btn = st.button(
+            "❌ **Remove Diacritics**", 
+            use_container_width=True,
+            help="Remove all accents, háčky and čárky from both texts",
+            on_click=remove_diacritics_action
+        )
+
     with col_buttons[2]:
-        reset_btn = st.button("🔄 **Reset**", use_container_width=True, help="Clear both text fields")
-    
-    # Button actions
-    if diacritics_btn:
-        if text1 or text2:
-            st.session_state.text1_input = remove_diacritics(text1)
-            st.session_state.text2_input = remove_diacritics(text2)
-            st.success("✅ Diacritics removed from both texts")
-            st.rerun()
-        else:
-            st.warning("Enter text in at least one field to remove diacritics")
-    
-    if reset_btn:
-        st.session_state.text1_input = ""
-        st.session_state.text2_input = ""
-        st.success("✅ Texts cleared")
-        st.rerun()
+        reset_btn = st.button(
+            "🔄 **Reset**", 
+            use_container_width=True,
+            help="Clear both text fields",
+            on_click=reset_action
+        )
+
+    if 'comparator_message' not in st.session_state:
+        st.session_state.comparator_message = ''
+
+    if st.session_state.comparator_message:
+        st.success(st.session_state.comparator_message)
+        st.session_state.comparator_message = ''
     
     if compare_btn:
         if text1.strip() and text2.strip():
@@ -1449,30 +1628,43 @@ elif page == "📝 Text Comparator":
             st.markdown("---")
             st.subheader("🔍 Character-by-Character Differences")
             
-            def highlight_differences(text1, text2):
-                result = ""
-                i, j = 0, 0
-                
-                while i < len(text1) and j < len(text2):
-                    if text1[i] == text2[j]:
-                        result += text1[i]
-                        i += 1
-                        j += 1
+            def format_segment(text: str, start: int, end: int, highlight: bool):
+                segment = text[start:end]
+                if not segment:
+                    return ""
+                if not highlight:
+                    return segment
+
+                displayed = ''.join('␣' if ch == ' ' else ch for ch in segment)
+                return f'<span style="background-color: #ff4444; color: white; font-weight: bold; padding: 1px 3px; border-radius: 3px;">{displayed}</span>'
+
+            def highlight_differences(text1: str, text2: str, side: str) -> str:
+                sm = difflib.SequenceMatcher(None, text1, text2)
+                html = ''
+
+                for tag, i1, i2, j1, j2 in sm.get_opcodes():
+                    if side == 'left':
+                        if tag == 'equal':
+                            html += format_segment(text1, i1, i2, False)
+                        elif tag in ('replace', 'delete'):
+                            html += format_segment(text1, i1, i2, True)
+                        elif tag == 'insert':
+                            # text1 has no chars for the inserted block from text2
+                            # we still keep the alignment meaning by showing nothing here
+                            pass
                     else:
-                        char_display = text1[i] if text1[i] != ' ' else '␣'
-                        result += f'<span style="background-color: #ff4444; color: white; font-weight: bold; padding: 1px 3px; border-radius: 3px;">{char_display}</span>'
-                        i += 1
-                        j += 1
-                
-                while i < len(text1):
-                    char_display = text1[i] if text1[i] != ' ' else '␣'
-                    result += f'<span style="background-color: #ff4444; color: white; font-weight: bold; padding: 1px 3px; border-radius: 3px;">{char_display}</span>'
-                    i += 1
-                
-                return result
-            
-            highlighted1 = highlight_differences(text1, text2)
-            highlighted2 = highlight_differences(text2, text1)
+                        if tag == 'equal':
+                            html += format_segment(text2, j1, j2, False)
+                        elif tag in ('replace', 'insert'):
+                            html += format_segment(text2, j1, j2, True)
+                        elif tag == 'delete':
+                            # text2 has no chars for the deleted block from text1
+                            pass
+
+                return html
+
+            highlighted1 = highlight_differences(text1, text2, 'left')
+            highlighted2 = highlight_differences(text1, text2, 'right')
             
             col_diff1, col_diff2 = st.columns(2)
             
@@ -1506,17 +1698,10 @@ elif page == "📝 Text Comparator":
                     unsafe_allow_html=True
                 )
             
-            matches = 0
-            total = min(len(text1), len(text2))
-            
-            for i in range(total):
-                if text1[i] == text2[i]:
-                    matches += 1
-            
-            if total > 0:
-                similarity = (matches / total) * 100
-            else:
-                similarity = 0
+            sm = difflib.SequenceMatcher(None, text1, text2)
+            matches = sum(block.size for block in sm.get_matching_blocks())
+            total = max(len(text1), len(text2)) if max(len(text1), len(text2)) > 0 else 1
+            similarity = sm.ratio() * 100
             
             st.markdown("---")
             st.subheader("📈 Similarity Analysis")
