@@ -9,6 +9,10 @@ import plotly.graph_objects as go  # zobrazeni grafu
 import plotly.express as px        # volitelny
 import re
 from datetime import datetime
+import yaml
+import streamlit_authenticator as stauth
+import bcrypt
+import user_data
 
 # define base directory as the location of this script. This is
 # stable even when Streamlit copies the code to /tmp or the current
@@ -29,6 +33,73 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# ---------- AUTENTIZACE ----------
+_CONFIG_PATH = Path(__file__).resolve().parent / "config.yaml"
+
+def _load_config() -> dict:
+    with open(_CONFIG_PATH, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+def _save_config(cfg: dict):
+    with open(_CONFIG_PATH, "w", encoding="utf-8") as f:
+        yaml.dump(cfg, f, allow_unicode=True, default_flow_style=False)
+
+def _build_authenticator(cfg: dict):
+    return stauth.Authenticate(
+        cfg["credentials"],
+        cfg["cookie"]["name"],
+        cfg["cookie"]["key"],
+        cfg["cookie"]["expiry_days"],
+    )
+
+cfg = _load_config()
+authenticator = _build_authenticator(cfg)
+
+login_result = authenticator.login(location="main")
+if login_result is not None:
+    name, auth_status, username = login_result
+else:
+    name, auth_status, username = None, None, None
+
+if auth_status is False:
+    st.error("Nesprávné jméno nebo heslo.")
+    st.stop()
+
+if auth_status is None:
+    st.title("🧪 Testool")
+    st.info("Přihlaste se výše nebo se zaregistrujte.")
+
+    with st.expander("Registrace nového uživatele"):
+        reg_code = st.text_input("Registrační kód", type="password", key="reg_code")
+        reg_username = st.text_input("Uživatelské jméno", key="reg_username")
+        reg_name = st.text_input("Zobrazované jméno", key="reg_name")
+        reg_password = st.text_input("Heslo", type="password", key="reg_password")
+        reg_password2 = st.text_input("Heslo znovu", type="password", key="reg_password2")
+
+        if st.button("Zaregistrovat se"):
+            if reg_code != cfg.get("registration_code", ""):
+                st.error("Nesprávný registrační kód.")
+            elif not reg_username or not reg_name or not reg_password:
+                st.error("Vyplňte všechna pole.")
+            elif reg_password != reg_password2:
+                st.error("Hesla se neshodují.")
+            elif reg_username in cfg["credentials"].get("usernames", {}):
+                st.error("Toto uživatelské jméno je již obsazeno.")
+            else:
+                hashed = bcrypt.hashpw(reg_password.encode(), bcrypt.gensalt()).decode()
+                if "usernames" not in cfg["credentials"]:
+                    cfg["credentials"]["usernames"] = {}
+                cfg["credentials"]["usernames"][reg_username] = {
+                    "email": "",
+                    "name": reg_name,
+                    "password": hashed,
+                }
+                _save_config(cfg)
+                user_data._ensure_dirs(reg_username)
+                st.success(f"Účet '{reg_username}' byl vytvořen. Přihlaste se výše.")
+                st.rerun()
+    st.stop()
 
 # Debug information to determine where the script is actually running.
 # Streamlit often copies the Python file to /tmp, which makes __file__ and
@@ -63,14 +134,13 @@ def save_json(filepath, data):
         st.error(f"Error saving {filepath}: {e}")
         return False
 
-def save_and_update_projects(data):
-    """Uloží projekty do souboru a aktualizuje session_state"""
-    # use fixed workspace path; not cwd, because Streamlit may run
-    # from a temp directory
-    projects_path = PROJECTS_PATH
-    success = save_json(projects_path, data)
+def save_and_update_projects(data, current_username=None):
+    """Uloží projekty do per-user souboru a aktualizuje session_state"""
+    uname = current_username or st.session_state.get('_projects_owner', 'default')
+    success = user_data.save_user_projects(uname, data)
     if success:
         st.session_state.projects = copy.deepcopy(data)
+        st.session_state[f"projects_{uname}"] = copy.deepcopy(data)
     return success
 
 def save_and_update_steps(data):
@@ -280,45 +350,26 @@ st.markdown("### Professional test case builder and manager")
 
 # (DATA_DIR already created by module-level code.)
 
-# Načtení dat
-projects = load_json(PROJECTS_PATH)
-steps_data = load_json(KROKY_PATH)
-
-# Load custom actions (fallback file) and merge them with primary
-custom_steps = load_json(KROKY_CUSTOM_PATH)
-if custom_steps:
-    # Merge custom actions into primary
-    steps_data.update(custom_steps)
-    # optionally log that we found custom actions
-
-
-# Zajistíme, aby se prázdné soubory inicializovaly s minimem dat
-if not projects or projects == {}:
-    projects = {}
-    save_json(PROJECTS_PATH, projects)
-
-if not steps_data or steps_data == {}:
-    steps_data = {}
-    save_json(KROKY_PATH, steps_data)
-
-# Session state initialization:
-# IMPORTANT: We initialize ONLY on first run (no 'in st.session_state'),
-# and then PRESERVE the in-memory copy across st.rerun() calls.
-# This allows temporary changes (new actions) to persist within the session
-# until the app is fully restarted.
-if 'projects' not in st.session_state:
-    st.session_state.projects = copy.deepcopy(projects)
+# ---------- NAČTENÍ DAT (per-user) ----------
+_session_user_key = f"projects_{username}"
+if _session_user_key not in st.session_state:
+    st.session_state[_session_user_key] = user_data.load_user_projects(username)
 
 if 'selected_project' not in st.session_state:
     st.session_state.selected_project = None
 
 if 'steps_data' not in st.session_state:
-    st.session_state.steps_data = copy.deepcopy(steps_data)
-    print(f"[DEBUG] INIT: steps_data first initialization from disk")
+    st.session_state.steps_data = user_data.load_kroky()
+
+if 'projects' not in st.session_state or st.session_state.get('_projects_owner') != username:
+    st.session_state.projects = st.session_state[_session_user_key]
+    st.session_state['_projects_owner'] = username
 
 # ---------- SIDEBAR ----------
 with st.sidebar:
     st.title("🧪 Testool")
+    st.caption(f"Přihlášen: **{name}** ({username})")
+    authenticator.logout("Odhlásit se", location="sidebar")
     st.markdown("---")
 
     # Navigation
@@ -352,7 +403,7 @@ with st.sidebar:
                     "subject": r"UAT2\Antosova\\",
                     "scenarios": []
                 }
-                save_and_update_projects(st.session_state.projects)
+                save_and_update_projects(st.session_state.projects, username)
                 st.session_state.selected_project = new_project
                 st.success("Project created.")
                 st.rerun()
@@ -382,7 +433,7 @@ with st.sidebar:
             else:
                 st.session_state.projects[new_name] = st.session_state.projects[current_project]
                 del st.session_state.projects[current_project]
-                save_and_update_projects(st.session_state.projects)
+                save_and_update_projects(st.session_state.projects, username)
                 st.session_state.selected_project = new_name
                 st.success("Project renamed.")
                 st.rerun()
@@ -401,7 +452,7 @@ with st.sidebar:
             with col_yes:
                 if st.button("Yes, delete", use_container_width=True):
                     del st.session_state.projects[current_project]
-                    save_and_update_projects(st.session_state.projects)
+                    save_and_update_projects(st.session_state.projects, username)
                     st.session_state.selected_project = None
                     st.session_state.project_to_delete = None
                     st.success("Project deleted.")
@@ -423,14 +474,29 @@ with st.sidebar:
         with col_save:
             if st.button("💾 Save subject", use_container_width=True):
                 st.session_state.projects[current_project]["subject"] = subject_input.strip()
-                save_and_update_projects(st.session_state.projects)
+                save_and_update_projects(st.session_state.projects, username)
                 st.success("Subject updated.")
 
         with col_delete:
             if st.button("🧹 Delete subject", use_container_width=True):
                 st.session_state.projects[current_project]["subject"] = ""
-                save_and_update_projects(st.session_state.projects)
+                save_and_update_projects(st.session_state.projects, username)
                 st.success("Subject cleared.")
+
+        st.markdown("---")
+        st.subheader("🔒 Viditelnost projektu")
+        is_public = st.session_state.projects[current_project].get("is_public", False)
+        new_visibility = st.toggle(
+            "Sdílený (viditelný pro tým)",
+            value=is_public,
+            key="visibility_toggle"
+        )
+        if new_visibility != is_public:
+            st.session_state.projects[current_project]["is_public"] = new_visibility
+            save_and_update_projects(st.session_state.projects, username)
+            label = "Sdílený" if new_visibility else "Soukromý"
+            st.success(f"Projekt je nyní: {label}")
+            st.rerun()
 
 
     # ---------- STRÁNKA 1: BUILD TEST CASES ----------
@@ -609,7 +675,7 @@ if page == "🏗️ Build Test Cases":
                 f"{prefix}_{sentence.capitalize()}"
             )
 
-        save_and_update_projects(st.session_state.projects)
+        save_and_update_projects(st.session_state.projects, username)
 
         # 2) Build export data
         rows = []
@@ -773,7 +839,7 @@ if page == "🏗️ Build Test Cases":
                 
                 project_data["next_id"] += 1
                 project_data["scenarios"].append(new_testcase)
-                save_and_update_projects(st.session_state.projects)
+                save_and_update_projects(st.session_state.projects, username)
                 st.success(f"✅ Test case added: {test_name}")
                 st.rerun()
 
@@ -902,7 +968,7 @@ if page == "🏗️ Build Test Cases":
                                 "kroky": kroky_pro_akci
                             })
                             
-                            save_and_update_projects(st.session_state.projects)
+                            save_and_update_projects(st.session_state.projects, username)
                             st.success(f"✅ Test case updated: {new_test_name}")
                             st.rerun()
         else:
@@ -945,7 +1011,7 @@ if page == "🏗️ Build Test Cases":
                 project_data["next_id"] = len(project_data["scenarios"]) + 1
 
                 # Uložíme
-                save_and_update_projects(st.session_state.projects)
+                save_and_update_projects(st.session_state.projects, username)
                 st.success(f"🗑️ Test case deleted: {deleted_tc['test_name']}")
                 st.rerun()
         else:
@@ -1174,7 +1240,7 @@ elif page == "🔧 Edit Actions & Steps":
                                 for scenario in project_data["scenarios"]:
                                     if scenario.get("akce") == action:
                                         scenario["kroky"] = []
-                        save_and_update_projects(st.session_state.projects)
+                        save_and_update_projects(st.session_state.projects, username)
                         
                         st.success(f"✅ Action '{action}' deleted from kroky.json!")
                         if affected_count > 0:
@@ -1269,7 +1335,7 @@ elif page == "🔧 Edit Actions & Steps":
                         
                         # 🔄 Propagate changes to all scenarios using this action
                         updated = update_scenarios_with_action_steps(st.session_state.projects, st.session_state.steps_data, action)
-                        save_and_update_projects(st.session_state.projects)
+                        save_and_update_projects(st.session_state.projects, username)
                         
                         st.success(f"✅ Action '{action}' updated in kroky.json!")
                         if updated > 0:
