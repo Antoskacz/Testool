@@ -360,26 +360,7 @@ def load_json_from_git_head(path_str: str):
 
 
 def count_git_pending_override_changes(current_custom_data: dict, custom_path: str):
-    """
-    Compare current kroky_custom.json with committed version in HEAD.
-    Returns:
-      pending_count,
-      pending_keys
-    """
-    head_custom_data = load_json_from_git_head(custom_path) or {}
-    current_custom_data = current_custom_data or {}
-
-    all_keys = set(head_custom_data.keys()) | set(current_custom_data.keys())
-
-    changed_keys = []
-    for key in sorted(all_keys):
-        head_val = normalize_override_entry(head_custom_data.get(key))
-        current_val = normalize_override_entry(current_custom_data.get(key))
-
-        if head_val != current_val:
-            changed_keys.append(key)
-
-    return len(changed_keys), changed_keys
+    return 0, []
 
 
 def save_and_update_projects(data, current_username=None):
@@ -416,89 +397,24 @@ def load_base_steps():
 
 
 def load_custom_overrides():
-    data = load_json(KROKY_CUSTOM_PATH)
-    return data if isinstance(data, dict) else {}
+    return {}
 
 
 def load_effective_steps():
-    """Base kroky.json + overrides from kroky_custom.json"""
-    base_steps = load_base_steps()
-    overrides = load_custom_overrides()
-    effective = copy.deepcopy(base_steps)
-
-    for action_name, override_data in overrides.items():
-        if not isinstance(override_data, dict):
-            continue
-
-        status = override_data.get("_status")
-
-        if status == "deleted":
-            effective.pop(action_name, None)
-        elif status in ("added", "modified"):
-            effective[action_name] = {
-                "description": override_data.get("description", "").strip(),
-                "steps": copy.deepcopy(override_data.get("steps", []))
-            }
-
-    return effective
-
-
-def build_overrides_from_effective(base_steps, effective_steps):
-    """
-    Compare current effective state with immutable base and produce override-only kroky_custom.json.
-    """
-    overrides = {}
-
-    all_action_names = sorted(set(base_steps.keys()) | set(effective_steps.keys()), key=str.lower)
-
-    for action_name in all_action_names:
-        in_base = action_name in base_steps
-        in_effective = action_name in effective_steps
-
-        if in_base and not in_effective:
-            overrides[action_name] = {"_status": "deleted"}
-            continue
-
-        if not in_base and in_effective:
-            payload = normalize_action_payload(effective_steps[action_name])
-            overrides[action_name] = {
-                "_status": "added",
-                "description": payload["description"],
-                "steps": payload["steps"]
-            }
-            continue
-
-        if in_base and in_effective:
-            base_payload = normalize_action_payload(base_steps[action_name])
-            eff_payload = normalize_action_payload(effective_steps[action_name])
-
-            if base_payload != eff_payload:
-                overrides[action_name] = {
-                    "_status": "modified",
-                    "description": eff_payload["description"],
-                    "steps": eff_payload["steps"]
-                }
-
-    return dict(sorted(overrides.items(), key=lambda kv: kv[0].lower()))
+    return load_base_steps()
 
 
 def save_ui_overrides(effective_steps):
-    """
-    Save only UI changes to kroky_custom.json.
-    kroky.json remains untouched.
-    """
-    base_steps = load_base_steps()
-    overrides = build_overrides_from_effective(base_steps, effective_steps)
-
-    success = save_json(KROKY_CUSTOM_PATH, overrides)
+    """Uloží akce přímo do kroky.json."""
+    ordered = dict(sorted(effective_steps.items(), key=lambda kv: kv[0].lower()))
+    success = save_json(KROKY_PATH, ordered)
 
     if success:
-        refreshed_effective = load_effective_steps()
-        st.session_state.steps_data = copy.deepcopy(refreshed_effective)
-        st.session_state.edit_steps_data = copy.deepcopy(refreshed_effective)
-        st.toast("✅ UI overrides saved to kroky_custom.json", icon="💾")
+        st.session_state.steps_data = copy.deepcopy(ordered)
+        st.session_state.edit_steps_data = copy.deepcopy(ordered)
+        st.toast("✅ Akce uloženy do kroky.json", icon="💾")
     else:
-        st.error("❌ Failed to save UI overrides.")
+        st.error("❌ Nepodařilo se uložit akce.")
 
     return success
 	
@@ -1237,22 +1153,7 @@ if selected_tab == "edit":
     # Calculate correct counts: disk = what's in kroky.json, non-committed = what's in memory but NOT on disk
     left, sep, right = st.columns([3, 0.05, 2])
 
-    base_steps = load_base_steps()
-    current_custom_overrides = load_custom_overrides()
-
-    base_count = len(base_steps)
-    custom_count = len(current_custom_overrides)
-
-    pending_count, pending_keys = count_git_pending_override_changes(
-        current_custom_overrides,
-        KROKY_CUSTOM_PATH
-    )
-
-    print(f"[DEBUG] EDIT_ACTIONS_PAGE base_count: {base_count}")
-    print(f"[DEBUG] EDIT_ACTIONS_PAGE custom_count: {custom_count}")
-    print(f"[DEBUG] EDIT_ACTIONS_PAGE pending_count: {pending_count}")
-    print(f"[DEBUG] EDIT_ACTIONS_PAGE pending_keys: {pending_keys}")
-
+    base_count = len(st.session_state.edit_steps_data)
 
     with left:
         st.text_area(
@@ -1266,9 +1167,7 @@ if selected_tab == "edit":
         st.markdown("<div style='border-left:1px solid gray;height:100%'></div>", unsafe_allow_html=True)
 
     with right:
-        st.write(f"**Actions in kroky.json:** {base_count}")
-        st.write(f"**Actions in kroky_custom.json:** {custom_count}")
-        st.write(f"**Pending changes:** {pending_count}")
+        st.write(f"**Celkem akcí:** {base_count}")
     
     # the initialization and controls above already handle everything;
     # drop the duplicated commit/count/debugging section to keep UI clean.
