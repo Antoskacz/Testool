@@ -10,6 +10,7 @@ import plotly.express as px        # volitelny
 import re
 from datetime import datetime
 import subprocess
+import time
 import yaml
 import streamlit_authenticator as stauth
 import bcrypt
@@ -81,6 +82,20 @@ def _build_authenticator(cfg: dict):
         cfg["cookie"]["key"],
         cfg["cookie"]["expiry_days"],
     )
+
+# Kontrola dostupnosti databáze při startu
+if supabase_data.is_available():
+    _db_ok = False
+    with st.spinner("Připojuji se k databázi..."):
+        for _ in range(3):
+            if supabase_data.ping():
+                _db_ok = True
+                break
+            time.sleep(5)
+    if not _db_ok:
+        st.error("Databáze není dostupná — Supabase projekt je pravděpodobně pozastaven.")
+        st.info("Jdi na supabase.com/dashboard a klikni **Resume project**, poté obnov stránku.")
+        st.stop()
 
 cfg = _load_config()
 authenticator = _build_authenticator(cfg)

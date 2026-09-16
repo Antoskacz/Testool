@@ -4,6 +4,7 @@ Používá se automaticky když jsou dostupné Supabase credentials v st.secrets
 """
 import json
 import copy
+from datetime import datetime, timezone
 import streamlit as st
 from supabase import create_client, Client
 
@@ -27,6 +28,18 @@ def get_client() -> Client | None:
 
 def is_available() -> bool:
     return get_client() is not None
+
+
+def ping() -> bool:
+    """Ověří, zda databáze odpovídá (pro detekci pauzy)."""
+    c = get_client()
+    if not c:
+        return False
+    try:
+        c.table("users").select("username").limit(1).execute()
+        return True
+    except Exception:
+        return False
 
 
 # ---------- USERS ----------
@@ -102,7 +115,7 @@ def save_user_projects(username: str, projects: dict) -> bool:
                 "project_name": project_name,
                 "project_data": data,
                 "is_public": is_public,
-                "updated_at": "now()",
+                "updated_at": datetime.now(timezone.utc).isoformat(),
             }, on_conflict="username,project_name").execute()
 
         # Smazat projekty které již v dict nejsou
