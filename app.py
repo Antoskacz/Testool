@@ -739,7 +739,10 @@ def render_section_intro(title: str, subtitle: str):
 
 # ---------- NAČTENÍ DAT (per-user) ----------
 _session_user_key = f"projects_{username}"
-if _session_user_key not in st.session_state:
+_switching_user = st.session_state.get('_projects_owner') not in (None, username)
+
+# Načíst vlastní projekty z DB: při prvním přihlášení nebo při přepnutí uživatele
+if _session_user_key not in st.session_state or _switching_user:
     if supabase_data.is_available():
         st.session_state[_session_user_key] = supabase_data.load_user_projects(username)
     else:
@@ -751,7 +754,7 @@ if 'selected_project' not in st.session_state:
 if 'steps_data' not in st.session_state:
     st.session_state.steps_data = user_data.load_kroky()
 
-if 'projects' not in st.session_state or st.session_state.get('_projects_owner') != username:
+if 'projects' not in st.session_state or _switching_user:
     st.session_state.projects = copy.deepcopy(st.session_state[_session_user_key])
     st.session_state['_projects_owner'] = username
     st.session_state.selected_project = None
@@ -887,7 +890,7 @@ with st.sidebar:
             new_visibility = st.toggle(
                 "Sdílený (viditelný pro tým)",
                 value=is_public,
-                key="visibility_toggle"
+                key=f"visibility_toggle_{current_project}"
             )
             if new_visibility != is_public:
                 st.session_state.projects[current_project]["is_public"] = new_visibility
