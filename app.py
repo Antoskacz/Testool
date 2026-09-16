@@ -466,6 +466,15 @@ def _backup_kroky():
 OLLAMA_URL = "http://localhost:11434"
 GROQ_MODELS = ["llama-3.3-70b-versatile", "gemma2-9b-it", "llama3-70b-8192"]
 
+_GROQ_MODEL_PRIORITY = [
+    "llama-3.3-70b-versatile",
+    "llama-3.1-70b-versatile",
+    "llama3-70b-8192",
+    "llama-3.1-8b-instant",
+    "gemma2-9b-it",
+    "mixtral-8x7b-32768",
+]
+
 def groq_list_models() -> list[str]:
     """Načte aktuálně dostupné modely z Groq API."""
     try:
@@ -476,6 +485,15 @@ def groq_list_models() -> list[str]:
         return ids if ids else GROQ_MODELS
     except Exception:
         return GROQ_MODELS
+
+def groq_best_model() -> str:
+    """Vybere nejlepší dostupný Groq model podle priority."""
+    available = set(groq_list_models())
+    for preferred in _GROQ_MODEL_PRIORITY:
+        if preferred in available:
+            return preferred
+    all_models = groq_list_models()
+    return all_models[0] if all_models else _GROQ_MODEL_PRIORITY[0]
 
 def _get_groq_key() -> str:
     try:
@@ -506,18 +524,25 @@ def _build_ai_prompt(br_text: str, actions: list[str]) -> tuple[str, str]:
 Znáš tyto dostupné akce (použij POUZE tyto, nevymýšlej jiné):
 {actions_str}
 
-Na základě zadaných Business Requirements vygeneruj seznam testovacích scénářů (TC).
-Každý TC musí mít tato pole:
-- nazev: krátký popis scénáře (česky)
-- akce: jedna z dostupných akcí výše (přesný název)
+Na základě Business Requirements vygeneruj KOMPLEXNÍ seznam testovacích scénářů.
+Přemýšlej důkladně — pokryj různé kombinace a situace:
+- Segmenty B2C i B2B (pokud BR zahrnuje oba, jinak jen relevantní)
+- Kanály SHOP i IL (pokud BR zahrnuje oba, jinak jen relevantní)
+- Pozitivní scénáře (co má fungovat) i negativní (co se nesmí stát)
+- Různé priority: kritické kroky (1-High), standardní průchody (2-Medium), okrajové případy (3-Low)
+- Minimálně 5 TC, klidně i více pro komplexní BR
+
+Každý TC musí mít:
+- nazev: výstižný popis scénáře česky (co se testuje a za jakých podmínek)
+- akce: přesný název akce ze seznamu výše
 - priorita: "1-High", "2-Medium" nebo "3-Low"
 - segment: "B2C" nebo "B2B"
 - kanal: "SHOP" nebo "IL"
-- poznamka: krátká poznámka (volitelně)
+- poznamka: krátká poznámka k účelu scénáře nebo prázdný string
 
 Odpověz POUZE validním JSON polem, žádný jiný text.
-Příklad: [{{"nazev":"Aktivace DSL B2C","akce":"Aktivace - FIX","priorita":"2-Medium","segment":"B2C","kanal":"SHOP","poznamka":""}}]"""
-    user = f"Business Requirements:\n\n{br_text}\n\nVygeneruj TC jako JSON pole."
+Příklad: [{{"nazev":"Aktivace DSL B2C přes SHOP — základní průchod","akce":"Aktivace - FIX","priorita":"1-High","segment":"B2C","kanal":"SHOP","poznamka":"Ověřit celý flow od objednávky po aktivaci"}}]"""
+    user = f"Business Requirements:\n\n{br_text}\n\nVygeneruj komplexní seznam TC jako JSON pole. Zahrň minimálně 5 scénářů pokrývajících různé kombinace a situace."
     return system, user
 
 def _parse_ai_response(raw: str) -> list[dict]:
@@ -964,11 +989,12 @@ if selected_tab == "br":
     ai_backend = get_available_ai()
 
     if ai_backend == "groq":
-        available_models = groq_list_models()
-        st.caption("AI: Groq Cloud")
+        selected_model = groq_best_model()
+        st.caption(f"AI: Groq Cloud — model: `{selected_model}`")
     elif ai_backend == "ollama":
         available_models = ollama_list_models()
-        st.caption("AI: Ollama (lokální)")
+        selected_model = available_models[0] if available_models else ""
+        st.caption(f"AI: Ollama (lokální) — model: `{selected_model}`")
     else:
         st.error("⚠️ Žádné AI není dostupné. Přidejte Groq API klíč do secrets nebo spusťte Ollama lokálně.")
         st.info("Groq (zdarma): https://console.groq.com | Ollama (lokální): https://ollama.com")
@@ -984,21 +1010,15 @@ if selected_tab == "br":
     if "br_editing" not in st.session_state:
         st.session_state.br_editing = None
 
-    col_input, col_settings = st.columns([3, 1])
+    br_text = st.text_area(
+        "Business Requirements",
+        value=st.session_state.br_text,
+        height=220,
+        placeholder="Vložte sem text Business Requirements...\n\nNapř.: Zákazník B2C chce aktivovat DSL službu přes SHOP kanál. Požadujeme otestovat aktivaci včetně VAS služeb a kontrolu dostupnosti.",
+        key="br_text_input"
+    )
 
-    with col_input:
-        br_text = st.text_area(
-            "Business Requirements",
-            value=st.session_state.br_text,
-            height=220,
-            placeholder="Vložte sem text Business Requirements...\n\nNapř.: Zákazník B2C chce aktivovat DSL službu přes SHOP kanál. Požadujeme otestovat aktivaci včetně VAS služeb a kontrolu dostupnosti.",
-            key="br_text_input"
-        )
-
-    with col_settings:
-        selected_model = st.selectbox("AI Model", options=available_models, key="br_model")
-        st.markdown("<br>", unsafe_allow_html=True)
-        generate_btn = st.button("🔍 Analyzovat", use_container_width=True, type="primary", key="br_generate")
+    generate_btn = st.button("🔍 Analyzovat a navrhnout scénáře", use_container_width=True, type="primary", key="br_generate")
 
     if generate_btn:
         if not br_text.strip():
