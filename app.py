@@ -466,6 +466,17 @@ def _backup_kroky():
 OLLAMA_URL = "http://localhost:11434"
 GROQ_MODELS = ["llama-3.3-70b-versatile", "gemma2-9b-it", "llama3-70b-8192"]
 
+def groq_list_models() -> list[str]:
+    """Načte aktuálně dostupné modely z Groq API."""
+    try:
+        from groq import Groq
+        client = Groq(api_key=_get_groq_key())
+        models = client.models.list()
+        ids = sorted([m.id for m in models.data if "whisper" not in m.id.lower()])
+        return ids if ids else GROQ_MODELS
+    except Exception:
+        return GROQ_MODELS
+
 def _get_groq_key() -> str:
     try:
         return st.secrets.get("groq_api_key", "")
@@ -953,7 +964,7 @@ if selected_tab == "br":
     ai_backend = get_available_ai()
 
     if ai_backend == "groq":
-        available_models = GROQ_MODELS
+        available_models = groq_list_models()
         st.caption("AI: Groq Cloud")
     elif ai_backend == "ollama":
         available_models = ollama_list_models()
