@@ -750,6 +750,7 @@ if 'steps_data' not in st.session_state:
 if 'projects' not in st.session_state or st.session_state.get('_projects_owner') != username:
     st.session_state.projects = st.session_state[_session_user_key]
     st.session_state['_projects_owner'] = username
+    st.session_state.selected_project = None
 
 # Initialize selected tab
 if 'selected_tab' not in st.session_state:
