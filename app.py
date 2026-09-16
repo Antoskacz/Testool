@@ -518,104 +518,50 @@ def ollama_list_models() -> list[str]:
     except Exception:
         return []
 
-def _build_ai_prompt(br_text: str, actions: list[str]) -> tuple[str, str]:
-    actions_str = "\n".join(f"- {a}" for a in sorted(actions))
-    system = f"""Jsi expert na UAT testování systému Siebel CZ pro telekomunikační společnost.
+_BR_SYSTEM_PROMPT = """Jsi expert na UAT testování systému Siebel CZ pro telekomunikační společnost.
+Na základě Business Requirements navrhni co je třeba otestovat.
+Odpovídej v češtině, strukturovaně, přehledně.
 
-DOSTUPNÉ AKCE (použij výhradně tyto — přesně jak jsou napsány, ani slovo jinak):
-{actions_str}
+Zahrň:
+- Hlavní průchody (co musí fungovat — kritické scénáře)
+- Negativní scénáře (co se nesmí stát, chybové stavy)
+- Okrajové případy (méně obvyklé situace)
+- Pokud BR zahrnuje více segmentů (B2C/B2B) nebo kanálů (SHOP/IL), uveď scénáře pro každý
+- Stručně naznač prioritu (Kritické / Standardní / Okrajové)
 
-PRAVIDLA:
-1. Pole "akce" musí obsahovat PŘESNÝ název z výše uvedeného seznamu — zkopíruj ho doslova.
-2. Nikdy nevymýšlej nové názvy akcí. Pokud pro scénář neexistuje přesná akce, vyber nejbližší z dostupných.
-3. Vygeneruj KOMPLEXNÍ pokrytí — přemýšlej co vše je třeba otestovat:
-   - Segmenty: B2C i B2B (pokud BR zahrnuje oba)
-   - Kanály: SHOP i IL (pokud BR zahrnuje oba)
-   - Pozitivní scénáře (co má fungovat) i negativní (chybové stavy, nevalidní vstupy)
-   - Priority: 1-High pro kritické průchody, 2-Medium pro standardní, 3-Low pro okrajové případy
-   - Minimálně 5 TC, ideálně více pro komplexní BR
+Výstup: přehledný seznam s nadpisy a odrážkami. Žádný JSON, žádný kód."""
 
-Každý TC musí mít tato pole:
-- nazev: výstižný popis česky (co se testuje a za jakých podmínek)
-- akce: PŘESNÝ název z dostupných akcí (zkopíruj doslova)
-- priorita: "1-High", "2-Medium" nebo "3-Low"
-- segment: "B2C" nebo "B2B"
-- kanal: "SHOP" nebo "IL"
-- poznamka: krátká poznámka nebo prázdný string
-
-Odpověz POUZE validním JSON polem, žádný jiný text."""
-    user = f"Business Requirements:\n\n{br_text}\n\nVygeneruj komplexní JSON pole TC. Minimálně 5 scénářů. Pole 'akce' musí být vždy přesný název z dostupných akcí."
-    return system, user
-
-def _normalize_str(s: str) -> str:
-    """Odstraní diakritiku a převede na lowercase pro porovnávání."""
-    normalized = unicodedata.normalize('NFKD', s)
-    return ''.join(c for c in normalized if not unicodedata.combining(c)).lower().strip()
-
-def _find_closest_action(action_name: str, valid_actions: set) -> str | None:
-    """Najde nejbližší platnou akci — exact match, pak normalizovaný match."""
-    if action_name in valid_actions:
-        return action_name
-    norm_input = _normalize_str(action_name)
-    for valid in valid_actions:
-        if _normalize_str(valid) == norm_input:
-            return valid
-    # Částečná shoda jako poslední záchrana
-    for valid in valid_actions:
-        if _normalize_str(valid) in norm_input or norm_input in _normalize_str(valid):
-            return valid
-    return None
-
-def _parse_ai_response(raw: str) -> list[dict]:
-    import json as _json
-    raw = raw.strip()
-    # najdi první [ ... ] blok
-    start = raw.find("[")
-    end = raw.rfind("]")
-    if start != -1 and end != -1:
-        raw = raw[start:end+1]
-    result = _json.loads(raw)
-    if isinstance(result, list):
-        return result
-    if isinstance(result, dict) and "test_cases" in result:
-        return result["test_cases"]
-    return []
-
-def generate_tcs_groq(br_text: str, actions: list[str], model: str) -> list[dict]:
+def analyze_br_groq(br_text: str, model: str) -> str:
+    """Vrátí textovou analýzu BR co otestovat."""
     from groq import Groq
-    system, user = _build_ai_prompt(br_text, actions)
     try:
         client = Groq(api_key=_get_groq_key())
         response = client.chat.completions.create(
             model=model,
             messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
+                {"role": "system", "content": _BR_SYSTEM_PROMPT},
+                {"role": "user", "content": f"Business Requirements:\n\n{br_text}"},
             ],
-            temperature=0.3,
-            max_tokens=4096,
+            temperature=0.4,
+            max_tokens=2048,
         )
-        raw = response.choices[0].message.content
-        return _parse_ai_response(raw)
+        return response.choices[0].message.content
     except Exception as e:
-        st.error(f"Chyba Groq API: {e}")
-        return []
+        return f"Chyba Groq API: {e}"
 
-def generate_tcs_ollama(br_text: str, actions: list[str], model: str) -> list[dict]:
-    system, user = _build_ai_prompt(br_text, actions)
+def analyze_br_ollama(br_text: str, model: str) -> str:
+    """Vrátí textovou analýzu BR co otestovat (Ollama)."""
     payload = {
         "model": model,
-        "prompt": user,
-        "system": system,
+        "prompt": f"Business Requirements:\n\n{br_text}",
+        "system": _BR_SYSTEM_PROMPT,
         "stream": False,
-        "format": "json",
     }
     try:
         r = requests.post(f"{OLLAMA_URL}/api/generate", json=payload, timeout=120)
-        return _parse_ai_response(r.json().get("response", "[]"))
+        return r.json().get("response", "Chyba: prázdná odpověď.")
     except Exception as e:
-        st.error(f"Chyba Ollama: {e}")
-        return []
+        return f"Chyba Ollama: {e}"
 
 def get_available_ai() -> str:
     """Vrátí 'groq', 'ollama' nebo 'none'."""
@@ -967,7 +913,7 @@ st.markdown("""
 col_space1, tab_br, tab_col1, tab_col2, tab_col3, col_space2 = st.columns([0.5, 1, 1, 1, 1, 0.5])
 
 with tab_br:
-    if st.button("BR Generátor", use_container_width=True, key="nav_br", type=("primary" if selected_tab == "br" else "secondary")):
+    if st.button("BR Analyzátor", use_container_width=True, key="nav_br", type=("primary" if selected_tab == "br" else "secondary")):
         st.session_state.selected_tab = "br"
         st.rerun()
 
@@ -1001,12 +947,11 @@ st.markdown("""
 # Content separator
 st.markdown("---")
 
-# ---------- TAB 0: BR GENERÁTOR ----------
+# ---------- TAB 0: BR ANALYZÁTOR ----------
 if selected_tab == "br":
-    st.markdown("## 📋 BR Generátor")
-    st.markdown("Vložte Business Requirements a AI navrhne testovací scénáře. Scénáře zkontrolujte, upravte a přeneste do projektu.")
+    st.markdown("## 📋 BR Analyzátor")
+    st.markdown("Vložte Business Requirements a AI navrhne co je třeba otestovat.")
 
-    # Detekce dostupného AI backendu
     ai_backend = get_available_ai()
 
     if ai_backend == "groq":
@@ -1021,15 +966,10 @@ if selected_tab == "br":
         st.info("Groq (zdarma): https://console.groq.com | Ollama (lokální): https://ollama.com")
         st.stop()
 
-    # Inicializace session state pro BR stránku
     if "br_text" not in st.session_state:
         st.session_state.br_text = ""
-    if "br_tcs" not in st.session_state:
-        st.session_state.br_tcs = []
-    if "br_selected" not in st.session_state:
-        st.session_state.br_selected = []
-    if "br_editing" not in st.session_state:
-        st.session_state.br_editing = None
+    if "br_analysis" not in st.session_state:
+        st.session_state.br_analysis = ""
 
     br_text = st.text_area(
         "Business Requirements",
@@ -1039,155 +979,25 @@ if selected_tab == "br":
         key="br_text_input"
     )
 
-    generate_btn = st.button("🔍 Analyzovat a navrhnout scénáře", use_container_width=True, type="primary", key="br_generate")
-
-    if generate_btn:
+    if st.button("🔍 Analyzovat", use_container_width=True, type="primary", key="br_analyze"):
         if not br_text.strip():
             st.warning("Vložte nejdříve text BR.")
         else:
             st.session_state.br_text = br_text
-            with st.spinner("AI analyzuje a navrhuje scénáře..."):
-                actions = list(st.session_state.steps_data.keys())
-                valid_actions = set(actions)
+            st.session_state.br_analysis = ""
+            with st.spinner("AI analyzuje BR..."):
                 if ai_backend == "groq":
-                    tcs = generate_tcs_groq(br_text, actions, selected_model)
+                    result = analyze_br_groq(br_text, selected_model)
                 else:
-                    tcs = generate_tcs_ollama(br_text, actions, selected_model)
-            if tcs:
-                # Opravit akce — spárovat s nejbližší platnou
-                fixed = 0
-                dropped = 0
-                result_tcs = []
-                for tc in tcs:
-                    closest = _find_closest_action(tc.get("akce", ""), valid_actions)
-                    if closest:
-                        if closest != tc.get("akce"):
-                            tc["akce"] = closest
-                            fixed += 1
-                        result_tcs.append(tc)
-                    else:
-                        dropped += 1
-                st.session_state.br_tcs = result_tcs
-                st.session_state.br_selected = [True] * len(result_tcs)
-                st.session_state.br_editing = None
-                if result_tcs:
-                    msg = f"Navrženo {len(result_tcs)} scénářů."
-                    if fixed:
-                        msg += f" ({fixed} akcí automaticky opraveno.)"
-                    if dropped:
-                        msg += f" ({dropped} TC bez platné akce odebráno.)"
-                    st.success(msg)
-                else:
-                    st.error("AI nevrátila scénáře s platnými akcemi. Zkontrolujte Actions & Steps.")
-            else:
-                st.error("AI nevrátila žádné scénáře. Zkuste znovu nebo upravte text BR.")
+                    result = analyze_br_ollama(br_text, selected_model)
+            st.session_state.br_analysis = result
 
-    # Tabulka vygenerovaných TC
-    if st.session_state.br_tcs:
+    if st.session_state.br_analysis:
         st.markdown("---")
-        st.markdown("### Navržené testovací scénáře")
-        st.caption("Zaškrtněte TC které chcete přenést, upravte nebo smažte nevhodné.")
-
-        available_actions = sorted(st.session_state.steps_data.keys())
-        priorities = ["1-High", "2-Medium", "3-Low"]
-        segments = ["B2C", "B2B", "UNKNOWN"]
-        kanaly = ["SHOP", "IL", "UNKNOWN"]
-
-        to_delete = None
-
-        for i, tc in enumerate(st.session_state.br_tcs):
-            is_editing = st.session_state.br_editing == i
-
-            col_chk, col_name, col_akce, col_prio, col_seg, col_kan, col_edit, col_del = st.columns([0.5, 3, 2, 1.5, 1, 1, 0.5, 0.5])
-
-            with col_chk:
-                checked = st.checkbox("", value=st.session_state.br_selected[i], key=f"br_chk_{i}", label_visibility="collapsed")
-                st.session_state.br_selected[i] = checked
-
-            if is_editing:
-                with col_name:
-                    tc["nazev"] = st.text_input("Název", value=tc.get("nazev", ""), key=f"br_nazev_{i}", label_visibility="collapsed")
-                with col_akce:
-                    idx_akce = available_actions.index(tc.get("akce", "")) if tc.get("akce") in available_actions else 0
-                    tc["akce"] = st.selectbox("Akce", options=available_actions, index=idx_akce, key=f"br_akce_{i}", label_visibility="collapsed")
-                with col_prio:
-                    idx_prio = priorities.index(tc.get("priorita", "2-Medium")) if tc.get("priorita") in priorities else 1
-                    tc["priorita"] = st.selectbox("Priorita", options=priorities, index=idx_prio, key=f"br_prio_{i}", label_visibility="collapsed")
-                with col_seg:
-                    idx_seg = segments.index(tc.get("segment", "B2C")) if tc.get("segment") in segments else 0
-                    tc["segment"] = st.selectbox("Seg", options=segments, index=idx_seg, key=f"br_seg_{i}", label_visibility="collapsed")
-                with col_kan:
-                    idx_kan = kanaly.index(tc.get("kanal", "SHOP")) if tc.get("kanal") in kanaly else 0
-                    tc["kanal"] = st.selectbox("Kanál", options=kanaly, index=idx_kan, key=f"br_kan_{i}", label_visibility="collapsed")
-                with col_edit:
-                    if st.button("✅", key=f"br_save_{i}", help="Uložit úpravy"):
-                        st.session_state.br_editing = None
-                        st.rerun()
-            else:
-                with col_name:
-                    st.write(tc.get("nazev", "—"))
-                with col_akce:
-                    st.write(tc.get("akce", "—"))
-                with col_prio:
-                    st.write(tc.get("priorita", "—"))
-                with col_seg:
-                    st.write(tc.get("segment", "—"))
-                with col_kan:
-                    st.write(tc.get("kanal", "—"))
-                with col_edit:
-                    if st.button("✏️", key=f"br_edit_{i}", help="Upravit"):
-                        st.session_state.br_editing = i
-                        st.rerun()
-
-            with col_del:
-                if st.button("✗", key=f"br_del_{i}", help="Smazat"):
-                    to_delete = i
-
-        if to_delete is not None:
-            st.session_state.br_tcs.pop(to_delete)
-            st.session_state.br_selected.pop(to_delete)
-            st.session_state.br_editing = None
-            st.rerun()
-
+        st.markdown("### Co doporučujeme otestovat")
+        st.markdown(st.session_state.br_analysis)
         st.markdown("---")
-
-        project_name = st.session_state.get("selected_project")
-        if not project_name:
-            st.warning("Nejdříve vyberte projekt v levém panelu.")
-        else:
-            selected_count = sum(st.session_state.br_selected)
-            if st.button(f"✅ Generovat test cases ({selected_count}) do projektu: {project_name}", type="primary", use_container_width=True):
-                if selected_count == 0:
-                    st.warning("Žádný TC není vybrán.")
-                else:
-                    proj = st.session_state.projects[project_name]
-                    added = 0
-                    for i, tc in enumerate(st.session_state.br_tcs):
-                        if not st.session_state.br_selected[i]:
-                            continue
-                        order = proj.get("next_id", 1)
-                        proj["next_id"] = order + 1
-                        from core import build_test_name, get_steps_from_action
-                        veta = tc.get("nazev", "")
-                        akce = tc.get("akce", "")
-                        test_name = build_test_name(order, veta)
-                        proj.setdefault("scenarios", []).append({
-                            "order_no": order,
-                            "test_name": test_name,
-                            "akce": akce,
-                            "segment": tc.get("segment", "UNKNOWN"),
-                            "kanal": tc.get("kanal", "UNKNOWN"),
-                            "priority": tc.get("priorita", "2-Medium"),
-                            "complexity": "4-Medium",
-                            "veta": veta,
-                            "kroky": get_steps_from_action(akce, st.session_state.steps_data),
-                        })
-                        added += 1
-                    save_and_update_projects(st.session_state.projects, username)
-                    st.success(f"✅ Přeneseno {added} TC do projektu '{project_name}'.")
-                    st.session_state.br_tcs = []
-                    st.session_state.br_selected = []
-                    st.rerun()
+        st.info("Na základě analýzy přidejte test cases ručně v záložce **Test Cases**.")
 
 # ---------- TAB 1: BUILD TEST CASES ----------
 if selected_tab == "build":
