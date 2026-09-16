@@ -547,6 +547,25 @@ Odpověz POUZE validním JSON polem, žádný jiný text."""
     user = f"Business Requirements:\n\n{br_text}\n\nVygeneruj komplexní JSON pole TC. Minimálně 5 scénářů. Pole 'akce' musí být vždy přesný název z dostupných akcí."
     return system, user
 
+def _normalize_str(s: str) -> str:
+    """Odstraní diakritiku a převede na lowercase pro porovnávání."""
+    normalized = unicodedata.normalize('NFKD', s)
+    return ''.join(c for c in normalized if not unicodedata.combining(c)).lower().strip()
+
+def _find_closest_action(action_name: str, valid_actions: set) -> str | None:
+    """Najde nejbližší platnou akci — exact match, pak normalizovaný match."""
+    if action_name in valid_actions:
+        return action_name
+    norm_input = _normalize_str(action_name)
+    for valid in valid_actions:
+        if _normalize_str(valid) == norm_input:
+            return valid
+    # Částečná shoda jako poslední záchrana
+    for valid in valid_actions:
+        if _normalize_str(valid) in norm_input or norm_input in _normalize_str(valid):
+            return valid
+    return None
+
 def _parse_ai_response(raw: str) -> list[dict]:
     import json as _json
     raw = raw.strip()
@@ -1035,19 +1054,31 @@ if selected_tab == "br":
                 else:
                     tcs = generate_tcs_ollama(br_text, actions, selected_model)
             if tcs:
-                # Odfiltrovat TC s neexistující akcí
-                invalid = [tc for tc in tcs if tc.get("akce") not in valid_actions]
-                tcs = [tc for tc in tcs if tc.get("akce") in valid_actions]
-                st.session_state.br_tcs = tcs
-                st.session_state.br_selected = [True] * len(tcs)
+                # Opravit akce — spárovat s nejbližší platnou
+                fixed = 0
+                dropped = 0
+                result_tcs = []
+                for tc in tcs:
+                    closest = _find_closest_action(tc.get("akce", ""), valid_actions)
+                    if closest:
+                        if closest != tc.get("akce"):
+                            tc["akce"] = closest
+                            fixed += 1
+                        result_tcs.append(tc)
+                    else:
+                        dropped += 1
+                st.session_state.br_tcs = result_tcs
+                st.session_state.br_selected = [True] * len(result_tcs)
                 st.session_state.br_editing = None
-                if tcs:
-                    msg = f"Navrženo {len(tcs)} scénářů."
-                    if invalid:
-                        msg += f" ({len(invalid)} TC s neplatnou akcí bylo odebráno.)"
+                if result_tcs:
+                    msg = f"Navrženo {len(result_tcs)} scénářů."
+                    if fixed:
+                        msg += f" ({fixed} akcí automaticky opraveno.)"
+                    if dropped:
+                        msg += f" ({dropped} TC bez platné akce odebráno.)"
                     st.success(msg)
                 else:
-                    st.error("AI vygenerovala pouze scénáře s neplatnými akcemi. Zkontrolujte Actions & Steps a zkuste znovu.")
+                    st.error("AI nevrátila scénáře s platnými akcemi. Zkontrolujte Actions & Steps.")
             else:
                 st.error("AI nevrátila žádné scénáře. Zkuste znovu nebo upravte text BR.")
 
