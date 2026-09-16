@@ -1,10 +1,8 @@
 [server]
 enableXsrfProtection = true
 enableCORS = false
-port = 8502
 
 [browser]
-serverAddress = "localhost"
 gatherUsageStats = false
 
 [runner]
