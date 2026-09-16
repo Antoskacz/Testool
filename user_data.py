@@ -68,8 +68,20 @@ def load_shared_projects() -> dict:
                 key = f"{proj_name} [{user_dir.name}]"
                 shared[key] = copy.deepcopy(proj_data)
                 shared[key]["_owner"] = user_dir.name
+                shared[key]["_original_name"] = proj_name
                 shared[key]["_readonly"] = True
     return shared
+
+
+def save_single_project(username: str, project_name: str, project_data: dict) -> bool:
+    """Uloží jeden projekt (pro přidávání TC do sdílených projektů)."""
+    projects = load_user_projects(username)
+    data = copy.deepcopy(project_data)
+    data.pop("_readonly", None)
+    data.pop("_owner", None)
+    data.pop("_original_name", None)
+    projects[project_name] = data
+    return save_user_projects(username, projects)
 
 
 def set_project_visibility(username: str, project_name: str, is_public: bool) -> bool:

@@ -1324,9 +1324,6 @@ if selected_tab == "build":
     st.markdown("---")
 
     _proj_readonly = project_data.get('_readonly', False) if project_exists else False
-    if _proj_readonly:
-        st.info("Sdílený projekt — zobrazení pouze pro čtení. Vlastní test cases přidávejte ve svých projektech.")
-        st.stop()
 
     st.subheader("➕ Add New Test Case")
 
@@ -1394,10 +1391,22 @@ if selected_tab == "build":
 
                 project_data["next_id"] += 1
                 project_data["scenarios"].append(new_testcase)
-                save_and_update_projects(st.session_state.projects, username)
+                if _proj_readonly:
+                    _owner = project_data.get("_owner", "")
+                    _orig_name = project_data.get("_original_name", project_name)
+                    if supabase_data.is_available():
+                        supabase_data.save_single_project(_owner, _orig_name, project_data)
+                    else:
+                        user_data.save_single_project(_owner, _orig_name, project_data)
+                    st.session_state.projects[project_name] = project_data
+                else:
+                    save_and_update_projects(st.session_state.projects, username)
                 st.success(f"✅ Test case added: {test_name}")
                 st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
+
+    if _proj_readonly:
+        st.stop()
 
     with st.expander("✏️ Edit Existing Test Case", expanded=False):
         if project_data["scenarios"]:

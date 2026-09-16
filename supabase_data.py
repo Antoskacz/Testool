@@ -144,8 +144,33 @@ def load_shared_projects() -> dict:
         key = f"{row['project_name']} [{row['username']}]"
         shared[key] = copy.deepcopy(data)
         shared[key]["_owner"] = row["username"]
+        shared[key]["_original_name"] = row["project_name"]
         shared[key]["_readonly"] = True
     return shared
+
+
+def save_single_project(username: str, project_name: str, project_data: dict) -> bool:
+    """Uloží jeden projekt (pro přidávání TC do sdílených projektů)."""
+    c = get_client()
+    if not c:
+        return False
+    try:
+        data = copy.deepcopy(project_data)
+        is_public = data.pop("is_public", False)
+        data.pop("_readonly", None)
+        data.pop("_owner", None)
+        data.pop("_original_name", None)
+        c.table("projects").upsert({
+            "username": username,
+            "project_name": project_name,
+            "project_data": data,
+            "is_public": is_public,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }, on_conflict="username,project_name").execute()
+        return True
+    except Exception as e:
+        st.error(f"Chyba při ukládání projektu: {e}")
+        return False
 
 
 def set_project_visibility(username: str, project_name: str, is_public: bool) -> bool:
