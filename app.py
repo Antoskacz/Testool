@@ -521,28 +521,30 @@ def ollama_list_models() -> list[str]:
 def _build_ai_prompt(br_text: str, actions: list[str]) -> tuple[str, str]:
     actions_str = "\n".join(f"- {a}" for a in sorted(actions))
     system = f"""Jsi expert na UAT testování systému Siebel CZ pro telekomunikační společnost.
-Znáš tyto dostupné akce (použij POUZE tyto, nevymýšlej jiné):
+
+DOSTUPNÉ AKCE (použij výhradně tyto — přesně jak jsou napsány, ani slovo jinak):
 {actions_str}
 
-Na základě Business Requirements vygeneruj KOMPLEXNÍ seznam testovacích scénářů.
-Přemýšlej důkladně — pokryj různé kombinace a situace:
-- Segmenty B2C i B2B (pokud BR zahrnuje oba, jinak jen relevantní)
-- Kanály SHOP i IL (pokud BR zahrnuje oba, jinak jen relevantní)
-- Pozitivní scénáře (co má fungovat) i negativní (co se nesmí stát)
-- Různé priority: kritické kroky (1-High), standardní průchody (2-Medium), okrajové případy (3-Low)
-- Minimálně 5 TC, klidně i více pro komplexní BR
+PRAVIDLA:
+1. Pole "akce" musí obsahovat PŘESNÝ název z výše uvedeného seznamu — zkopíruj ho doslova.
+2. Nikdy nevymýšlej nové názvy akcí. Pokud pro scénář neexistuje přesná akce, vyber nejbližší z dostupných.
+3. Vygeneruj KOMPLEXNÍ pokrytí — přemýšlej co vše je třeba otestovat:
+   - Segmenty: B2C i B2B (pokud BR zahrnuje oba)
+   - Kanály: SHOP i IL (pokud BR zahrnuje oba)
+   - Pozitivní scénáře (co má fungovat) i negativní (chybové stavy, nevalidní vstupy)
+   - Priority: 1-High pro kritické průchody, 2-Medium pro standardní, 3-Low pro okrajové případy
+   - Minimálně 5 TC, ideálně více pro komplexní BR
 
-Každý TC musí mít:
-- nazev: výstižný popis scénáře česky (co se testuje a za jakých podmínek)
-- akce: přesný název akce ze seznamu výše
+Každý TC musí mít tato pole:
+- nazev: výstižný popis česky (co se testuje a za jakých podmínek)
+- akce: PŘESNÝ název z dostupných akcí (zkopíruj doslova)
 - priorita: "1-High", "2-Medium" nebo "3-Low"
 - segment: "B2C" nebo "B2B"
 - kanal: "SHOP" nebo "IL"
-- poznamka: krátká poznámka k účelu scénáře nebo prázdný string
+- poznamka: krátká poznámka nebo prázdný string
 
-Odpověz POUZE validním JSON polem, žádný jiný text.
-Příklad: [{{"nazev":"Aktivace DSL B2C přes SHOP — základní průchod","akce":"Aktivace - FIX","priorita":"1-High","segment":"B2C","kanal":"SHOP","poznamka":"Ověřit celý flow od objednávky po aktivaci"}}]"""
-    user = f"Business Requirements:\n\n{br_text}\n\nVygeneruj komplexní seznam TC jako JSON pole. Zahrň minimálně 5 scénářů pokrývajících různé kombinace a situace."
+Odpověz POUZE validním JSON polem, žádný jiný text."""
+    user = f"Business Requirements:\n\n{br_text}\n\nVygeneruj komplexní JSON pole TC. Minimálně 5 scénářů. Pole 'akce' musí být vždy přesný název z dostupných akcí."
     return system, user
 
 def _parse_ai_response(raw: str) -> list[dict]:
@@ -1025,19 +1027,29 @@ if selected_tab == "br":
             st.warning("Vložte nejdříve text BR.")
         else:
             st.session_state.br_text = br_text
-            with st.spinner("AI generuje testovací scénáře..."):
+            with st.spinner("AI analyzuje a navrhuje scénáře..."):
                 actions = list(st.session_state.steps_data.keys())
+                valid_actions = set(actions)
                 if ai_backend == "groq":
                     tcs = generate_tcs_groq(br_text, actions, selected_model)
                 else:
                     tcs = generate_tcs_ollama(br_text, actions, selected_model)
             if tcs:
+                # Odfiltrovat TC s neexistující akcí
+                invalid = [tc for tc in tcs if tc.get("akce") not in valid_actions]
+                tcs = [tc for tc in tcs if tc.get("akce") in valid_actions]
                 st.session_state.br_tcs = tcs
                 st.session_state.br_selected = [True] * len(tcs)
                 st.session_state.br_editing = None
-                st.success(f"Vygenerováno {len(tcs)} testovacích scénářů.")
+                if tcs:
+                    msg = f"Navrženo {len(tcs)} scénářů."
+                    if invalid:
+                        msg += f" ({len(invalid)} TC s neplatnou akcí bylo odebráno.)"
+                    st.success(msg)
+                else:
+                    st.error("AI vygenerovala pouze scénáře s neplatnými akcemi. Zkontrolujte Actions & Steps a zkuste znovu.")
             else:
-                st.error("AI nevrátila žádné scénáře. Zkuste jiný model nebo upravte text BR.")
+                st.error("AI nevrátila žádné scénáře. Zkuste znovu nebo upravte text BR.")
 
     # Tabulka vygenerovaných TC
     if st.session_state.br_tcs:
