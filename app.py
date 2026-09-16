@@ -404,13 +404,14 @@ def count_git_pending_override_changes(current_custom_data: dict, custom_path: s
 def save_and_update_projects(data, current_username=None):
     """Uloží projekty (Supabase nebo lokální soubor) a aktualizuje session_state."""
     uname = current_username or st.session_state.get('_projects_owner', 'default')
+    own_data = {k: v for k, v in data.items() if not v.get('_readonly', False)}
     if supabase_data.is_available():
-        success = supabase_data.save_user_projects(uname, data)
+        success = supabase_data.save_user_projects(uname, own_data)
     else:
-        success = user_data.save_user_projects(uname, data)
+        success = user_data.save_user_projects(uname, own_data)
     if success:
         st.session_state.projects = copy.deepcopy(data)
-        st.session_state[f"projects_{uname}"] = copy.deepcopy(data)
+        st.session_state[f"projects_{uname}"] = copy.deepcopy(own_data)
     return success
 
 def normalize_action_payload(action_data):
@@ -463,7 +464,7 @@ def _backup_kroky():
 
 # ---------- AI BACKEND (Groq + Ollama fallback) ----------
 OLLAMA_URL = "http://localhost:11434"
-GROQ_MODELS = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "mixtral-8x7b-32768"]
+GROQ_MODELS = ["llama-3.3-70b-versatile", "gemma2-9b-it", "llama3-70b-8192"]
 
 def _get_groq_key() -> str:
     try:
@@ -748,9 +749,17 @@ if 'steps_data' not in st.session_state:
     st.session_state.steps_data = user_data.load_kroky()
 
 if 'projects' not in st.session_state or st.session_state.get('_projects_owner') != username:
-    st.session_state.projects = st.session_state[_session_user_key]
+    st.session_state.projects = copy.deepcopy(st.session_state[_session_user_key])
     st.session_state['_projects_owner'] = username
     st.session_state.selected_project = None
+    # Načíst sdílené projekty ostatních uživatelů
+    if supabase_data.is_available():
+        _shared = supabase_data.load_shared_projects()
+    else:
+        _shared = user_data.load_shared_projects()
+    for _k, _v in _shared.items():
+        if _v.get("_owner") != username:
+            st.session_state.projects[_k] = _v
 
 # Initialize selected tab
 if 'selected_tab' not in st.session_state:
@@ -796,85 +805,93 @@ with st.sidebar:
     current_project = st.session_state.get("selected_project")
 
     if current_project:
-        st.markdown("---")
-        st.subheader("🛠️ Project Settings")
+        _is_readonly = st.session_state.projects.get(current_project, {}).get('_readonly', False)
+        if _is_readonly:
+            st.markdown("---")
+            _owner = st.session_state.projects[current_project].get('_owner', '')
+            st.caption(f"Sdílený projekt od: **{_owner}** — pouze pro čtení")
+        else:
+            st.markdown("---")
+            st.subheader("🛠️ Project Settings")
 
-        # Rename project
-        rename_val = st.text_input("Rename project", value=current_project)
+        # Rename project (jen pro vlastní projekty)
+        if not _is_readonly:
+            rename_val = st.text_input("Rename project", value=current_project)
 
-        if st.button("✏️ Rename project", use_container_width=True):
-            new_name = rename_val.strip()
-            if not new_name:
-                st.error("Project name cannot be empty.")
-            elif new_name in st.session_state.projects:
-                st.error("A project with this name already exists.")
-            else:
-                st.session_state.projects[new_name] = st.session_state.projects[current_project]
-                del st.session_state.projects[current_project]
-                save_and_update_projects(st.session_state.projects, username)
-                st.session_state.selected_project = new_name
-                st.success("Project renamed.")
-                st.rerun()
-
-        # Delete project (two-step)
-        if "project_to_delete" not in st.session_state:
-            st.session_state.project_to_delete = None
-
-        if st.button("🗑️ Delete project", use_container_width=True):
-            st.session_state.project_to_delete = current_project
-
-        if st.session_state.project_to_delete == current_project:
-            st.warning(f'Are you sure you want to delete "{current_project}"?')
-            col_yes, col_no = st.columns(2)
-
-            with col_yes:
-                if st.button("Yes, delete", use_container_width=True):
+        if not _is_readonly:
+            if st.button("✏️ Rename project", use_container_width=True):
+                new_name = rename_val.strip()
+                if not new_name:
+                    st.error("Project name cannot be empty.")
+                elif new_name in st.session_state.projects:
+                    st.error("A project with this name already exists.")
+                else:
+                    st.session_state.projects[new_name] = st.session_state.projects[current_project]
                     del st.session_state.projects[current_project]
                     save_and_update_projects(st.session_state.projects, username)
-                    st.session_state.selected_project = None
-                    st.session_state.project_to_delete = None
-                    st.success("Project deleted.")
+                    st.session_state.selected_project = new_name
+                    st.success("Project renamed.")
                     st.rerun()
 
-            with col_no:
-                if st.button("Cancel", use_container_width=True):
-                    st.session_state.project_to_delete = None
+            # Delete project (two-step)
+            if "project_to_delete" not in st.session_state:
+                st.session_state.project_to_delete = None
 
-        # Subject settings
-        st.markdown("---")
-        st.subheader("📨 Subject Settings")
+            if st.button("🗑️ Delete project", use_container_width=True):
+                st.session_state.project_to_delete = current_project
 
-        subject_val = st.session_state.projects[current_project].get("subject", "")
-        subject_input = st.text_input("Subject", value=subject_val)
+            if st.session_state.project_to_delete == current_project:
+                st.warning(f'Are you sure you want to delete "{current_project}"?')
+                col_yes, col_no = st.columns(2)
 
-        col_save, col_delete = st.columns(2)
+                with col_yes:
+                    if st.button("Yes, delete", use_container_width=True):
+                        del st.session_state.projects[current_project]
+                        save_and_update_projects(st.session_state.projects, username)
+                        st.session_state.selected_project = None
+                        st.session_state.project_to_delete = None
+                        st.success("Project deleted.")
+                        st.rerun()
 
-        with col_save:
-            if st.button("💾 Save subject", use_container_width=True):
-                st.session_state.projects[current_project]["subject"] = subject_input.strip()
+                with col_no:
+                    if st.button("Cancel", use_container_width=True):
+                        st.session_state.project_to_delete = None
+
+            # Subject settings
+            st.markdown("---")
+            st.subheader("📨 Subject Settings")
+
+            subject_val = st.session_state.projects[current_project].get("subject", "")
+            subject_input = st.text_input("Subject", value=subject_val)
+
+            col_save, col_delete = st.columns(2)
+
+            with col_save:
+                if st.button("💾 Save subject", use_container_width=True):
+                    st.session_state.projects[current_project]["subject"] = subject_input.strip()
+                    save_and_update_projects(st.session_state.projects, username)
+                    st.success("Subject updated.")
+
+            with col_delete:
+                if st.button("🧹 Delete subject", use_container_width=True):
+                    st.session_state.projects[current_project]["subject"] = ""
+                    save_and_update_projects(st.session_state.projects, username)
+                    st.success("Subject cleared.")
+
+            st.markdown("---")
+            st.subheader("🔒 Viditelnost projektu")
+            is_public = st.session_state.projects[current_project].get("is_public", False)
+            new_visibility = st.toggle(
+                "Sdílený (viditelný pro tým)",
+                value=is_public,
+                key="visibility_toggle"
+            )
+            if new_visibility != is_public:
+                st.session_state.projects[current_project]["is_public"] = new_visibility
                 save_and_update_projects(st.session_state.projects, username)
-                st.success("Subject updated.")
-
-        with col_delete:
-            if st.button("🧹 Delete subject", use_container_width=True):
-                st.session_state.projects[current_project]["subject"] = ""
-                save_and_update_projects(st.session_state.projects, username)
-                st.success("Subject cleared.")
-
-        st.markdown("---")
-        st.subheader("🔒 Viditelnost projektu")
-        is_public = st.session_state.projects[current_project].get("is_public", False)
-        new_visibility = st.toggle(
-            "Sdílený (viditelný pro tým)",
-            value=is_public,
-            key="visibility_toggle"
-        )
-        if new_visibility != is_public:
-            st.session_state.projects[current_project]["is_public"] = new_visibility
-            save_and_update_projects(st.session_state.projects, username)
-            label = "Sdílený" if new_visibility else "Soukromý"
-            st.success(f"Projekt je nyní: {label}")
-            st.rerun()
+                label = "Sdílený" if new_visibility else "Soukromý"
+                st.success(f"Projekt je nyní: {label}")
+                st.rerun()
 
 # ---------- MAIN CONTENT: STICKY TOP NAV ----------
 if 'selected_tab' not in st.session_state:
@@ -970,7 +987,7 @@ if selected_tab == "br":
     with col_settings:
         selected_model = st.selectbox("AI Model", options=available_models, key="br_model")
         st.markdown("<br>", unsafe_allow_html=True)
-        generate_btn = st.button("▶ Generovat TC", use_container_width=True, type="primary", key="br_generate")
+        generate_btn = st.button("🔍 Analyzovat", use_container_width=True, type="primary", key="br_generate")
 
     if generate_btn:
         if not br_text.strip():
@@ -1065,7 +1082,7 @@ if selected_tab == "br":
             st.warning("Nejdříve vyberte projekt v levém panelu.")
         else:
             selected_count = sum(st.session_state.br_selected)
-            if st.button(f"✅ Přenést vybrané ({selected_count}) do projektu: {project_name}", type="primary", use_container_width=True):
+            if st.button(f"✅ Generovat test cases ({selected_count}) do projektu: {project_name}", type="primary", use_container_width=True):
                 if selected_count == 0:
                     st.warning("Žádný TC není vybrán.")
                 else:
@@ -1305,6 +1322,12 @@ if selected_tab == "build":
     else:
         st.info("No test cases yet. Add your first test case below.")
     st.markdown("---")
+
+    _proj_readonly = project_data.get('_readonly', False) if project_exists else False
+    if _proj_readonly:
+        st.info("Sdílený projekt — zobrazení pouze pro čtení. Vlastní test cases přidávejte ve svých projektech.")
+        st.stop()
+
     st.subheader("➕ Add New Test Case")
 
     if not project_exists:
